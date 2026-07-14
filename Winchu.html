@@ -184,7 +184,6 @@
 
         .chat-messages { max-height: 340px; overflow-y: auto; padding: 6px 0; margin: 8px 0; }
 
-        /* Instagram-style Social Feed */
         .ig-story-row {
             display: flex;
             gap: 14px;
@@ -762,14 +761,12 @@
         'https://images.unsplash.com/photo-1491466424936-e304919aada7?w=1920&q=80'
     ];
 
-    // ==================== JSONBIN CONFIG ====================
-    // YOUR ACTUAL CREDENTIALS - CONNECTED!
+    // ==================== JSONBIN CONFIG - YOUR CREDENTIALS ====================
     const JSONBIN_KEY = '$2a$10$rxszN.mST.9rXVfKlbAGwO1LsenqbMEFynIxmObPNTjYNx3A6ofZ6';
     const JSONBIN_BIN_ID = '6a5659c1f5f4af5e298e19c7';
     const CLOUD_ENABLED = true;
 
-    console.log('🔗 JSONBin configured with ID:', JSONBIN_BIN_ID);
-    console.log('🔑 API Key:', JSONBIN_KEY.substring(0, 20) + '...');
+    console.log('🔗 JSONBin connected with ID:', JSONBIN_BIN_ID);
 
     // ==================== CLOUD FUNCTIONS ====================
     async function cloudGet() {
@@ -782,14 +779,12 @@
             });
             if (response.ok) {
                 const data = await response.json();
-                console.log('✅ JSONBin data loaded:', Object.keys(data));
+                console.log('✅ JSONBin data loaded');
                 return data;
-            } else {
-                console.warn('⚠️ JSONBin get error:', response.status, response.statusText);
-                return null;
             }
+            return null;
         } catch (e) {
-            console.error('❌ JSONBin connection error:', e.message);
+            console.error('❌ JSONBin error:', e.message);
             return null;
         }
     }
@@ -807,25 +802,18 @@
             if (response.ok) {
                 console.log('✅ JSONBin data saved');
                 return true;
-            } else {
-                console.warn('⚠️ JSONBin put error:', response.status, response.statusText);
-                return false;
             }
+            return false;
         } catch (e) {
             console.error('❌ JSONBin save error:', e.message);
             return false;
         }
     }
 
-    // ==================== LOCAL FALLBACK ====================
     function loadLocalData() {
         try {
             const raw = localStorage.getItem('nexus_cloud_data');
-            if (raw) {
-                const data = JSON.parse(raw);
-                console.log('📦 Local data loaded');
-                return data;
-            }
+            if (raw) return JSON.parse(raw);
         } catch (e) {}
         return null;
     }
@@ -836,28 +824,20 @@
         } catch (e) {}
     }
 
-    // ==================== LOAD ALL DATA ====================
     let CLOUD_DATA = { messages: [], users: {}, posts: [], diaries: [], routines: [], profiles: {} };
 
     async function loadAllData() {
-        // Try cloud first
         const cloudData = await cloudGet();
         if (cloudData) {
             CLOUD_DATA = cloudData;
             saveLocalData(cloudData);
-            console.log('✅ Using cloud data');
             return CLOUD_DATA;
         }
-        
-        // Fallback to local
         const localData = loadLocalData();
         if (localData) {
             CLOUD_DATA = localData;
-            console.log('📦 Using local data (cloud unavailable)');
             return CLOUD_DATA;
         }
-        
-        console.log('📦 Using empty data (first run)');
         return CLOUD_DATA;
     }
 
@@ -865,24 +845,6 @@
         if (!CLOUD_DATA) return;
         saveLocalData(CLOUD_DATA);
         await cloudPut(CLOUD_DATA);
-    }
-
-    // ==================== TEST CONNECTION ====================
-    async function testJSONBinConnection() {
-        try {
-            const result = await cloudGet();
-            if (result) {
-                toast('✅ JSONBin Connected!');
-                console.log('✅ JSONBin connection successful');
-                return true;
-            } else {
-                toast('⚠️ JSONBin connection failed - using local storage');
-                return false;
-            }
-        } catch (e) {
-            toast('⚠️ JSONBin unavailable - using local storage');
-            return false;
-        }
     }
 
     // ==================== AUTH ====================
@@ -898,7 +860,6 @@
                 const data = JSON.parse(raw);
                 if (data && data.username) {
                     S.username = data.username;
-                    // Load from cloud data
                     if (CLOUD_DATA.profiles && CLOUD_DATA.profiles[S.username]) {
                         const profile = CLOUD_DATA.profiles[S.username];
                         S.bio = profile.bio || 'Building my energy. One aura at a time. ⚡';
@@ -914,7 +875,6 @@
 
     function saveAuth() {
         localStorage.setItem(AUTH_KEY, JSON.stringify({ username: S.username }));
-        // Update cloud profile
         if (!CLOUD_DATA.profiles) CLOUD_DATA.profiles = {};
         CLOUD_DATA.profiles[S.username] = {
             bio: S.bio,
@@ -925,7 +885,6 @@
         saveAllData();
     }
 
-    // ==================== AUTH HANDLERS ====================
     async function handleSignup() {
         const name = document.getElementById('signupName').value.trim();
         const user = document.getElementById('signupUser').value.trim();
@@ -1188,7 +1147,6 @@
         const mood = document.getElementById('diaryMood').value.trim() || '—';
         if (!content) { toast('Write something'); return; }
         S.diary.unshift({ date: new Date().toISOString(), content: content, mood: mood });
-        // Save to cloud
         if (!CLOUD_DATA.diaries) CLOUD_DATA.diaries = [];
         CLOUD_DATA.diaries = S.diary;
         saveAuth();
@@ -1510,29 +1468,12 @@
     // ==================== INIT ====================
     async function init() {
         console.log('🚀 Nexus starting...');
-        console.log('📦 Loading data from JSONBin...');
-        
         await loadAllData();
         
-        // Load messages from cloud
-        if (CLOUD_DATA.messages) {
-            chatMessages = CLOUD_DATA.messages;
-        }
-        // Load posts from cloud
-        if (CLOUD_DATA.posts) {
-            S.socialPosts = CLOUD_DATA.posts;
-        }
-        // Load diaries from cloud
-        if (CLOUD_DATA.diaries) {
-            S.diary = CLOUD_DATA.diaries;
-        }
-        // Load routines from cloud
-        if (CLOUD_DATA.routines) {
-            S.routines = CLOUD_DATA.routines;
-        }
-
-        // Test JSONBin connection
-        await testJSONBinConnection();
+        if (CLOUD_DATA.messages) chatMessages = CLOUD_DATA.messages;
+        if (CLOUD_DATA.posts) S.socialPosts = CLOUD_DATA.posts;
+        if (CLOUD_DATA.diaries) S.diary = CLOUD_DATA.diaries;
+        if (CLOUD_DATA.routines) S.routines = CLOUD_DATA.routines;
 
         const loggedIn = loadAuth();
         if (loggedIn) {
@@ -1548,8 +1489,6 @@
         }, 5000);
         
         console.log('⚡ Nexus · id³ with JSONBin ✅');
-        console.log('📦 Bin ID:', JSONBIN_BIN_ID);
-        console.log('🔗 Data shared across all devices!');
     }
 
     // ==================== EXPOSE TO WINDOW ====================
