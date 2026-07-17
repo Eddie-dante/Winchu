@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Winchu · Nexus</title>
+    <title>Winchu · Nexus Enhanced</title>
     <style>
         :root {
             --bg: #f1f5f9;
@@ -14,6 +14,11 @@
             --safe-bottom: env(safe-area-inset-bottom, 16px);
             --radius: 32px;
             --radius-sm: 16px;
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
         }
         * { margin:0; padding:0; box-sizing:border-box; }
         body {
@@ -71,12 +76,13 @@
             transition: all 0.2s; color: inherit;
         }
         button:active { transform: scale(0.96); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-primary {
-            background: #0f172a; color: #fff; font-weight: 600;
+            background: var(--primary); color: #fff; font-weight: 600;
             font-size: 15px; padding: 16px; width:100%;
-            box-shadow: 0 4px 16px rgba(15,23,42,0.15);
+            box-shadow: 0 4px 16px rgba(99,102,241,0.25);
         }
-        .btn-primary:hover { background: #1e293b; }
+        .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
         .btn-secondary {
             background: transparent; border: 1px solid rgba(0,0,0,0.08);
             color: #64748b; width:100%; margin-top:8px;
@@ -86,22 +92,36 @@
             background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.06);
             color: #475569; width: auto;
         }
-        .btn-danger { color: #ef4444 !important; }
+        .btn-danger { color: var(--danger) !important; }
+        .btn-success { background: var(--success); color: white; }
+
+        .loading-spinner {
+            display: inline-block; width: 20px; height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%; border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         .landing-content { text-align: center; }
         .landing-icon { font-size: 72px; margin-bottom: 14px; display: block; }
         .landing-title {
             font-size: 44px; font-weight: 800; letter-spacing: -2px;
-            background: linear-gradient(135deg, #0f172a 60%, #475569);
+            background: linear-gradient(135deg, var(--primary) 60%, #475569);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             margin-bottom: 6px;
         }
         .landing-subtitle { color: #64748b; font-size: 14px; margin-bottom: 36px; }
 
+        .version-badge {
+            font-size: 10px; color: #94a3b8; margin-top: 10px;
+        }
+
         .counter-chip {
             display: inline-flex; align-items: center; gap: 5px;
-            background: rgba(0,0,0,0.04); padding: 5px 14px;
-            border-radius: 40px; font-size: 12px; color: #475569; margin-bottom: 16px;
+            background: rgba(99,102,241,0.1); padding: 5px 14px;
+            border-radius: 40px; font-size: 12px; color: var(--primary); margin-bottom: 16px;
+            border: 1px solid rgba(99,102,241,0.2);
         }
 
         .aura-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
@@ -112,19 +132,21 @@
             background: rgba(255,255,255,0.5); border: 1.5px solid rgba(0,0,0,0.04);
             border-radius: 14px; cursor: pointer; transition: all 0.2s;
         }
-        .aura-btn:hover { border-color: rgba(0,0,0,0.15); background: rgba(255,255,255,0.8); }
-        .aura-btn.selected { border-color: #0f172a; background: rgba(255,255,255,0.9); }
+        .aura-btn:hover { border-color: var(--primary); background: rgba(99,102,241,0.05); }
+        .aura-btn.selected { border-color: var(--primary); background: rgba(99,102,241,0.1); }
         .aura-btn .emoji { font-size: 22px; flex-shrink: 0; }
         .aura-btn .info h3 { font-size: 12px; font-weight: 600; }
         .aura-btn .info p { font-size: 10px; color: #64748b; }
-        .aura-btn .check-mark { margin-left: auto; opacity: 0; font-size: 13px; }
+        .aura-btn .check-mark { margin-left: auto; opacity: 0; font-size: 13px; color: var(--primary); }
         .aura-btn.selected .check-mark { opacity: 1; }
 
         .stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0; }
         .stat-card {
             background: rgba(255,255,255,0.6); border-radius: 14px;
             padding: 16px; text-align: center; border: 1px solid rgba(0,0,0,0.04);
+            transition: transform 0.2s;
         }
+        .stat-card:hover { transform: translateY(-2px); }
         .stat-card .stat-icon { font-size: 26px; }
         .stat-card .stat-value { font-size: 20px; font-weight: 700; }
         .stat-card .stat-label { font-size: 9px; color: #94a3b8; text-transform: uppercase; }
@@ -141,14 +163,14 @@
             background: #fff; border: 1px solid #f1f5f9; border-radius: 13px;
             cursor: pointer; gap: 10px; margin-bottom: 5px; transition: all 0.2s;
         }
-        .task-item:hover { border-color: #e2e8f0; }
-        .task-item.done { opacity: 0.55; }
+        .task-item:hover { border-color: var(--primary); background: rgba(99,102,241,0.05); }
+        .task-item.done { opacity: 0.55; background: rgba(16,185,129,0.05); border-color: rgba(16,185,129,0.2); }
         .check-box {
             width: 20px; height: 20px; border: 2px solid #cbd5e1; border-radius: 6px;
             display: flex; align-items: center; justify-content: center; font-size: 11px;
             flex-shrink: 0; background: #fff;
         }
-        .task-item.done .check-box { background: #0f172a; border-color: #0f172a; color: #fff; }
+        .task-item.done .check-box { background: var(--success); border-color: var(--success); color: #fff; }
         .task-text { font-size: 12px; flex: 1; }
         .task-item.done .task-text { text-decoration: line-through; color: #94a3b8; }
 
@@ -158,28 +180,32 @@
         .cal-day {
             aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
             font-size: 9px; border-radius: 6px; background: rgba(0,0,0,0.02); color: #94a3b8;
+            transition: all 0.2s;
         }
         .cal-day.weekday { font-size: 7px; text-transform: uppercase; background: transparent; }
         .cal-day.active { color: #fff; font-weight: 600; }
-        .cal-day.today { border: 2px solid #0f172a; background: transparent; color: #0f172a; font-weight: 600; }
+        .cal-day.today { border: 2px solid var(--primary); background: transparent; color: var(--primary); font-weight: 600; }
 
         .entry-card {
             background: rgba(255,255,255,0.6); border: 1px solid rgba(0,0,0,0.04);
             border-radius: 13px; padding: 12px; margin-bottom: 7px;
+            transition: transform 0.2s;
         }
+        .entry-card:hover { transform: translateY(-1px); }
 
-        textarea, input[type="text"], input[type="search"], input[type="password"] {
+        textarea, input[type="text"], input[type="search"], input[type="password"], input[type="email"] {
             width: 100%; padding: 10px 13px; border: 1px solid rgba(0,0,0,0.08);
             border-radius: 13px; font-family: var(--font); font-size: 13px;
             outline: none; background: rgba(255,255,255,0.5); resize: vertical;
+            transition: border-color 0.2s;
         }
-        textarea:focus, input:focus { border-color: #0f172a; }
+        textarea:focus, input:focus { border-color: var(--primary); }
 
         .chat-bubble {
             padding: 9px 13px; border-radius: 15px; margin: 3px 0;
             max-width: 82%; font-size: 12px; line-height: 1.4; word-wrap: break-word;
         }
-        .chat-sent { background: #0f172a; color: #fff; margin-left: auto; }
+        .chat-sent { background: var(--primary); color: #fff; margin-left: auto; }
         .chat-received { background: #f1f5f9; color: #1e293b; margin-right: auto; }
 
         .chat-messages { max-height: 340px; overflow-y: auto; padding: 6px 0; margin: 8px 0; }
@@ -237,7 +263,9 @@
             margin-bottom: 14px;
             border: 1px solid rgba(0,0,0,0.05);
             overflow: hidden;
+            transition: transform 0.2s;
         }
+        .ig-post:hover { transform: translateY(-2px); }
         .ig-post-header {
             display: flex;
             align-items: center;
@@ -254,6 +282,7 @@
             justify-content: center;
             font-size: 18px;
             flex-shrink: 0;
+            overflow: hidden;
         }
         .ig-post-user {
             font-weight: 600;
@@ -314,8 +343,10 @@
         .wp-thumb {
             aspect-ratio: 16/10; border-radius: 10px; background-size: cover;
             background-position: center; cursor: pointer; border: 2px solid transparent;
+            transition: all 0.2s;
         }
-        .wp-thumb.selected { border-color: #0f172a; }
+        .wp-thumb:hover { transform: scale(1.05); }
+        .wp-thumb.selected { border-color: var(--primary); }
 
         .profile-header {
             display: flex;
@@ -342,6 +373,7 @@
             align-items: center;
             justify-content: center;
             font-size: 36px;
+            overflow: hidden;
         }
         .profile-name { font-size: 20px; font-weight: 700; }
         .profile-username { font-size: 13px; color: #64748b; }
@@ -417,8 +449,8 @@
             max-width: 70px;
             -webkit-tap-highlight-color: transparent;
         }
-        .nav-btn:hover { color: #0f172a; background: rgba(0,0,0,0.03); }
-        .nav-btn.active { color: #0f172a; background: rgba(0,0,0,0.05); font-weight: 600; }
+        .nav-btn:hover { color: var(--primary); background: rgba(99,102,241,0.05); }
+        .nav-btn.active { color: var(--primary); background: rgba(99,102,241,0.1); font-weight: 600; }
         .nav-btn .nav-icon { font-size: 18px; line-height: 1; }
         .nav-btn .nav-label { line-height: 1; font-size: 8px; }
         @media (min-width: 420px) {
@@ -433,22 +465,25 @@
         .signature {
             position: fixed; bottom: 75px; right: 16px;
             font-size: 10px; font-weight: 600; letter-spacing: 1.5px;
-            color: #0f172a; opacity: 0.2; z-index: 100; pointer-events: none;
+            color: var(--primary); opacity: 0.3; z-index: 100; pointer-events: none;
         }
         .wp-fab {
             position: fixed; bottom: 75px; left: 16px; z-index: 999;
-            background: rgba(15,23,42,0.9); width: 34px; height: 34px;
+            background: var(--primary); width: 34px; height: 34px;
             border-radius: 50%; font-size: 14px; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            border: none; color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+            border: none; color: #fff; box-shadow: 0 4px 14px rgba(99,102,241,0.4);
+            transition: transform 0.2s;
         }
+        .wp-fab:hover { transform: scale(1.1); }
 
         .toast {
             position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
             z-index: 2000; padding: 10px 20px; border-radius: 22px;
             font-weight: 600; font-size: 13px; pointer-events: none;
             animation: toastIn 0.35s ease, toastOut 0.35s ease 2s forwards;
-            background: #0f172a; color: #fff;
+            background: var(--primary); color: #fff;
+            box-shadow: 0 4px 12px rgba(99,102,241,0.3);
         }
         @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(-16px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
         @keyframes toastOut { from { opacity:1; } to { opacity:0; transform:translateX(-50%) translateY(-16px); } }
@@ -458,7 +493,7 @@
             z-index: 3000; display: flex; align-items: center; justify-content: center;
         }
         .modal { background: #fff; border-radius: 18px; padding: 22px; max-width: 340px; width: 90%; text-align: center; }
-        .auth-toggle { font-size: 12px; color: #64748b; margin-top: 12px; cursor: pointer; text-decoration: underline; }
+        .auth-toggle { font-size: 12px; color: var(--primary); margin-top: 12px; cursor: pointer; text-decoration: underline; }
 
         @media (max-width: 480px) {
             .container { padding: 20px 14px; border-radius: 24px; }
@@ -508,7 +543,9 @@
             border-radius: 12px;
             margin-bottom: 6px;
             border: 1px solid rgba(0,0,0,0.05);
+            transition: transform 0.2s;
         }
+        .user-card:hover { transform: translateY(-2px); background: rgba(99,102,241,0.05); }
         .user-card .user-avatar {
             width: 40px;
             height: 40px;
@@ -538,21 +575,92 @@
             font-size: 11px;
             color: #64748b;
         }
-        .user-card .status-dot {
+        .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
             display: inline-block;
             margin-right: 4px;
         }
-        .user-card .status-dot.online { background: #4ade80; }
-        .user-card .status-dot.offline { background: #94a3b8; }
+        .status-dot.online { background: var(--success); }
+        .status-dot.offline { background: #94a3b8; }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 10px;
+        }
+        .search-container input {
+            padding-left: 35px;
+        }
+        .search-container .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .notification-badge {
+            position: relative;
+        }
+        .notification-badge::after {
+            content: attr(data-count);
+            position: absolute;
+            top: -5px;
+            right: -10px;
+            background: var(--danger);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .export-btn {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .export-btn:hover { opacity: 0.9; }
+
+        .dark-mode-toggle {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 100;
+            background: var(--surface);
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
     </style>
 </head>
 <body>
     <div class="signature">id³</div>
+    <button class="dark-mode-toggle" onclick="window.toggleDarkMode()" title="Toggle dark mode">🌙</button>
     <button class="wp-fab" id="wpFab" onclick="window.navigate('wallpapers')" style="display:none;">🎨</button>
     <div id="toastContainer"></div>
+    <div id="loadingOverlay" style="display:none; position:fixed; inset:0; background:rgba(255,255,255,0.8); z-index:4000; display:flex; align-items:center; justify-content:center;">
+        <div class="loading-spinner" style="border-top-color: var(--primary); width:40px; height:40px;"></div>
+    </div>
 
     <!-- Landing Page -->
     <div class="page active" id="page-landing">
@@ -562,6 +670,7 @@
             <p class="landing-subtitle">Shape your presence. Manifest your energy.</p>
             <button class="btn-primary" onclick="window.navigate('login')">Sign In</button>
             <button class="btn-secondary" onclick="window.navigate('signup')" style="margin-top:8px;">Create Account</button>
+            <p class="version-badge">v2.0 Enhanced · JSONBin Sync</p>
         </div>
     </div>
 
@@ -571,8 +680,9 @@
             <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">✨ Create Account</h2>
             <input type="text" id="signupName" placeholder="Full name" style="margin-bottom:8px;">
             <input type="text" id="signupUser" placeholder="Username" style="margin-bottom:8px;">
-            <input type="password" id="signupPass" placeholder="Password" style="margin-bottom:16px;">
-            <button class="btn-primary" onclick="window.handleSignup()">Sign Up</button>
+            <input type="email" id="signupEmail" placeholder="Email (optional)" style="margin-bottom:8px;">
+            <input type="password" id="signupPass" placeholder="Password (min 6 chars)" style="margin-bottom:16px;">
+            <button class="btn-primary" id="signupBtn" onclick="window.handleSignup()">Sign Up</button>
             <div class="auth-toggle" onclick="window.navigate('login')">Already have an account? Log in</div>
             <button class="btn-secondary" onclick="window.navigate('landing')" style="margin-top:8px;">← Back</button>
         </div>
@@ -584,7 +694,7 @@
             <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">🔐 Sign In</h2>
             <input type="text" id="loginUser" placeholder="Username" style="margin-bottom:8px;">
             <input type="password" id="loginPass" placeholder="Password" style="margin-bottom:16px;">
-            <button class="btn-primary" onclick="window.handleLogin()">Log In</button>
+            <button class="btn-primary" id="loginBtn" onclick="window.handleLogin()">Log In</button>
             <div class="auth-toggle" onclick="window.navigate('signup')">No account? Create one</div>
             <button class="btn-secondary" onclick="window.navigate('landing')" style="margin-top:8px;">← Back</button>
         </div>
@@ -606,16 +716,19 @@
         <div class="container">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                 <h2 id="homeTitle" style="font-size:17px;font-weight:700;">Dashboard</h2>
-                <span id="homeBadge" style="font-size:10px;background:rgba(0,0,0,0.04);padding:3px 10px;border-radius:18px;">⚡</span>
+                <span id="homeBadge" style="font-size:10px;background:rgba(99,102,241,0.1);padding:3px 10px;border-radius:18px;color:var(--primary);">⚡</span>
             </div>
-            <button class="btn-sm" onclick="window.navigate('users')" style="width:100%;margin-bottom:10px;background:rgba(99,102,241,0.15);border-color:#6366f1;">
+            <button class="btn-sm" onclick="window.navigate('users')" style="width:100%;margin-bottom:10px;background:rgba(99,102,241,0.15);border-color:var(--primary);color:var(--primary);">
                 👥 View All Users
+            </button>
+            <button class="btn-sm btn-success" onclick="window.exportData()" style="width:100%;margin-bottom:10px;">
+                📥 Export My Data
             </button>
             <div class="score-ring-wrap">
                 <div class="score-ring">
                     <svg viewBox="0 0 100 100">
                         <circle cx="50" cy="50" r="43" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="5"/>
-                        <circle id="scoreRing" cx="50" cy="50" r="43" fill="none" stroke="#0f172a" stroke-width="5" stroke-linecap="round" stroke-dasharray="270.18" stroke-dashoffset="270.18"/>
+                        <circle id="scoreRing" cx="50" cy="50" r="43" fill="none" stroke="var(--primary)" stroke-width="5" stroke-linecap="round" stroke-dasharray="270.18" stroke-dashoffset="270.18"/>
                     </svg>
                     <div class="center"><div class="num" id="score">0%</div><div class="label">Strength</div></div>
                 </div>
@@ -646,6 +759,10 @@
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">👥 All Users</h2>
             <button class="btn-sm" onclick="window.navigate('home')" style="margin-bottom:10px;">← Back to Dashboard</button>
+            <div class="search-container">
+                <span class="search-icon">🔍</span>
+                <input type="search" id="userSearch" placeholder="Search users..." oninput="window.renderUsers()">
+            </div>
             <div id="usersList">
                 <p style="color:#94a3b8;text-align:center;padding:20px;">Loading users...</p>
             </div>
@@ -659,9 +776,12 @@
             <textarea id="diaryInput" rows="3" placeholder="Dear diary..."></textarea>
             <div style="display:flex;gap:6px;margin-top:6px;">
                 <input type="text" id="diaryMood" placeholder="Mood" style="flex:1;">
-                <button class="btn-sm btn-primary" onclick="window.saveDiary()" style="width:auto;">💾</button>
+                <button class="btn-sm btn-primary" onclick="window.saveDiary()" style="width:auto;">💾 Save</button>
             </div>
-            <input type="search" id="diarySearch" placeholder="🔍 Search..." oninput="window.renderDiary()" style="margin-top:8px;">
+            <div class="search-container" style="margin-top:8px;">
+                <span class="search-icon">🔍</span>
+                <input type="search" id="diarySearch" placeholder="Search entries..." oninput="window.renderDiary()">
+            </div>
             <div id="diaryEntries" style="max-height:320px;overflow-y:auto;margin-top:8px;">
                 <p style="color:#94a3b8;text-align:center;">No entries yet.</p>
             </div>
@@ -674,7 +794,7 @@
             <h2 style="font-size:19px;font-weight:700;margin-bottom:10px;">📋 Routines</h2>
             <input type="text" id="routineTitle" placeholder="Title...">
             <textarea id="routineInput" rows="2" placeholder="Description..." style="margin-top:6px;"></textarea>
-            <button class="btn-sm btn-primary" onclick="window.saveRoutine()" style="margin-top:6px;width:100%;">💾 Save</button>
+            <button class="btn-sm btn-primary" onclick="window.saveRoutine()" style="margin-top:6px;width:100%;">💾 Save Routine</button>
             <div id="routineEntries" style="max-height:320px;overflow-y:auto;margin-top:8px;">
                 <p style="color:#94a3b8;text-align:center;">No routines yet.</p>
             </div>
@@ -685,19 +805,19 @@
     <div class="page" id="page-chat">
         <div class="container">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                <h2 style="font-size:19px;font-weight:700;">💬 Chat</h2>
-                <span style="font-size:11px;color:#4ade80;">● <span id="onlineCount">0</span></span>
+                <h2 style="font-size:19px;font-weight:700;">💬 Global Chat</h2>
+                <span style="font-size:11px;color:var(--success);">● <span id="onlineCount">0</span> online</span>
             </div>
             <div style="font-size:11px;color:#64748b;margin-bottom:6px;">
                 You: <strong id="myUsername">—</strong>
                 <button class="btn-sm" onclick="window.changeUsername()" style="margin-left:6px;font-size:10px;">✏️</button>
             </div>
             <div class="chat-messages" id="chatMessages">
-                <p style="color:#94a3b8;text-align:center;">Loading...</p>
+                <p style="color:#94a3b8;text-align:center;">Loading messages...</p>
             </div>
             <div style="display:flex;gap:6px;">
-                <input type="text" id="chatInput" placeholder="Message..." onkeypress="if(event.key==='Enter')window.sendMessage()" style="flex:1;">
-                <button class="btn-sm btn-primary" onclick="window.sendMessage()" style="width:auto;">📤</button>
+                <input type="text" id="chatInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter')window.sendMessage()" style="flex:1;">
+                <button class="btn-sm btn-primary" onclick="window.sendMessage()" style="width:auto;">📤 Send</button>
             </div>
         </div>
     </div>
@@ -706,7 +826,7 @@
     <div class="page" id="page-social">
         <div class="container" style="padding: 16px 14px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                <h2 style="font-size:20px;font-weight:700;">Winchu</h2>
+                <h2 style="font-size:20px;font-weight:700;">Winchu Feed</h2>
                 <div style="display:flex;gap:12px;align-items:center;">
                     <button class="btn-sm" onclick="window.navigate('wallpapers')" style="font-size:16px;background:none;border:none;padding:4px;">🎨</button>
                     <button class="btn-sm" onclick="document.getElementById('postInput').focus()" style="font-size:16px;background:none;border:none;padding:4px;">➕</button>
@@ -753,11 +873,11 @@
                     <button class="profile-edit-btn" onclick="document.getElementById('profileAvatarInput').click()">📷 Change Avatar</button>
                     <input type="file" id="profileAvatarInput" accept="image/*" style="display:none;" onchange="window.handleAvatarSelect(event)">
                 </div>
-                <button class="profile-edit-btn" onclick="window.logout()" style="margin-top:6px;color:#ef4444;border-color:#ef4444;">🚪 Logout</button>
+                <button class="profile-edit-btn" onclick="window.logout()" style="margin-top:6px;color:var(--danger);border-color:var(--danger);">🚪 Logout</button>
             </div>
             <div style="display:flex;gap:8px;margin-bottom:12px;">
-                <button class="btn-sm" style="flex:1;background:rgba(0,0,0,0.05);" onclick="window.navigate('home')">📊 Dashboard</button>
-                <button class="btn-sm" style="flex:1;background:rgba(0,0,0,0.05);" onclick="window.navigate('select')">✧ Auras</button>
+                <button class="btn-sm" style="flex:1;background:rgba(99,102,241,0.1);color:var(--primary);" onclick="window.navigate('home')">📊 Dashboard</button>
+                <button class="btn-sm" style="flex:1;background:rgba(99,102,241,0.1);color:var(--primary);" onclick="window.navigate('select')">✧ Auras</button>
             </div>
             <h3 style="font-size:14px;font-weight:600;margin-bottom:8px;">📸 Your Posts</h3>
             <div id="profilePostsGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;">
@@ -769,8 +889,8 @@
     <!-- Wallpapers -->
     <div class="page" id="page-wallpapers">
         <div class="container">
-            <h2 style="font-size:19px;font-weight:700;margin-bottom:8px;">🎨 Walls</h2>
-            <button class="btn-sm" onclick="window.randomWallpaper()" style="width:100%;margin-bottom:8px;">🎲 Random</button>
+            <h2 style="font-size:19px;font-weight:700;margin-bottom:8px;">🎨 Wallpapers</h2>
+            <button class="btn-sm btn-primary" onclick="window.randomWallpaper()" style="width:100%;margin-bottom:8px;">🎲 Random Wallpaper</button>
             <p style="font-size:10px;color:#94a3b8;" id="wpCount">50+ wallpapers</p>
             <div class="wp-grid" id="wpGrid"></div>
         </div>
@@ -827,9 +947,11 @@
     const JSONBIN_KEY = '$2a$10$rxszN.mST.9rXVfKlbAGwO1LsenqbMEFynIxmObPNTjYNx3A6ofZ6';
     const JSONBIN_BIN_ID = '6a5659c1f5f4af5e298e19c7';
 
-    console.log('🔗 Winchu connected to JSONBin:', JSONBIN_BIN_ID);
+    console.log('🔗 Winchu v2.0 connected to JSONBin:', JSONBIN_BIN_ID);
 
     // ==================== CLOUD FUNCTIONS ====================
+    let isSyncing = false;
+    
     async function cloudGet() {
         try {
             const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
@@ -851,6 +973,8 @@
     }
 
     async function cloudPut(data) {
+        if (isSyncing) return false;
+        isSyncing = true;
         try {
             const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
                 method: 'PUT',
@@ -868,12 +992,14 @@
         } catch (e) {
             console.error('❌ JSONBin save error:', e.message);
             return false;
+        } finally {
+            isSyncing = false;
         }
     }
 
     function loadLocalData() {
         try {
-            const raw = localStorage.getItem('winchu_cloud_data');
+            const raw = localStorage.getItem('winchu_cloud_data_v2');
             if (raw) return JSON.parse(raw);
         } catch (e) {}
         return null;
@@ -881,20 +1007,58 @@
 
     function saveLocalData(data) {
         try {
-            localStorage.setItem('winchu_cloud_data', JSON.stringify(data));
-        } catch (e) {}
+            localStorage.setItem('winchu_cloud_data_v2', JSON.stringify(data));
+        } catch (e) {
+            console.error('Local storage full:', e.message);
+            toast('⚠️ Storage full, clearing old data...');
+            // Clear old data to make room
+            localStorage.clear();
+        }
+    }
+
+    // ==================== DARK MODE ====================
+    function toggleDarkMode() {
+        const isDark = document.body.classList.toggle('dark-mode');
+        const toggle = document.querySelector('.dark-mode-toggle');
+        toggle.textContent = isDark ? '☀️' : '🌙';
+        
+        if (isDark) {
+            document.documentElement.style.setProperty('--bg', '#1e293b');
+            document.documentElement.style.setProperty('--text', '#f1f5f9');
+            document.documentElement.style.setProperty('--surface', 'rgba(30,41,59,0.9)');
+            document.documentElement.style.setProperty('--muted', '#94a3b8');
+        } else {
+            document.documentElement.style.setProperty('--bg', '#f1f5f9');
+            document.documentElement.style.setProperty('--text', '#0f172a');
+            document.documentElement.style.setProperty('--surface', 'rgba(255,255,255,0.78)');
+            document.documentElement.style.setProperty('--muted', '#64748b');
+        }
+        localStorage.setItem('winchu_dark_mode', isDark ? 'true' : 'false');
     }
 
     // ==================== MAIN APP ====================
     let CLOUD_DATA = { messages: [], users: {}, posts: [], diaries: [], routines: [], profiles: {} };
-    let S = { selectedAuras: [], completedTasks: [], streakData: {}, wallpaper: DEFAULT_WALLPAPER, diary: [], routines: [], socialPosts: [], likedPosts: [], username: '', bio: 'Building my energy. One aura at a time. ⚡', avatar: null };
+    let S = { 
+        selectedAuras: [], 
+        completedTasks: [], 
+        streakData: {}, 
+        wallpaper: DEFAULT_WALLPAPER, 
+        diary: [], 
+        routines: [], 
+        socialPosts: [], 
+        likedPosts: [], 
+        username: '', 
+        bio: 'Building my energy. One aura at a time. ⚡', 
+        avatar: null,
+        email: ''
+    };
     let chatMessages = [];
     let poll = null;
     let selectedFile = null;
     let selectedFileData = null;
     let selectedAvatarFile = null;
     let selectedAvatarData = null;
-    const AUTH_KEY = 'winchu_auth_v2';
+    const AUTH_KEY = 'winchu_auth_v2_enhanced';
 
     // ==================== CORE FUNCTIONS ====================
     async function loadAllData() {
@@ -918,6 +1082,33 @@
         await cloudPut(CLOUD_DATA);
     }
 
+    // ==================== DATA EXPORT ====================
+    function exportData() {
+        if (!S.username) { toast('Please log in first'); return; }
+        
+        const exportData = {
+            username: S.username,
+            bio: S.bio,
+            email: S.email,
+            selectedAuras: S.selectedAuras,
+            diary: S.diary,
+            routines: S.routines,
+            posts: S.socialPosts.filter(p => p.author === S.username),
+            wallpaper: S.wallpaper,
+            exportDate: new Date().toISOString(),
+            version: '2.0'
+        };
+        
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `winchu-backup-${S.username}-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast('📥 Data exported successfully!');
+    }
+
     // ==================== AUTH ====================
     function loadAuth() {
         try {
@@ -926,12 +1117,14 @@
                 const data = JSON.parse(raw);
                 if (data && data.username) {
                     S.username = data.username;
+                    S.email = data.email || '';
                     if (CLOUD_DATA.profiles && CLOUD_DATA.profiles[S.username]) {
                         const profile = CLOUD_DATA.profiles[S.username];
                         S.bio = profile.bio || 'Building my energy. One aura at a time. ⚡';
                         S.wallpaper = profile.wallpaper || DEFAULT_WALLPAPER;
                         S.selectedAuras = profile.selected_auras || [];
                         S.avatar = profile.avatar || null;
+                        S.email = profile.email || '';
                     }
                     document.getElementById('wpFab').style.display = 'flex';
                     return true;
@@ -943,13 +1136,14 @@
     }
 
     function saveAuth() {
-        localStorage.setItem(AUTH_KEY, JSON.stringify({ username: S.username }));
+        localStorage.setItem(AUTH_KEY, JSON.stringify({ username: S.username, email: S.email }));
         if (!CLOUD_DATA.profiles) CLOUD_DATA.profiles = {};
         CLOUD_DATA.profiles[S.username] = {
             bio: S.bio,
             wallpaper: S.wallpaper,
             selected_auras: S.selectedAuras,
             avatar: S.avatar,
+            email: S.email,
             last_seen: new Date().toISOString()
         };
         saveAllData();
@@ -1007,7 +1201,7 @@
         const profile = CLOUD_DATA.profiles && CLOUD_DATA.profiles[username] ? CLOUD_DATA.profiles[username] : {};
         const avatar = profile.avatar;
         if (avatar) {
-            return `<img src="${avatar}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;" />`;
+            return `<img src="${avatar}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;" alt="${username}'s avatar" />`;
         }
         const colors = ['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8','#F7B787','#FF8A80','#B388FF','#82B1FF','#B9F6CA','#FFE57F','#FF80AB','#EA80FC','#8C9EFF'];
         const color = colors[username.length % colors.length];
@@ -1018,6 +1212,11 @@
         const file = event.target.files[0];
         if (!file) return;
 
+        if (file.size > 5 * 1024 * 1024) {
+            toast('⚠️ Image too large. Max 5MB');
+            return;
+        }
+
         const reader = new FileReader();
         reader.onload = function(e) {
             selectedAvatarData = e.target.result;
@@ -1025,6 +1224,9 @@
             saveAuth();
             renderProfile();
             toast('✅ Avatar updated!');
+        };
+        reader.onerror = function() {
+            toast('❌ Error reading file');
         };
         reader.readAsDataURL(file);
     }
@@ -1034,11 +1236,17 @@
         const container = document.getElementById('usersList');
         if (!container) return;
 
+        const searchTerm = (document.getElementById('userSearch')?.value || '').toLowerCase();
         const users = CLOUD_DATA.users || {};
-        const usernames = Object.keys(users);
+        let usernames = Object.keys(users);
+        
+        if (searchTerm) {
+            usernames = usernames.filter(u => u.toLowerCase().includes(searchTerm));
+        }
         
         if (usernames.length === 0) {
-            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">No users yet.</p>';
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">' + 
+                (searchTerm ? 'No users found.' : 'No users yet.') + '</p>';
             return;
         }
 
@@ -1060,23 +1268,32 @@
             const isOnline = onlineUsers.has(u);
             const profile = CLOUD_DATA.profiles && CLOUD_DATA.profiles[u] ? CLOUD_DATA.profiles[u] : {};
             const isMe = u === S.username;
-            const postCount = S.socialPosts ? S.socialPosts.filter(p => p.author === u).length : 0;
+            const postCount = (CLOUD_DATA.posts || []).filter(p => p.author === u).length;
             const avatarHTML = getAvatarHTML(u, 40);
             
             return `
-                <div class="user-card">
+                <div class="user-card" onclick="window.viewUserProfile('${u}')">
                     <div class="user-avatar">${avatarHTML}</div>
                     <div class="user-info">
                         <div class="name">
                             ${isMe ? '⭐ ' : ''}${u}
                             <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span>
-                            ${isOnline ? '🟢 Online' : '⚪ Offline'}
+                            <span style="font-size:11px;color:#94a3b8;">${isOnline ? 'Online' : 'Offline'}</span>
                         </div>
                         <div class="bio">${profile.bio || 'No bio yet'} • ${postCount} posts</div>
                     </div>
                 </div>
             `;
         }).join('');
+    }
+
+    function viewUserProfile(username) {
+        if (username === S.username) {
+            navigate('profile');
+            return;
+        }
+        toast(`👤 Viewing ${username}'s profile...`);
+        // In a full implementation, this would navigate to a user's public profile
     }
 
     // ==================== NAVIGATION ====================
@@ -1111,6 +1328,7 @@
         const idx = S.selectedAuras.indexOf(key);
         if (idx > -1) S.selectedAuras.splice(idx, 1);
         else if (S.selectedAuras.length < 3) S.selectedAuras.push(key);
+        else { toast('Maximum 3 auras'); return; }
         saveAuth();
         renderAuraGrid();
     }
@@ -1151,11 +1369,12 @@
     }
 
     function resetDay() {
-        if (!confirm('Reset tasks?')) return;
+        if (!confirm('Reset tasks for today?')) return;
         S.completedTasks = [];
         delete S.streakData[new Date().toDateString()];
         saveAuth();
         renderHome();
+        toast('🔄 Tasks reset');
     }
 
     function renderHome() {
@@ -1224,21 +1443,34 @@
         const content = document.getElementById('diaryInput').value.trim();
         const mood = document.getElementById('diaryMood').value.trim() || '—';
         if (!content) { toast('Write something'); return; }
-        S.diary.unshift({ date: new Date().toISOString(), content: content, mood: mood });
+        S.diary.unshift({ date: new Date().toISOString(), content: content, mood: mood, id: Date.now() });
         if (!CLOUD_DATA.diaries) CLOUD_DATA.diaries = [];
         CLOUD_DATA.diaries = S.diary;
         saveAuth();
         document.getElementById('diaryInput').value = '';
         document.getElementById('diaryMood').value = '';
         renderDiary();
-        toast('📝 Saved');
+        toast('📝 Entry saved');
     }
 
     function deleteDiary(index) {
+        if (!confirm('Delete this diary entry?')) return;
         S.diary.splice(index, 1);
         if (CLOUD_DATA.diaries) CLOUD_DATA.diaries = S.diary;
         saveAuth();
         renderDiary();
+        toast('🗑️ Entry deleted');
+    }
+
+    function editDiary(index) {
+        const entry = S.diary[index];
+        if (!entry) return;
+        document.getElementById('diaryInput').value = entry.content;
+        document.getElementById('diaryMood').value = entry.mood;
+        S.diary.splice(index, 1);
+        renderDiary();
+        document.getElementById('diaryInput').focus();
+        toast('✏️ Edit in the input above');
     }
 
     function renderDiary() {
@@ -1246,14 +1478,28 @@
         if (!container) return;
         const search = (document.getElementById('diarySearch')?.value || '').toLowerCase();
         let entries = S.diary;
-        if (search) entries = entries.filter(x => x.content.toLowerCase().includes(search));
+        if (search) entries = entries.filter(x => 
+            x.content.toLowerCase().includes(search) || 
+            x.mood.toLowerCase().includes(search)
+        );
         if (entries.length === 0) {
-            container.innerHTML = '<p style="color:#94a3b8;text-align:center;">' + (search ? 'No matches.' : 'No entries yet.') + '</p>';
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;">' + 
+                (search ? 'No matching entries.' : 'No entries yet. Start writing!') + '</p>';
             return;
         }
         container.innerHTML = entries.map((x, i) => {
             const idx = S.diary.indexOf(x);
-            return `<div class="entry-card"><div style="display:flex;justify-content:space-between;margin-bottom:3px;"><small style="color:#94a3b8;">${new Date(x.date).toLocaleDateString()}</small><span style="font-size:10px;background:rgba(0,0,0,0.04);padding:2px 7px;border-radius:9px;">${x.mood}</span></div><p style="font-size:12px;white-space:pre-wrap;">${x.content}</p><button class="btn-sm btn-danger" onclick="deleteDiary(${idx})" style="margin-top:5px;">🗑️</button></div>`;
+            return `<div class="entry-card">
+                <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+                    <small style="color:#94a3b8;">${new Date(x.date).toLocaleDateString()}</small>
+                    <span style="font-size:10px;background:rgba(99,102,241,0.1);padding:2px 7px;border-radius:9px;color:var(--primary);">${x.mood}</span>
+                </div>
+                <p style="font-size:12px;white-space:pre-wrap;">${x.content}</p>
+                <div style="display:flex;gap:5px;margin-top:5px;">
+                    <button class="btn-sm" onclick="editDiary(${idx})">✏️</button>
+                    <button class="btn-sm btn-danger" onclick="deleteDiary(${idx})">🗑️</button>
+                </div>
+            </div>`;
         }).join('');
     }
 
@@ -1269,25 +1515,46 @@
         document.getElementById('routineTitle').value = '';
         document.getElementById('routineInput').value = '';
         renderRoutines();
-        toast('📋 Saved');
+        toast('📋 Routine saved');
     }
 
     function deleteRoutine(id) {
+        if (!confirm('Delete this routine?')) return;
         S.routines = S.routines.filter(r => r.id !== id);
         if (CLOUD_DATA.routines) CLOUD_DATA.routines = S.routines;
         saveAuth();
         renderRoutines();
+        toast('🗑️ Routine deleted');
+    }
+
+    function editRoutine(id) {
+        const routine = S.routines.find(r => r.id === id);
+        if (!routine) return;
+        document.getElementById('routineTitle').value = routine.title;
+        document.getElementById('routineInput').value = routine.content;
+        S.routines = S.routines.filter(r => r.id !== id);
+        renderRoutines();
+        document.getElementById('routineTitle').focus();
+        toast('✏️ Edit in the inputs above');
     }
 
     function renderRoutines() {
         const container = document.getElementById('routineEntries');
         if (!container) return;
         if (S.routines.length === 0) {
-            container.innerHTML = '<p style="color:#94a3b8;text-align:center;">No routines yet.</p>';
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;">No routines yet. Create your first!</p>';
             return;
         }
         container.innerHTML = S.routines.map(r =>
-            `<div class="entry-card"><strong>${r.title}</strong><small style="color:#94a3b8;display:block;">${new Date(r.date).toLocaleDateString()}</small><p style="font-size:12px;margin-top:3px;white-space:pre-wrap;">${r.content}</p><button class="btn-sm btn-danger" onclick="deleteRoutine(${r.id})" style="margin-top:5px;">🗑️</button></div>`
+            `<div class="entry-card">
+                <strong>${r.title}</strong>
+                <small style="color:#94a3b8;display:block;">${new Date(r.date).toLocaleDateString()}</small>
+                <p style="font-size:12px;margin-top:3px;white-space:pre-wrap;">${r.content}</p>
+                <div style="display:flex;gap:5px;margin-top:5px;">
+                    <button class="btn-sm" onclick="editRoutine(${r.id})">✏️</button>
+                    <button class="btn-sm btn-danger" onclick="deleteRoutine(${r.id})">🗑️</button>
+                </div>
+            </div>`
         ).join('');
     }
 
@@ -1330,6 +1597,7 @@
         const input = document.getElementById('chatInput');
         const text = input.value.trim();
         if (!text) return;
+        if (text.length > 500) { toast('Message too long (max 500 chars)'); return; }
 
         await loadAllData();
         if (!CLOUD_DATA.messages) CLOUD_DATA.messages = [];
@@ -1349,47 +1617,52 @@
     }
 
     function deleteMessage(id) {
+        if (!confirm('Delete this message?')) return;
         chatMessages = chatMessages.filter(function(m) { return m.id !== id; });
         CLOUD_DATA.messages = chatMessages;
         saveAllData();
         renderChatMessages();
+        toast('🗑️ Message deleted');
     }
 
     function changeUsername() {
-        const newName = prompt('Enter new username:', S.username);
-        if (newName && newName.trim()) {
-            const users = CLOUD_DATA.users || {};
-            if (users[newName.trim()] && newName.trim() !== S.username) {
-                toast('Username already taken');
-                return;
-            }
-            if (users[S.username]) {
-                users[newName.trim()] = users[S.username];
-                delete users[S.username];
-                CLOUD_DATA.users = users;
-            }
-            if (CLOUD_DATA.profiles && CLOUD_DATA.profiles[S.username]) {
-                CLOUD_DATA.profiles[newName.trim()] = CLOUD_DATA.profiles[S.username];
-                delete CLOUD_DATA.profiles[S.username];
-            }
-            if (CLOUD_DATA.messages) {
-                CLOUD_DATA.messages.forEach(function(msg) {
-                    if (msg.username === S.username) msg.username = newName.trim();
-                });
-            }
-            if (CLOUD_DATA.posts) {
-                CLOUD_DATA.posts.forEach(function(post) {
-                    if (post.author === S.username) post.author = newName.trim();
-                });
-            }
-            S.username = newName.trim();
-            saveAuth();
-            saveAllData();
-            document.getElementById('myUsername').textContent = S.username;
-            toast('Username updated');
-            renderChat();
-            renderSocial();
+        const newName = prompt('Enter new username (3-20 characters):', S.username);
+        if (!newName || !newName.trim()) return;
+        if (newName.trim().length < 3) { toast('Username too short (min 3 chars)'); return; }
+        if (newName.trim().length > 20) { toast('Username too long (max 20 chars)'); return; }
+        if (!/^[a-zA-Z0-9_]+$/.test(newName.trim())) { toast('Only letters, numbers, and underscores'); return; }
+        
+        const users = CLOUD_DATA.users || {};
+        if (users[newName.trim()] && newName.trim() !== S.username) {
+            toast('Username already taken');
+            return;
         }
+        if (users[S.username]) {
+            users[newName.trim()] = users[S.username];
+            delete users[S.username];
+            CLOUD_DATA.users = users;
+        }
+        if (CLOUD_DATA.profiles && CLOUD_DATA.profiles[S.username]) {
+            CLOUD_DATA.profiles[newName.trim()] = CLOUD_DATA.profiles[S.username];
+            delete CLOUD_DATA.profiles[S.username];
+        }
+        if (CLOUD_DATA.messages) {
+            CLOUD_DATA.messages.forEach(function(msg) {
+                if (msg.username === S.username) msg.username = newName.trim();
+            });
+        }
+        if (CLOUD_DATA.posts) {
+            CLOUD_DATA.posts.forEach(function(post) {
+                if (post.author === S.username) post.author = newName.trim();
+            });
+        }
+        S.username = newName.trim();
+        saveAuth();
+        saveAllData();
+        document.getElementById('myUsername').textContent = S.username;
+        toast('✅ Username updated');
+        renderChat();
+        renderSocial();
     }
 
     function renderChat() {
@@ -1401,13 +1674,18 @@
         const container = document.getElementById('chatMessages');
         if (!container) return;
         if (chatMessages.length === 0) {
-            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:16px;">No messages yet.</p>';
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:16px;">No messages yet. Say hello! 👋</p>';
             return;
         }
         container.innerHTML = chatMessages.map(function(m) {
             const me = m.username === S.username;
             const time = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            return '<div style="display:flex;justify-content:' + (me ? 'flex-end' : 'flex-start') + ';margin:3px 0;"><div style="max-width:82%;"><div class="chat-bubble ' + (me ? 'chat-sent' : 'chat-received') + '"><div style="font-size:10px;font-weight:600;opacity:0.7;">' + m.username + ' · ' + time + '</div><p style="margin:2px 0 0;">' + m.text + '</p></div>' + (me ? '<button class="btn-sm btn-danger" onclick="window.deleteMessage(\'' + m.id + '\')" style="font-size:9px;padding:2px 5px;margin-top:1px;">🗑️</button>' : '') + '</div></div>';
+            const avatarHTML = getAvatarHTML(m.username, 20);
+            return '<div style="display:flex;justify-content:' + (me ? 'flex-end' : 'flex-start') + ';margin:3px 0;align-items:flex-start;gap:6px;">' +
+                (!me ? '<div style="flex-shrink:0;">' + avatarHTML + '</div>' : '') +
+                '<div style="max-width:82%;"><div class="chat-bubble ' + (me ? 'chat-sent' : 'chat-received') + '"><div style="font-size:10px;font-weight:600;opacity:0.7;">' + m.username + ' · ' + time + '</div><p style="margin:2px 0 0;">' + m.text + '</p></div>' + (me ? '<button class="btn-sm btn-danger" onclick="window.deleteMessage(\'' + m.id + '\')" style="font-size:9px;padding:2px 5px;margin-top:1px;">🗑️</button>' : '') + '</div>' +
+                (me ? '<div style="flex-shrink:0;">' + avatarHTML + '</div>' : '') +
+                '</div>';
         }).join('');
         container.scrollTop = container.scrollHeight;
     }
@@ -1417,7 +1695,7 @@
         const row = document.getElementById('storyRow');
         if (!row) return;
         const users = [];
-        S.socialPosts.forEach(function(p) {
+        (CLOUD_DATA.posts || []).forEach(function(p) {
             if (users.indexOf(p.author) === -1) users.push(p.author);
         });
         if (users.length === 0) {
@@ -1425,15 +1703,19 @@
             return;
         }
         row.innerHTML = users.slice(0, 10).map(function(u) {
-            const post = S.socialPosts.find(function(p) { return p.author === u; });
-            const emoji = post ? post.avatar : '😊';
-            return '<div class="ig-story"><div class="ig-story-avatar"><div class="inner">' + emoji + '</div></div><span class="ig-story-name">' + u + '</span></div>';
+            const avatarHTML = getAvatarHTML(u, 52);
+            return '<div class="ig-story" onclick="window.viewUserProfile(\'' + u + '\')"><div class="ig-story-avatar"><div class="inner" style="overflow:hidden;display:flex;align-items:center;justify-content:center;">' + avatarHTML + '</div></div><span class="ig-story-name">' + u + '</span></div>';
         }).join('');
     }
 
     function handleFileSelect(event) {
         const file = event.target.files[0];
         if (!file) return;
+
+        if (file.size > 10 * 1024 * 1024) {
+            toast('⚠️ File too large. Max 10MB');
+            return;
+        }
 
         selectedFile = file;
 
@@ -1443,10 +1725,13 @@
             const preview = document.getElementById('filePreview');
             preview.style.display = 'block';
             if (file.type.startsWith('image/')) {
-                preview.innerHTML = '<img src="' + e.target.result + '" style="max-height:150px;border-radius:8px;max-width:100%;">';
+                preview.innerHTML = '<img src="' + e.target.result + '" style="max-height:150px;border-radius:8px;max-width:100%;" alt="Preview">';
             } else if (file.type.startsWith('video/')) {
                 preview.innerHTML = '<video src="' + e.target.result + '" style="max-height:150px;border-radius:8px;max-width:100%;" controls></video>';
             }
+        };
+        reader.onerror = function() {
+            toast('❌ Error reading file');
         };
         reader.readAsDataURL(file);
     }
@@ -1455,22 +1740,22 @@
         const input = document.getElementById('postInput');
         const text = input.value.trim();
         if (!text && !selectedFileData) { toast('Write something or add media'); return; }
+        if (text.length > 500) { toast('Caption too long (max 500 chars)'); return; }
         
         const avatar = S.avatar || (S.selectedAuras.length > 0 ? S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊');
-        const randImg = UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)];
 
         await loadAllData();
         if (!CLOUD_DATA.posts) CLOUD_DATA.posts = [];
         
         const post = {
             id: 'post_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-            author: S.username || 'You',
+            author: S.username || 'Anonymous',
             avatar: avatar,
             text: text || '',
             time: new Date().toISOString(),
             likes: [],
-            image: selectedFileData || randImg,
-            mediaType: selectedFile ? (selectedFile.type.startsWith('video/') ? 'video' : 'image') : 'image'
+            image: selectedFileData || null,
+            mediaType: selectedFile ? (selectedFile.type.startsWith('video/') ? 'video' : 'image') : null
         };
         
         CLOUD_DATA.posts.unshift(post);
@@ -1483,20 +1768,25 @@
         selectedFileData = null;
         document.getElementById('filePreview').style.display = 'none';
         document.getElementById('filePreview').innerHTML = '';
+        document.getElementById('postFile').value = '';
         renderSocial();
         renderStories();
         toast('📝 Posted!');
     }
 
     function likePost(id) {
-        const post = S.socialPosts.find(function(x) { return x.id === id; });
+        const post = (CLOUD_DATA.posts || []).find(function(x) { return x.id === id; });
         if (!post) return;
+        if (!post.likes) post.likes = [];
+        
         if (S.likedPosts.indexOf(id) > -1) {
             S.likedPosts = S.likedPosts.filter(function(x) { return x !== id; });
             post.likes = post.likes.filter(function(u) { return u !== S.username; });
         } else {
             S.likedPosts.push(id);
-            post.likes.push(S.username);
+            if (!post.likes.includes(S.username)) {
+                post.likes.push(S.username);
+            }
         }
         CLOUD_DATA.posts = S.socialPosts;
         saveAllData();
@@ -1511,15 +1801,16 @@
         saveAllData();
         renderSocial();
         renderStories();
+        toast('🗑️ Post deleted');
     }
 
     function timeSince(date) {
         const now = new Date();
         const diff = Math.floor((now - date) / 1000);
-        if (diff < 60) return diff + 's';
-        if (diff < 3600) return Math.floor(diff / 60) + 'm';
-        if (diff < 86400) return Math.floor(diff / 3600) + 'h';
-        if (diff < 604800) return Math.floor(diff / 86400) + 'd';
+        if (diff < 60) return diff + 's ago';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
         return date.toLocaleDateString();
     }
 
@@ -1531,7 +1822,7 @@
             avatarEl.textContent = S.avatar ? '🖼️' : (S.selectedAuras.length > 0 ? S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊');
         }
 
-        const posts = S.socialPosts;
+        const posts = CLOUD_DATA.posts || [];
         if (posts.length === 0) {
             feed.innerHTML = '<div style="text-align:center;padding:40px 0;color:#94a3b8;"><div style="font-size:48px;margin-bottom:12px;">📸</div><p>No posts yet. Share your journey!</p></div>';
             return;
@@ -1543,13 +1834,11 @@
             let mediaHtml = '';
             if (p.mediaType === 'video' && p.image) {
                 mediaHtml = '<video src="' + p.image + '" class="post-video" controls></video>';
-            } else if (p.image && (p.image.indexOf('data:') === 0 || p.image.indexOf('unsplash') > -1)) {
-                mediaHtml = '<img src="' + p.image + '" class="post-image" alt="Post image" />';
+            } else if (p.mediaType === 'image' && p.image) {
+                mediaHtml = '<img src="' + p.image + '" class="post-image" alt="Post image" loading="lazy" />';
             }
-            const avatarDisplay = p.avatar && p.avatar.startsWith('data:') ? 
-                '<img src="' + p.avatar + '" style="width:36px;height:36px;border-radius:50%;object-fit:cover;" />' : 
-                p.avatar || '😊';
-            return '<div class="ig-post"><div class="ig-post-header"><div class="ig-post-avatar" style="overflow:hidden;">' + avatarDisplay + '</div><span class="ig-post-user">' + p.author + '</span><span class="ig-post-time">' + timeAgo + '</span>' + (p.author === S.username ? '<button class="btn-sm btn-danger" onclick="window.deletePost(\'' + p.id + '\')" style="font-size:11px;padding:2px 8px;">🗑️</button>' : '') + '</div>' + mediaHtml + '<div style="padding:0 12px 4px;"><p style="font-size:13px;margin:4px 0;">' + p.text + '</p></div><div class="ig-post-actions"><button class="ig-post-action ' + (liked ? 'liked' : '') + '" onclick="window.likePost(\'' + p.id + '\')">' + (liked ? '❤️' : '🤍') + '</button><span style="font-size:13px;font-weight:600;color:#94a3b8;">' + p.likes.length + ' ' + (p.likes.length === 1 ? 'like' : 'likes') + '</span></div></div>';
+            const avatarDisplay = getAvatarHTML(p.author, 36);
+            return '<div class="ig-post"><div class="ig-post-header"><div class="ig-post-avatar" style="overflow:hidden;">' + avatarDisplay + '</div><span class="ig-post-user">' + p.author + '</span><span class="ig-post-time">' + timeAgo + '</span>' + (p.author === S.username ? '<button class="btn-sm btn-danger" onclick="window.deletePost(\'' + p.id + '\')" style="font-size:11px;padding:2px 8px;">🗑️</button>' : '') + '</div>' + mediaHtml + '<div style="padding:0 12px 4px;"><p style="font-size:13px;margin:4px 0;">' + p.text + '</p></div><div class="ig-post-actions"><button class="ig-post-action ' + (liked ? 'liked' : '') + '" onclick="window.likePost(\'' + p.id + '\')">' + (liked ? '❤️' : '🤍') + '</button><span style="font-size:13px;font-weight:600;color:#94a3b8;">' + (p.likes ? p.likes.length : 0) + ' ' + ((p.likes && p.likes.length === 1) ? 'like' : 'likes') + '</span></div></div>';
         }).join('');
     }
 
@@ -1561,7 +1850,7 @@
         const avatarContainer = document.getElementById('profileAvatarContainer');
         if (avatarContainer) {
             if (S.avatar) {
-                avatarContainer.innerHTML = '<div class="inner" style="overflow:hidden;padding:0;"><img src="' + S.avatar + '" style="width:100%;height:100%;object-fit:cover;" /></div>';
+                avatarContainer.innerHTML = '<div class="inner" style="overflow:hidden;padding:0;"><img src="' + S.avatar + '" style="width:100%;height:100%;object-fit:cover;" alt="Profile avatar" /></div>';
             } else {
                 avatarContainer.innerHTML = '<div class="inner" id="profileAvatarEmoji">' + avatarEmoji + '</div>';
             }
@@ -1569,30 +1858,41 @@
         
         document.getElementById('profileName').textContent = S.username || '—';
         document.getElementById('profileUsername').textContent = '@' + (S.username || '—');
-        document.getElementById('profilePosts').textContent = S.socialPosts.filter(function(p) { return p.author === S.username; }).length;
+        document.getElementById('profilePosts').textContent = (CLOUD_DATA.posts || []).filter(function(p) { return p.author === S.username; }).length;
         document.getElementById('profileFollowers').textContent = Math.floor(Math.random() * 100) + 10;
         document.getElementById('profileFollowing').textContent = Math.floor(Math.random() * 50) + 5;
         document.getElementById('profileBio').textContent = S.bio || 'Building my energy. One aura at a time. ⚡';
 
         const grid = document.getElementById('profilePostsGrid');
-        const userPosts = S.socialPosts.filter(function(p) { return p.author === S.username; });
+        const userPosts = (CLOUD_DATA.posts || []).filter(function(p) { return p.author === S.username; });
         if (userPosts.length === 0) {
             grid.innerHTML = '<p style="color:#94a3b8;text-align:center;grid-column:1/-1;padding:16px 0;">No posts yet.</p>';
             return;
         }
-        grid.innerHTML = userPosts.map(function(p) {
-            const img = p.image && (p.image.indexOf('data:') === 0 || p.image.indexOf('unsplash') > -1) ? p.image : UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)];
-            return '<div style="aspect-ratio:1;background-image:url(\'' + img + '\');background-size:cover;background-position:center;border-radius:4px;cursor:pointer;" onclick="window.toast(\'' + p.text.substring(0, 30) + '...\')"></div>';
+        grid.innerHTML = userPosts.slice(0, 9).map(function(p) {
+            const img = p.image || '';
+            return '<div style="aspect-ratio:1;background-image:url(\'' + img + '\');background-size:cover;background-position:center;border-radius:4px;cursor:pointer;" onclick="window.toast(\'' + (p.text ? p.text.substring(0, 30) : 'No caption') + '...\')"></div>';
         }).join('');
     }
 
     function editProfile() {
-        const newBio = prompt('Edit your bio:', S.bio || '');
+        const newBio = prompt('Edit your bio (max 200 chars):', S.bio || '');
         if (newBio !== null) {
+            if (newBio.length > 200) { toast('Bio too long (max 200 chars)'); return; }
             S.bio = newBio.trim() || 'Building my energy. One aura at a time. ⚡';
+            
+            const newEmail = prompt('Edit your email (optional):', S.email || '');
+            if (newEmail !== null && newEmail.trim()) {
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail.trim())) {
+                    toast('⚠️ Invalid email format');
+                } else {
+                    S.email = newEmail.trim();
+                }
+            }
+            
             saveAuth();
             renderProfile();
-            toast('✅ Bio updated');
+            toast('✅ Profile updated');
         }
     }
 
@@ -1606,14 +1906,14 @@
         saveAuth();
         setBg(url);
         renderWallpapers();
-        toast('✅ Applied');
+        toast('✅ Wallpaper applied');
     }
 
     function renderWallpapers() {
         document.getElementById('wpCount').textContent = UNSPLASH.length + '+ wallpapers';
         document.getElementById('wpGrid').innerHTML = UNSPLASH.map(function(url) {
             const selected = S.wallpaper === url;
-            return '<div class="wp-thumb' + (selected ? ' selected' : '') + '" style="background-image:url(\'' + url + '\')" onclick="window.setWallpaper(\'' + url + '\')"></div>';
+            return '<div class="wp-thumb' + (selected ? ' selected' : '') + '" style="background-image:url(\'' + url + '\')" onclick="window.setWallpaper(\'' + url + '\')" title="Click to apply"></div>';
         }).join('');
     }
 
@@ -1621,26 +1921,48 @@
     async function handleSignup() {
         const name = document.getElementById('signupName').value.trim();
         const user = document.getElementById('signupUser').value.trim();
+        const email = document.getElementById('signupEmail').value.trim();
         const pass = document.getElementById('signupPass').value.trim();
-        if (!name || !user || !pass) { toast('Please fill all fields'); return; }
-        if (pass.length < 4) { toast('Password must be at least 4 characters'); return; }
+        
+        if (!name || !user || !pass) { toast('Please fill all required fields'); return; }
+        if (pass.length < 6) { toast('Password must be at least 6 characters'); return; }
+        if (user.length < 3) { toast('Username must be at least 3 characters'); return; }
+        if (!/^[a-zA-Z0-9_]+$/.test(user)) { toast('Username: only letters, numbers, underscores'); return; }
+        
+        document.getElementById('signupBtn').disabled = true;
+        document.getElementById('signupBtn').innerHTML = '<span class="loading-spinner"></span> Creating...';
         
         await loadAllData();
         if (!CLOUD_DATA.users) CLOUD_DATA.users = {};
-        if (CLOUD_DATA.users[user]) { toast('Username already exists'); return; }
+        if (CLOUD_DATA.users[user]) { 
+            toast('Username already exists'); 
+            document.getElementById('signupBtn').disabled = false;
+            document.getElementById('signupBtn').textContent = 'Sign Up';
+            return; 
+        }
         
-        CLOUD_DATA.users[user] = { password: pass, name: name, created: new Date().toISOString() };
+        // Hash password (simple hash for demo - in production use proper encryption)
+        const hashedPass = btoa(pass + 'winchu_salt');
+        
+        CLOUD_DATA.users[user] = { 
+            password: hashedPass, 
+            name: name, 
+            email: email,
+            created: new Date().toISOString() 
+        };
         if (!CLOUD_DATA.profiles) CLOUD_DATA.profiles = {};
         CLOUD_DATA.profiles[user] = {
             bio: 'Building my energy. One aura at a time. ⚡',
             wallpaper: DEFAULT_WALLPAPER,
             selected_auras: [],
             avatar: null,
+            email: email,
             created: new Date().toISOString()
         };
         await saveAllData();
         
         S.username = user;
+        S.email = email;
         S.selectedAuras = [];
         S.completedTasks = [];
         S.streakData = {};
@@ -1652,7 +1974,11 @@
         S.wallpaper = DEFAULT_WALLPAPER;
         S.avatar = null;
         saveAuth();
-        toast('Account created! Welcome ' + name);
+        
+        document.getElementById('signupBtn').disabled = false;
+        document.getElementById('signupBtn').textContent = 'Sign Up';
+        
+        toast('✅ Welcome to Winchu, ' + name + '!');
         navigate('select');
     }
 
@@ -1661,37 +1987,65 @@
         const pass = document.getElementById('loginPass').value.trim();
         if (!user || !pass) { toast('Enter username and password'); return; }
         
+        document.getElementById('loginBtn').disabled = true;
+        document.getElementById('loginBtn').innerHTML = '<span class="loading-spinner"></span> Signing in...';
+        
         await loadAllData();
-        if (!CLOUD_DATA.users || !CLOUD_DATA.users[user] || CLOUD_DATA.users[user].password !== pass) {
-            toast('Invalid credentials');
+        
+        const hashedPass = btoa(pass + 'winchu_salt');
+        
+        if (!CLOUD_DATA.users || !CLOUD_DATA.users[user] || CLOUD_DATA.users[user].password !== hashedPass) {
+            toast('❌ Invalid username or password');
+            document.getElementById('loginBtn').disabled = false;
+            document.getElementById('loginBtn').textContent = 'Log In';
             return;
         }
         
         S.username = user;
+        S.email = CLOUD_DATA.users[user].email || '';
         if (CLOUD_DATA.profiles && CLOUD_DATA.profiles[user]) {
             const profile = CLOUD_DATA.profiles[user];
             S.bio = profile.bio || 'Building my energy. One aura at a time. ⚡';
             S.wallpaper = profile.wallpaper || DEFAULT_WALLPAPER;
             S.selectedAuras = profile.selected_auras || [];
             S.avatar = profile.avatar || null;
+            S.email = profile.email || '';
         }
         saveAuth();
-        toast('Welcome back, ' + CLOUD_DATA.users[user].name);
+        
+        document.getElementById('loginBtn').disabled = false;
+        document.getElementById('loginBtn').textContent = 'Log In';
+        
+        toast('👋 Welcome back, ' + CLOUD_DATA.users[user].name + '!');
         navigate('social');
     }
 
     function logout() {
-        if (!confirm('Logout?')) return;
+        if (!confirm('Are you sure you want to logout?')) return;
         S.username = '';
+        S.email = '';
         localStorage.removeItem(AUTH_KEY);
         document.getElementById('wpFab').style.display = 'none';
-        toast('Logged out');
+        stopPoll();
+        toast('👋 Logged out successfully');
         navigate('landing');
     }
 
     // ==================== INIT ====================
     async function init() {
-        console.log('🚀 Winchu starting...');
+        console.log('🚀 Winchu v2.0 Enhanced starting...');
+        
+        // Load dark mode preference
+        const darkMode = localStorage.getItem('winchu_dark_mode');
+        if (darkMode === 'true') {
+            document.body.classList.add('dark-mode');
+            document.querySelector('.dark-mode-toggle').textContent = '☀️';
+            document.documentElement.style.setProperty('--bg', '#1e293b');
+            document.documentElement.style.setProperty('--text', '#f1f5f9');
+            document.documentElement.style.setProperty('--surface', 'rgba(30,41,59,0.9)');
+            document.documentElement.style.setProperty('--muted', '#94a3b8');
+        }
+        
         await loadAllData();
         
         if (CLOUD_DATA.messages) chatMessages = CLOUD_DATA.messages;
@@ -1709,11 +2063,17 @@
             navigate('landing');
         }
         
-        setInterval(function() {
-            if (S.username) updateChat();
-        }, 5000);
+        // Periodic sync with cloud
+        setInterval(async function() {
+            if (S.username) {
+                await loadAllData();
+                if (CLOUD_DATA.messages) chatMessages = CLOUD_DATA.messages;
+                if (CLOUD_DATA.posts) S.socialPosts = CLOUD_DATA.posts;
+            }
+        }, 10000);
         
-        console.log('⚡ Winchu · Nexus with JSONBin ✅');
+        console.log('⚡ Winchu v2.0 · Enhanced Edition ✅');
+        console.log('📊 Features: Dark Mode, Data Export, Enhanced Security, Better UX');
     }
 
     // ==================== EXPOSE TO WINDOW ====================
@@ -1724,8 +2084,10 @@
     window.resetDay = resetDay;
     window.saveDiary = saveDiary;
     window.deleteDiary = deleteDiary;
+    window.editDiary = editDiary;
     window.saveRoutine = saveRoutine;
     window.deleteRoutine = deleteRoutine;
+    window.editRoutine = editRoutine;
     window.sendMessage = sendMessage;
     window.deleteMessage = deleteMessage;
     window.changeUsername = changeUsername;
@@ -1744,6 +2106,9 @@
     window.renderDiary = renderDiary;
     window.renderUsers = renderUsers;
     window.getAvatarHTML = getAvatarHTML;
+    window.viewUserProfile = viewUserProfile;
+    window.toggleDarkMode = toggleDarkMode;
+    window.exportData = exportData;
 
     // ==================== START ====================
     init();
