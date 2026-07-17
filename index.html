@@ -473,11 +473,37 @@
             .profile-avatar-large .inner { font-size: 28px; }
             .profile-stats { gap: 16px; }
         }
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        .post-image {
+            width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin: 4px 0;
+        }
+        .post-video {
+            width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            margin: 4px 0;
+        }
     </style>
 </head>
 <body>
     <div class="signature">id³</div>
-    <!-- Wallpaper button - FIXED: only shows when logged in -->
     <button class="wp-fab" id="wpFab" onclick="navigate('wallpapers')" style="display:none;">🎨</button>
     <div id="toastContainer"></div>
 
@@ -632,8 +658,13 @@
                         <span id="postAvatarEmoji">😊</span>
                     </div>
                     <input type="text" id="postInput" placeholder="What's on your mind?" style="flex:1;border:none;background:transparent;padding:6px 0;font-size:13px;outline:none;">
+                    <div class="file-input-wrapper">
+                        <button class="btn-sm" style="font-size:16px;background:none;border:none;padding:4px;cursor:pointer;">📎</button>
+                        <input type="file" id="postFile" accept="image/*,video/*" onchange="handleFileSelect(event)">
+                    </div>
                     <button class="btn-sm btn-primary" onclick="createPost()" style="width:auto;padding:6px 14px;font-size:12px;">Post</button>
                 </div>
+                <div id="filePreview" style="margin-top:4px;display:none;"></div>
             </div>
             <div id="socialFeed" style="max-height:520px;overflow-y:auto;padding-bottom:10px;">
                 <p style="color:#94a3b8;text-align:center;padding:30px 0;">No posts yet. Share something!</p>
@@ -719,51 +750,10 @@
         'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=1920&q=80',
         'https://images.unsplash.com/photo-1470071459606-3b5ec3a7fe05?w=1920&q=80',
         'https://images.unsplash.com/photo-1440589473619-3cde28941638?w=1920&q=80',
-        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80',
-        'https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=1920&q=80',
-        'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1920&q=80',
-        'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1920&q=80',
-        'https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=1920&q=80',
-        'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=1920&q=80',
-        'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=1920&q=80',
-        'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920&q=80',
-        'https://images.unsplash.com/photo-1511818966892-d7b671e67291?w=1920&q=80',
-        'https://images.unsplash.com/photo-1496568816309-51d7c20e3b21?w=1920&q=80',
-        'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1920&q=80',
-        'https://images.unsplash.com/photo-1557682224-5b8590cd9ec5?w=1920&q=80',
-        'https://images.unsplash.com/photo-1557682260-96773eb01377?w=1920&q=80',
-        'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=1920&q=80',
-        'https://images.unsplash.com/photo-1558470598-a5dda9640f68?w=1920&q=80',
-        'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1920&q=80',
-        'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=1920&q=80',
-        'https://images.unsplash.com/photo-1500462918059-b1a0cb512f1d?w=1920&q=80',
-        'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=1920&q=80',
-        'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1920&q=80',
-        'https://images.unsplash.com/photo-1504333638930-c8787321eee0?w=1920&q=80',
-        'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=1920&q=80',
-        'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80',
-        'https://images.unsplash.com/photo-1505228395891-9a51e7e86bf6?w=1920&q=80',
-        'https://images.unsplash.com/photo-1471922694854-ff1b63b20036?w=1920&q=80',
-        'https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=1920&q=80',
-        'https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=1920&q=80',
-        'https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920&q=80',
-        'https://images.unsplash.com/photo-1503803548695-c2a7b4a5b875?w=1920&q=80',
-        'https://images.unsplash.com/photo-1502139214982-d0ad755818d8?w=1920&q=80',
-        'https://images.unsplash.com/photo-1506891536236-3e07892564b7?w=1920&q=80',
-        'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1920&q=80',
-        'https://images.unsplash.com/photo-1485988412941-77a35537dae4?w=1920&q=80',
-        'https://images.unsplash.com/photo-1432821596592-e2c18b78144f?w=1920&q=80',
-        'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&q=80',
-        'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1920&q=80',
-        'https://images.unsplash.com/photo-1504639725590-34d0984388bd?w=1920&q=80',
-        'https://images.unsplash.com/photo-1509114397022-ed747cca3f65?w=1920&q=80',
-        'https://images.unsplash.com/photo-1477346611705-65d1883cee1e?w=1920&q=80',
-        'https://images.unsplash.com/photo-1515630278258-407f66498911?w=1920&q=80',
-        'https://images.unsplash.com/photo-1491466424936-e304919aada7?w=1920&q=80'
+        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80'
     ];
 
     // ==================== DEFAULT WALLPAPER ====================
-    // This is the default wallpaper for new users
     const DEFAULT_WALLPAPER = 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1920&q=80';
 
     // ==================== JSONBIN CONFIG ====================
@@ -851,6 +841,32 @@
         await cloudPut(CLOUD_DATA);
     }
 
+    // ==================== FILE HANDLING ====================
+    let selectedFile = null;
+    let selectedFileType = null;
+    let selectedFileData = null;
+
+    function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        selectedFile = file;
+        selectedFileType = file.type;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            selectedFileData = e.target.result;
+            const preview = document.getElementById('filePreview');
+            preview.style.display = 'block';
+            if (file.type.startsWith('image/')) {
+                preview.innerHTML = `<img src="${e.target.result}" style="max-height:150px;border-radius:8px;max-width:100%;">`;
+            } else if (file.type.startsWith('video/')) {
+                preview.innerHTML = `<video src="${e.target.result}" style="max-height:150px;border-radius:8px;max-width:100%;" controls></video>`;
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
     // ==================== AUTH ====================
     let S = { selectedAuras: [], completedTasks: [], streakData: {}, wallpaper: DEFAULT_WALLPAPER, diary: [], routines: [], socialPosts: [], likedPosts: [], username: '', bio: 'Building my energy. One aura at a time. ⚡' };
     let chatMessages = [];
@@ -870,13 +886,11 @@
                         S.wallpaper = profile.wallpaper || DEFAULT_WALLPAPER;
                         S.selectedAuras = profile.selected_auras || [];
                     }
-                    // Show wallpaper button
                     document.getElementById('wpFab').style.display = 'flex';
                     return true;
                 }
             }
         } catch (e) {}
-        // Hide wallpaper button when not logged in
         document.getElementById('wpFab').style.display = 'none';
         return false;
     }
@@ -891,7 +905,6 @@
             last_seen: new Date().toISOString()
         };
         saveAllData();
-        // Show wallpaper button
         document.getElementById('wpFab').style.display = 'flex';
     }
 
@@ -958,7 +971,6 @@
         if (!confirm('Logout?')) return;
         S.username = '';
         localStorage.removeItem(AUTH_KEY);
-        // Hide wallpaper button
         document.getElementById('wpFab').style.display = 'none';
         toast('Logged out');
         navigate('landing');
@@ -1032,10 +1044,8 @@
         if (page === 'home') renderHome();
         if (page === 'diary') renderDiary();
         if (page === 'routine') renderRoutines();
-        if (page === 'chat') { renderChat();
-            startPoll(); } else stopPoll();
-        if (page === 'social') { renderSocial();
-            renderStories(); }
+        if (page === 'chat') { renderChat(); startPoll(); } else stopPoll();
+        if (page === 'social') { renderSocial(); renderStories(); }
         if (page === 'profile') renderProfile();
         if (page === 'wallpapers') renderWallpapers();
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1231,12 +1241,11 @@
         stopPoll();
         poll = setInterval(() => {
             updateChat();
-        }, 3000);
+        }, 2000);
     }
 
     function stopPoll() {
-        if (poll) { clearInterval(poll);
-            poll = null; }
+        if (poll) { clearInterval(poll); poll = null; }
     }
 
     async function updateChat() {
@@ -1245,8 +1254,22 @@
             chatMessages = CLOUD_DATA.messages;
             renderChatMessages();
         }
-        const online = Object.keys(CLOUD_DATA.profiles || {}).length;
-        document.getElementById('onlineCount').textContent = online;
+        // Update online count from all users who have sent messages in last 5 min
+        const now = Date.now();
+        const online = new Set();
+        if (CLOUD_DATA.messages) {
+            CLOUD_DATA.messages.forEach(msg => {
+                try {
+                    const time = new Date(msg.time).getTime();
+                    if (now - time < 300000) {
+                        online.add(msg.username);
+                    }
+                } catch(e) {}
+            });
+        }
+        // Also add current user
+        if (S.username) online.add(S.username);
+        document.getElementById('onlineCount').textContent = online.size;
     }
 
     async function sendMessage() {
@@ -1263,12 +1286,13 @@
             text: text,
             time: new Date().toISOString()
         });
-        if (CLOUD_DATA.messages.length > 200) CLOUD_DATA.messages = CLOUD_DATA.messages.slice(-200);
+        if (CLOUD_DATA.messages.length > 500) CLOUD_DATA.messages = CLOUD_DATA.messages.slice(-500);
         await saveAllData();
 
         chatMessages = CLOUD_DATA.messages;
         input.value = '';
         renderChatMessages();
+        updateChat();
     }
 
     function deleteMessage(id) {
@@ -1281,10 +1305,42 @@
     function changeUsername() {
         const newName = prompt('Enter new username:', S.username);
         if (newName && newName.trim()) {
+            // Check if username exists
+            const users = CLOUD_DATA.users || {};
+            if (users[newName.trim()] && newName.trim() !== S.username) {
+                toast('Username already taken');
+                return;
+            }
+            // Update user in users list
+            if (users[S.username]) {
+                users[newName.trim()] = users[S.username];
+                delete users[S.username];
+                CLOUD_DATA.users = users;
+            }
+            // Update profile
+            if (CLOUD_DATA.profiles && CLOUD_DATA.profiles[S.username]) {
+                CLOUD_DATA.profiles[newName.trim()] = CLOUD_DATA.profiles[S.username];
+                delete CLOUD_DATA.profiles[S.username];
+            }
+            // Update messages
+            if (CLOUD_DATA.messages) {
+                CLOUD_DATA.messages.forEach(msg => {
+                    if (msg.username === S.username) msg.username = newName.trim();
+                });
+            }
+            // Update posts
+            if (CLOUD_DATA.posts) {
+                CLOUD_DATA.posts.forEach(post => {
+                    if (post.author === S.username) post.author = newName.trim();
+                });
+            }
             S.username = newName.trim();
             saveAuth();
+            await saveAllData();
             document.getElementById('myUsername').textContent = S.username;
             toast('Username updated');
+            renderChat();
+            renderSocial();
         }
     }
 
@@ -1327,26 +1383,35 @@
     async function createPost() {
         const input = document.getElementById('postInput');
         const text = input.value.trim();
-        if (!text) { toast('Write something'); return; }
+        if (!text && !selectedFileData) { toast('Write something or add media'); return; }
+        
         const avatar = S.selectedAuras.length > 0 ? S.selectedAuras.map(k => AURAS[k].emoji).join('') : '😊';
         const randImg = UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)];
 
         await loadAllData();
         if (!CLOUD_DATA.posts) CLOUD_DATA.posts = [];
-        CLOUD_DATA.posts.unshift({
-            id: Date.now(),
+        
+        const post = {
+            id: 'post_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
             author: S.username || 'You',
             avatar: avatar,
-            text: text,
+            text: text || '',
             time: new Date().toISOString(),
-            likes: 0,
-            image: randImg
-        });
-        if (CLOUD_DATA.posts.length > 100) CLOUD_DATA.posts = CLOUD_DATA.posts.slice(0, 100);
+            likes: [],
+            image: selectedFileData || randImg,
+            mediaType: selectedFile ? (selectedFile.type.startsWith('video/') ? 'video' : 'image') : 'image'
+        };
+        
+        CLOUD_DATA.posts.unshift(post);
+        if (CLOUD_DATA.posts.length > 200) CLOUD_DATA.posts = CLOUD_DATA.posts.slice(0, 200);
         await saveAllData();
 
         S.socialPosts = CLOUD_DATA.posts;
         input.value = '';
+        selectedFile = null;
+        selectedFileData = null;
+        document.getElementById('filePreview').style.display = 'none';
+        document.getElementById('filePreview').innerHTML = '';
         renderSocial();
         renderStories();
         toast('📝 Posted!');
@@ -1357,10 +1422,10 @@
         if (!post) return;
         if (S.likedPosts.includes(id)) {
             S.likedPosts = S.likedPosts.filter(x => x !== id);
-            post.likes = Math.max(0, post.likes - 1);
+            post.likes = post.likes.filter(u => u !== S.username);
         } else {
             S.likedPosts.push(id);
-            post.likes++;
+            post.likes.push(S.username);
         }
         CLOUD_DATA.posts = S.socialPosts;
         saveAllData();
@@ -1395,31 +1460,37 @@
             avatarEl.textContent = S.selectedAuras.length > 0 ? S.selectedAuras.map(k => AURAS[k].emoji).join('') : '😊';
         }
 
-        if (S.socialPosts.length === 0) {
+        const posts = S.socialPosts;
+        if (posts.length === 0) {
             feed.innerHTML = `<div style="text-align:center;padding:40px 0;color:#94a3b8;"><div style="font-size:48px;margin-bottom:12px;">📸</div><p>No posts yet. Share your journey!</p></div>`;
             return;
         }
 
-        feed.innerHTML = S.socialPosts.map(p => {
+        feed.innerHTML = posts.map(p => {
             const liked = S.likedPosts.includes(p.id);
             const timeAgo = timeSince(new Date(p.time));
+            let mediaHtml = '';
+            if (p.mediaType === 'video' && p.image) {
+                mediaHtml = `<video src="${p.image}" class="post-video" controls></video>`;
+            } else if (p.image && p.image.startsWith('data:') || p.image && (p.image.includes('unsplash'))) {
+                mediaHtml = `<img src="${p.image}" class="post-image" alt="Post image" />`;
+            }
             return `
                 <div class="ig-post">
                     <div class="ig-post-header">
                         <div class="ig-post-avatar">${p.avatar}</div>
                         <span class="ig-post-user">${p.author}</span>
                         <span class="ig-post-time">${timeAgo}</span>
-                        ${p.author === S.username ? `<button class="btn-sm btn-danger" onclick="deletePost(${p.id})" style="font-size:11px;padding:2px 8px;">🗑️</button>` : ''}
+                        ${p.author === S.username ? `<button class="btn-sm btn-danger" onclick="deletePost('${p.id}')" style="font-size:11px;padding:2px 8px;">🗑️</button>` : ''}
                     </div>
-                    <div class="ig-post-image" style="background-image:url('${p.image || UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)]}')"></div>
+                    ${mediaHtml}
+                    <div style="padding:0 12px 4px;">
+                        <p style="font-size:13px;margin:4px 0;">${p.text}</p>
+                    </div>
                     <div class="ig-post-actions">
-                        <button class="ig-post-action ${liked ? 'liked' : ''}" onclick="likePost(${p.id})">${liked ? '❤️' : '🤍'}</button>
-                        <button class="ig-post-action" onclick="toast('💬 Comment feature coming soon')">💬</button>
-                        <button class="ig-post-action" onclick="toast('📤 Share feature coming soon')">📤</button>
+                        <button class="ig-post-action ${liked ? 'liked' : ''}" onclick="likePost('${p.id}')">${liked ? '❤️' : '🤍'}</button>
+                        <span style="font-size:13px;font-weight:600;color:#94a3b8;">${p.likes.length} ${p.likes.length === 1 ? 'like' : 'likes'}</span>
                     </div>
-                    <div class="ig-post-likes">${p.likes} ${p.likes === 1 ? 'like' : 'likes'}</div>
-                    <div class="ig-post-caption"><strong>${p.author}</strong> ${p.text}</div>
-                    <div class="ig-post-comment" onclick="toast('💬 Comment feature coming soon')">View all comments</div>
                 </div>
             `;
         }).join('');
@@ -1431,7 +1502,7 @@
         document.getElementById('profileAvatarEmoji').textContent = avatarEmoji;
         document.getElementById('profileName').textContent = S.username || '—';
         document.getElementById('profileUsername').textContent = '@' + (S.username || '—');
-        document.getElementById('profilePosts').textContent = S.socialPosts.length;
+        document.getElementById('profilePosts').textContent = S.socialPosts.filter(p => p.author === S.username).length;
         document.getElementById('profileFollowers').textContent = Math.floor(Math.random() * 100) + 10;
         document.getElementById('profileFollowing').textContent = Math.floor(Math.random() * 50) + 5;
         document.getElementById('profileBio').textContent = S.bio || 'Building my energy. One aura at a time. ⚡';
@@ -1494,7 +1565,6 @@
             document.getElementById('myUsername').textContent = S.username;
             navigate('social');
         } else {
-            // Hide wallpaper button when not logged in
             document.getElementById('wpFab').style.display = 'none';
             navigate('landing');
         }
@@ -1528,6 +1598,7 @@
     window.handleLogin = handleLogin;
     window.logout = logout;
     window.editProfile = editProfile;
+    window.handleFileSelect = handleFileSelect;
 
     // ==================== START ====================
     init();
