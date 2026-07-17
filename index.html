@@ -520,6 +520,12 @@
             background: #e2e8f0;
             margin-right: 10px;
             flex-shrink: 0;
+            overflow: hidden;
+        }
+        .user-card .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         .user-card .user-info {
             flex: 1;
@@ -602,7 +608,6 @@
                 <h2 id="homeTitle" style="font-size:17px;font-weight:700;">Dashboard</h2>
                 <span id="homeBadge" style="font-size:10px;background:rgba(0,0,0,0.04);padding:3px 10px;border-radius:18px;">⚡</span>
             </div>
-            <!-- Users Button -->
             <button class="btn-sm" onclick="window.navigate('users')" style="width:100%;margin-bottom:10px;background:rgba(99,102,241,0.15);border-color:#6366f1;">
                 👥 View All Users
             </button>
@@ -732,7 +737,9 @@
     <div class="page" id="page-profile">
         <div class="container">
             <div class="profile-header">
-                <div class="profile-avatar-large"><div class="inner" id="profileAvatarEmoji">😊</div></div>
+                <div class="profile-avatar-large" id="profileAvatarContainer">
+                    <div class="inner" id="profileAvatarEmoji">😊</div>
+                </div>
                 <div class="profile-name" id="profileName">—</div>
                 <div class="profile-username" id="profileUsername">@—</div>
                 <div class="profile-stats">
@@ -741,7 +748,11 @@
                     <div class="profile-stat"><div class="num" id="profileFollowing">0</div><div class="label">Following</div></div>
                 </div>
                 <div class="profile-bio" id="profileBio">Building my energy. One aura at a time. ⚡</div>
-                <button class="profile-edit-btn" onclick="window.editProfile()">✏️ Edit Profile</button>
+                <div style="display:flex;gap:8px;margin:6px 0;flex-wrap:wrap;justify-content:center;">
+                    <button class="profile-edit-btn" onclick="window.editProfile()">✏️ Edit Bio</button>
+                    <button class="profile-edit-btn" onclick="document.getElementById('profileAvatarInput').click()">📷 Change Avatar</button>
+                    <input type="file" id="profileAvatarInput" accept="image/*" style="display:none;" onchange="window.handleAvatarSelect(event)">
+                </div>
                 <button class="profile-edit-btn" onclick="window.logout()" style="margin-top:6px;color:#ef4444;border-color:#ef4444;">🚪 Logout</button>
             </div>
             <div style="display:flex;gap:8px;margin-bottom:12px;">
@@ -876,11 +887,13 @@
 
     // ==================== MAIN APP ====================
     let CLOUD_DATA = { messages: [], users: {}, posts: [], diaries: [], routines: [], profiles: {} };
-    let S = { selectedAuras: [], completedTasks: [], streakData: {}, wallpaper: DEFAULT_WALLPAPER, diary: [], routines: [], socialPosts: [], likedPosts: [], username: '', bio: 'Building my energy. One aura at a time. ⚡' };
+    let S = { selectedAuras: [], completedTasks: [], streakData: {}, wallpaper: DEFAULT_WALLPAPER, diary: [], routines: [], socialPosts: [], likedPosts: [], username: '', bio: 'Building my energy. One aura at a time. ⚡', avatar: null };
     let chatMessages = [];
     let poll = null;
     let selectedFile = null;
     let selectedFileData = null;
+    let selectedAvatarFile = null;
+    let selectedAvatarData = null;
     const AUTH_KEY = 'winchu_auth_v2';
 
     // ==================== CORE FUNCTIONS ====================
@@ -918,6 +931,7 @@
                         S.bio = profile.bio || 'Building my energy. One aura at a time. ⚡';
                         S.wallpaper = profile.wallpaper || DEFAULT_WALLPAPER;
                         S.selectedAuras = profile.selected_auras || [];
+                        S.avatar = profile.avatar || null;
                     }
                     document.getElementById('wpFab').style.display = 'flex';
                     return true;
@@ -935,6 +949,7 @@
             bio: S.bio,
             wallpaper: S.wallpaper,
             selected_auras: S.selectedAuras,
+            avatar: S.avatar,
             last_seen: new Date().toISOString()
         };
         saveAllData();
@@ -987,6 +1002,33 @@
         return s;
     }
 
+    // ==================== AVATAR FUNCTIONS ====================
+    function getAvatarHTML(username, size) {
+        const profile = CLOUD_DATA.profiles && CLOUD_DATA.profiles[username] ? CLOUD_DATA.profiles[username] : {};
+        const avatar = profile.avatar;
+        if (avatar) {
+            return `<img src="${avatar}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;" />`;
+        }
+        const colors = ['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8','#F7B787','#FF8A80','#B388FF','#82B1FF','#B9F6CA','#FFE57F','#FF80AB','#EA80FC','#8C9EFF'];
+        const color = colors[username.length % colors.length];
+        return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:${size*0.4}px;">${username.charAt(0).toUpperCase()}</div>`;
+    }
+
+    function handleAvatarSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            selectedAvatarData = e.target.result;
+            S.avatar = selectedAvatarData;
+            saveAuth();
+            renderProfile();
+            toast('✅ Avatar updated!');
+        };
+        reader.readAsDataURL(file);
+    }
+
     // ==================== USERS LIST ====================
     function renderUsers() {
         const container = document.getElementById('usersList');
@@ -1000,7 +1042,6 @@
             return;
         }
 
-        // Get online users from messages
         const now = Date.now();
         const onlineUsers = new Set();
         if (CLOUD_DATA.messages) {
@@ -1020,17 +1061,16 @@
             const profile = CLOUD_DATA.profiles && CLOUD_DATA.profiles[u] ? CLOUD_DATA.profiles[u] : {};
             const isMe = u === S.username;
             const postCount = S.socialPosts ? S.socialPosts.filter(p => p.author === u).length : 0;
+            const avatarHTML = getAvatarHTML(u, 40);
             
             return `
                 <div class="user-card">
-                    <div class="user-avatar" style="background:${isMe ? '#6366f1' : '#e2e8f0'};color:${isMe ? 'white' : '#0f172a'}">
-                        ${u.charAt(0).toUpperCase()}
-                    </div>
+                    <div class="user-avatar">${avatarHTML}</div>
                     <div class="user-info">
                         <div class="name">
                             ${isMe ? '⭐ ' : ''}${u}
                             <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span>
-                            ${isOnline ? '🟢' : '⚪'}
+                            ${isOnline ? '🟢 Online' : '⚪ Offline'}
                         </div>
                         <div class="bio">${profile.bio || 'No bio yet'} • ${postCount} posts</div>
                     </div>
@@ -1416,7 +1456,7 @@
         const text = input.value.trim();
         if (!text && !selectedFileData) { toast('Write something or add media'); return; }
         
-        const avatar = S.selectedAuras.length > 0 ? S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊';
+        const avatar = S.avatar || (S.selectedAuras.length > 0 ? S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊');
         const randImg = UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)];
 
         await loadAllData();
@@ -1488,7 +1528,7 @@
         if (!feed) return;
         const avatarEl = document.getElementById('postAvatarEmoji');
         if (avatarEl) {
-            avatarEl.textContent = S.selectedAuras.length > 0 ? S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊';
+            avatarEl.textContent = S.avatar ? '🖼️' : (S.selectedAuras.length > 0 ? S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊');
         }
 
         const posts = S.socialPosts;
@@ -1506,14 +1546,27 @@
             } else if (p.image && (p.image.indexOf('data:') === 0 || p.image.indexOf('unsplash') > -1)) {
                 mediaHtml = '<img src="' + p.image + '" class="post-image" alt="Post image" />';
             }
-            return '<div class="ig-post"><div class="ig-post-header"><div class="ig-post-avatar">' + p.avatar + '</div><span class="ig-post-user">' + p.author + '</span><span class="ig-post-time">' + timeAgo + '</span>' + (p.author === S.username ? '<button class="btn-sm btn-danger" onclick="window.deletePost(\'' + p.id + '\')" style="font-size:11px;padding:2px 8px;">🗑️</button>' : '') + '</div>' + mediaHtml + '<div style="padding:0 12px 4px;"><p style="font-size:13px;margin:4px 0;">' + p.text + '</p></div><div class="ig-post-actions"><button class="ig-post-action ' + (liked ? 'liked' : '') + '" onclick="window.likePost(\'' + p.id + '\')">' + (liked ? '❤️' : '🤍') + '</button><span style="font-size:13px;font-weight:600;color:#94a3b8;">' + p.likes.length + ' ' + (p.likes.length === 1 ? 'like' : 'likes') + '</span></div></div>';
+            const avatarDisplay = p.avatar && p.avatar.startsWith('data:') ? 
+                '<img src="' + p.avatar + '" style="width:36px;height:36px;border-radius:50%;object-fit:cover;" />' : 
+                p.avatar || '😊';
+            return '<div class="ig-post"><div class="ig-post-header"><div class="ig-post-avatar" style="overflow:hidden;">' + avatarDisplay + '</div><span class="ig-post-user">' + p.author + '</span><span class="ig-post-time">' + timeAgo + '</span>' + (p.author === S.username ? '<button class="btn-sm btn-danger" onclick="window.deletePost(\'' + p.id + '\')" style="font-size:11px;padding:2px 8px;">🗑️</button>' : '') + '</div>' + mediaHtml + '<div style="padding:0 12px 4px;"><p style="font-size:13px;margin:4px 0;">' + p.text + '</p></div><div class="ig-post-actions"><button class="ig-post-action ' + (liked ? 'liked' : '') + '" onclick="window.likePost(\'' + p.id + '\')">' + (liked ? '❤️' : '🤍') + '</button><span style="font-size:13px;font-weight:600;color:#94a3b8;">' + p.likes.length + ' ' + (p.likes.length === 1 ? 'like' : 'likes') + '</span></div></div>';
         }).join('');
     }
 
     // ==================== PROFILE FUNCTIONS ====================
     function renderProfile() {
-        const avatarEmoji = S.selectedAuras.length > 0 ? S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊';
-        document.getElementById('profileAvatarEmoji').textContent = avatarEmoji;
+        const avatarEmoji = S.avatar ? '🖼️' : (S.selectedAuras.length > 0 ? S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊');
+        
+        // Update avatar
+        const avatarContainer = document.getElementById('profileAvatarContainer');
+        if (avatarContainer) {
+            if (S.avatar) {
+                avatarContainer.innerHTML = '<div class="inner" style="overflow:hidden;padding:0;"><img src="' + S.avatar + '" style="width:100%;height:100%;object-fit:cover;" /></div>';
+            } else {
+                avatarContainer.innerHTML = '<div class="inner" id="profileAvatarEmoji">' + avatarEmoji + '</div>';
+            }
+        }
+        
         document.getElementById('profileName').textContent = S.username || '—';
         document.getElementById('profileUsername').textContent = '@' + (S.username || '—');
         document.getElementById('profilePosts').textContent = S.socialPosts.filter(function(p) { return p.author === S.username; }).length;
@@ -1528,7 +1581,8 @@
             return;
         }
         grid.innerHTML = userPosts.map(function(p) {
-            return '<div style="aspect-ratio:1;background-image:url(\'' + (p.image || UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)]) + '\');background-size:cover;background-position:center;border-radius:4px;cursor:pointer;" onclick="window.toast(\'' + p.text.substring(0, 30) + '...\')"></div>';
+            const img = p.image && (p.image.indexOf('data:') === 0 || p.image.indexOf('unsplash') > -1) ? p.image : UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)];
+            return '<div style="aspect-ratio:1;background-image:url(\'' + img + '\');background-size:cover;background-position:center;border-radius:4px;cursor:pointer;" onclick="window.toast(\'' + p.text.substring(0, 30) + '...\')"></div>';
         }).join('');
     }
 
@@ -1581,6 +1635,7 @@
             bio: 'Building my energy. One aura at a time. ⚡',
             wallpaper: DEFAULT_WALLPAPER,
             selected_auras: [],
+            avatar: null,
             created: new Date().toISOString()
         };
         await saveAllData();
@@ -1595,6 +1650,7 @@
         S.likedPosts = [];
         S.bio = 'Building my energy. One aura at a time. ⚡';
         S.wallpaper = DEFAULT_WALLPAPER;
+        S.avatar = null;
         saveAuth();
         toast('Account created! Welcome ' + name);
         navigate('select');
@@ -1617,6 +1673,7 @@
             S.bio = profile.bio || 'Building my energy. One aura at a time. ⚡';
             S.wallpaper = profile.wallpaper || DEFAULT_WALLPAPER;
             S.selectedAuras = profile.selected_auras || [];
+            S.avatar = profile.avatar || null;
         }
         saveAuth();
         toast('Welcome back, ' + CLOUD_DATA.users[user].name);
@@ -1682,9 +1739,11 @@
     window.logout = logout;
     window.editProfile = editProfile;
     window.handleFileSelect = handleFileSelect;
+    window.handleAvatarSelect = handleAvatarSelect;
     window.toast = toast;
     window.renderDiary = renderDiary;
     window.renderUsers = renderUsers;
+    window.getAvatarHTML = getAvatarHTML;
 
     // ==================== START ====================
     init();
