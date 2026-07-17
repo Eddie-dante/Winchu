@@ -504,7 +504,7 @@
 </head>
 <body>
     <div class="signature">id³</div>
-    <button class="wp-fab" id="wpFab" onclick="navigate('wallpapers')" style="display:none;">🎨</button>
+    <button class="wp-fab" id="wpFab" onclick="window.navigate('wallpapers')" style="display:none;">🎨</button>
     <div id="toastContainer"></div>
 
     <!-- Landing Page -->
@@ -513,8 +513,8 @@
             <span class="landing-icon">⚡</span>
             <h1 class="landing-title">Winchu</h1>
             <p class="landing-subtitle">Shape your presence. Manifest your energy.</p>
-            <button class="btn-primary" onclick="navigate('login')">Sign In</button>
-            <button class="btn-secondary" onclick="navigate('signup')" style="margin-top:8px;">Create Account</button>
+            <button class="btn-primary" onclick="window.navigate('login')">Sign In</button>
+            <button class="btn-secondary" onclick="window.navigate('signup')" style="margin-top:8px;">Create Account</button>
         </div>
     </div>
 
@@ -525,9 +525,9 @@
             <input type="text" id="signupName" placeholder="Full name" style="margin-bottom:8px;">
             <input type="text" id="signupUser" placeholder="Username" style="margin-bottom:8px;">
             <input type="password" id="signupPass" placeholder="Password" style="margin-bottom:16px;">
-            <button class="btn-primary" onclick="handleSignup()">Sign Up</button>
-            <div class="auth-toggle" onclick="navigate('login')">Already have an account? Log in</div>
-            <button class="btn-secondary" onclick="navigate('landing')" style="margin-top:8px;">← Back</button>
+            <button class="btn-primary" onclick="window.handleSignup()">Sign Up</button>
+            <div class="auth-toggle" onclick="window.navigate('login')">Already have an account? Log in</div>
+            <button class="btn-secondary" onclick="window.navigate('landing')" style="margin-top:8px;">← Back</button>
         </div>
     </div>
 
@@ -537,9 +537,9 @@
             <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">🔐 Sign In</h2>
             <input type="text" id="loginUser" placeholder="Username" style="margin-bottom:8px;">
             <input type="password" id="loginPass" placeholder="Password" style="margin-bottom:16px;">
-            <button class="btn-primary" onclick="handleLogin()">Log In</button>
-            <div class="auth-toggle" onclick="navigate('signup')">No account? Create one</div>
-            <button class="btn-secondary" onclick="navigate('landing')" style="margin-top:8px;">← Back</button>
+            <button class="btn-primary" onclick="window.handleLogin()">Log In</button>
+            <div class="auth-toggle" onclick="window.navigate('signup')">No account? Create one</div>
+            <button class="btn-secondary" onclick="window.navigate('landing')" style="margin-top:8px;">← Back</button>
         </div>
     </div>
 
@@ -550,7 +550,7 @@
             <p style="color:#64748b;font-size:12px;margin-bottom:10px;">Select up to 3 energies</p>
             <div class="counter-chip"><span>✧</span> <strong id="counter">0</strong><span>/3</span></div>
             <div class="aura-grid" id="auraGrid"></div>
-            <button class="btn-primary" onclick="confirmSelection()" style="margin-top:10px;">Continue →</button>
+            <button class="btn-primary" onclick="window.confirmSelection()" style="margin-top:10px;">Continue →</button>
         </div>
     </div>
 
@@ -585,8 +585,8 @@
                 <div class="cal-grid" id="calendar"></div>
             </div>
             <div style="display:flex;gap:6px;margin-top:8px;">
-                <button class="btn-sm" onclick="resetDay()">↺ Reset</button>
-                <button class="btn-sm" onclick="navigate('select')">✧ Auras</button>
+                <button class="btn-sm" onclick="window.resetDay()">↺ Reset</button>
+                <button class="btn-sm" onclick="window.navigate('select')">✧ Auras</button>
             </div>
         </div>
     </div>
@@ -598,9 +598,9 @@
             <textarea id="diaryInput" rows="3" placeholder="Dear diary..."></textarea>
             <div style="display:flex;gap:6px;margin-top:6px;">
                 <input type="text" id="diaryMood" placeholder="Mood" style="flex:1;">
-                <button class="btn-sm btn-primary" onclick="saveDiary()" style="width:auto;">💾</button>
+                <button class="btn-sm btn-primary" onclick="window.saveDiary()" style="width:auto;">💾</button>
             </div>
-            <input type="search" id="diarySearch" placeholder="🔍 Search..." oninput="renderDiary()" style="margin-top:8px;">
+            <input type="search" id="diarySearch" placeholder="🔍 Search..." oninput="window.renderDiary()" style="margin-top:8px;">
             <div id="diaryEntries" style="max-height:320px;overflow-y:auto;margin-top:8px;">
                 <p style="color:#94a3b8;text-align:center;">No entries yet.</p>
             </div>
@@ -613,7 +613,7 @@
             <h2 style="font-size:19px;font-weight:700;margin-bottom:10px;">📋 Routines</h2>
             <input type="text" id="routineTitle" placeholder="Title...">
             <textarea id="routineInput" rows="2" placeholder="Description..." style="margin-top:6px;"></textarea>
-            <button class="btn-sm btn-primary" onclick="saveRoutine()" style="margin-top:6px;width:100%;">💾 Save</button>
+            <button class="btn-sm btn-primary" onclick="window.saveRoutine()" style="margin-top:6px;width:100%;">💾 Save</button>
             <div id="routineEntries" style="max-height:320px;overflow-y:auto;margin-top:8px;">
                 <p style="color:#94a3b8;text-align:center;">No routines yet.</p>
             </div>
@@ -629,14 +629,14 @@
             </div>
             <div style="font-size:11px;color:#64748b;margin-bottom:6px;">
                 You: <strong id="myUsername">—</strong>
-                <button class="btn-sm" onclick="changeUsername()" style="margin-left:6px;font-size:10px;">✏️</button>
+                <button class="btn-sm" onclick="window.changeUsername()" style="margin-left:6px;font-size:10px;">✏️</button>
             </div>
             <div class="chat-messages" id="chatMessages">
                 <p style="color:#94a3b8;text-align:center;">Loading...</p>
             </div>
             <div style="display:flex;gap:6px;">
-                <input type="text" id="chatInput" placeholder="Message..." onkeypress="if(event.key==='Enter')sendMessage()" style="flex:1;">
-                <button class="btn-sm btn-primary" onclick="sendMessage()" style="width:auto;">📤</button>
+                <input type="text" id="chatInput" placeholder="Message..." onkeypress="if(event.key==='Enter')window.sendMessage()" style="flex:1;">
+                <button class="btn-sm btn-primary" onclick="window.sendMessage()" style="width:auto;">📤</button>
             </div>
         </div>
     </div>
@@ -647,7 +647,7 @@
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
                 <h2 style="font-size:20px;font-weight:700;">Winchu</h2>
                 <div style="display:flex;gap:12px;align-items:center;">
-                    <button class="btn-sm" onclick="navigate('wallpapers')" style="font-size:16px;background:none;border:none;padding:4px;">🎨</button>
+                    <button class="btn-sm" onclick="window.navigate('wallpapers')" style="font-size:16px;background:none;border:none;padding:4px;">🎨</button>
                     <button class="btn-sm" onclick="document.getElementById('postInput').focus()" style="font-size:16px;background:none;border:none;padding:4px;">➕</button>
                 </div>
             </div>
@@ -660,9 +660,9 @@
                     <input type="text" id="postInput" placeholder="What's on your mind?" style="flex:1;border:none;background:transparent;padding:6px 0;font-size:13px;outline:none;">
                     <div class="file-input-wrapper">
                         <button class="btn-sm" style="font-size:16px;background:none;border:none;padding:4px;cursor:pointer;">📎</button>
-                        <input type="file" id="postFile" accept="image/*,video/*" onchange="handleFileSelect(event)">
+                        <input type="file" id="postFile" accept="image/*,video/*" onchange="window.handleFileSelect(event)">
                     </div>
-                    <button class="btn-sm btn-primary" onclick="createPost()" style="width:auto;padding:6px 14px;font-size:12px;">Post</button>
+                    <button class="btn-sm btn-primary" onclick="window.createPost()" style="width:auto;padding:6px 14px;font-size:12px;">Post</button>
                 </div>
                 <div id="filePreview" style="margin-top:4px;display:none;"></div>
             </div>
@@ -685,12 +685,12 @@
                     <div class="profile-stat"><div class="num" id="profileFollowing">0</div><div class="label">Following</div></div>
                 </div>
                 <div class="profile-bio" id="profileBio">Building my energy. One aura at a time. ⚡</div>
-                <button class="profile-edit-btn" onclick="editProfile()">✏️ Edit Profile</button>
-                <button class="profile-edit-btn" onclick="logout()" style="margin-top:6px;color:#ef4444;border-color:#ef4444;">🚪 Logout</button>
+                <button class="profile-edit-btn" onclick="window.editProfile()">✏️ Edit Profile</button>
+                <button class="profile-edit-btn" onclick="window.logout()" style="margin-top:6px;color:#ef4444;border-color:#ef4444;">🚪 Logout</button>
             </div>
             <div style="display:flex;gap:8px;margin-bottom:12px;">
-                <button class="btn-sm" style="flex:1;background:rgba(0,0,0,0.05);" onclick="navigate('home')">📊 Dashboard</button>
-                <button class="btn-sm" style="flex:1;background:rgba(0,0,0,0.05);" onclick="navigate('select')">✧ Auras</button>
+                <button class="btn-sm" style="flex:1;background:rgba(0,0,0,0.05);" onclick="window.navigate('home')">📊 Dashboard</button>
+                <button class="btn-sm" style="flex:1;background:rgba(0,0,0,0.05);" onclick="window.navigate('select')">✧ Auras</button>
             </div>
             <h3 style="font-size:14px;font-weight:600;margin-bottom:8px;">📸 Your Posts</h3>
             <div id="profilePostsGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;">
@@ -703,7 +703,7 @@
     <div class="page" id="page-wallpapers">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:8px;">🎨 Walls</h2>
-            <button class="btn-sm" onclick="randomWallpaper()" style="width:100%;margin-bottom:8px;">🎲 Random</button>
+            <button class="btn-sm" onclick="window.randomWallpaper()" style="width:100%;margin-bottom:8px;">🎲 Random</button>
             <p style="font-size:10px;color:#94a3b8;" id="wpCount">50+ wallpapers</p>
             <div class="wp-grid" id="wpGrid"></div>
         </div>
@@ -711,12 +711,12 @@
 
     <!-- Bottom Nav -->
     <nav class="bottom-nav" id="bottomNav" style="display:none;">
-        <button class="nav-btn active" data-page="social" onclick="navigate('social')"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
-        <button class="nav-btn" data-page="home" onclick="navigate('home')"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></button>
-        <button class="nav-btn" data-page="diary" onclick="navigate('diary')"><span class="nav-icon">📖</span><span class="nav-label">Diary</span></button>
-        <button class="nav-btn" data-page="routine" onclick="navigate('routine')"><span class="nav-icon">📋</span><span class="nav-label">Routine</span></button>
-        <button class="nav-btn" data-page="chat" onclick="navigate('chat')"><span class="nav-icon">💬</span><span class="nav-label">Chat</span></button>
-        <button class="nav-btn" data-page="profile" onclick="navigate('profile')"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></button>
+        <button class="nav-btn active" data-page="social" onclick="window.navigate('social')"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
+        <button class="nav-btn" data-page="home" onclick="window.navigate('home')"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></button>
+        <button class="nav-btn" data-page="diary" onclick="window.navigate('diary')"><span class="nav-icon">📖</span><span class="nav-label">Diary</span></button>
+        <button class="nav-btn" data-page="routine" onclick="window.navigate('routine')"><span class="nav-icon">📋</span><span class="nav-label">Routine</span></button>
+        <button class="nav-btn" data-page="chat" onclick="window.navigate('chat')"><span class="nav-icon">💬</span><span class="nav-label">Chat</span></button>
+        <button class="nav-btn" data-page="profile" onclick="window.navigate('profile')"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></button>
     </nav>
 
     <script>
@@ -818,8 +818,16 @@
         } catch (e) {}
     }
 
+    // ==================== MAIN APP ====================
     let CLOUD_DATA = { messages: [], users: {}, posts: [], diaries: [], routines: [], profiles: {} };
+    let S = { selectedAuras: [], completedTasks: [], streakData: {}, wallpaper: DEFAULT_WALLPAPER, diary: [], routines: [], socialPosts: [], likedPosts: [], username: '', bio: 'Building my energy. One aura at a time. ⚡' };
+    let chatMessages = [];
+    let poll = null;
+    let selectedFile = null;
+    let selectedFileData = null;
+    const AUTH_KEY = 'winchu_auth_v2';
 
+    // ==================== CORE FUNCTIONS ====================
     async function loadAllData() {
         const cloudData = await cloudGet();
         if (cloudData) {
@@ -841,38 +849,7 @@
         await cloudPut(CLOUD_DATA);
     }
 
-    // ==================== FILE HANDLING ====================
-    let selectedFile = null;
-    let selectedFileType = null;
-    let selectedFileData = null;
-
-    function handleFileSelect(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        selectedFile = file;
-        selectedFileType = file.type;
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            selectedFileData = e.target.result;
-            const preview = document.getElementById('filePreview');
-            preview.style.display = 'block';
-            if (file.type.startsWith('image/')) {
-                preview.innerHTML = `<img src="${e.target.result}" style="max-height:150px;border-radius:8px;max-width:100%;">`;
-            } else if (file.type.startsWith('video/')) {
-                preview.innerHTML = `<video src="${e.target.result}" style="max-height:150px;border-radius:8px;max-width:100%;" controls></video>`;
-            }
-        };
-        reader.readAsDataURL(file);
-    }
-
     // ==================== AUTH ====================
-    let S = { selectedAuras: [], completedTasks: [], streakData: {}, wallpaper: DEFAULT_WALLPAPER, diary: [], routines: [], socialPosts: [], likedPosts: [], username: '', bio: 'Building my energy. One aura at a time. ⚡' };
-    let chatMessages = [];
-    let poll = null;
-    const AUTH_KEY = 'winchu_auth_v2';
-
     function loadAuth() {
         try {
             const raw = localStorage.getItem(AUTH_KEY);
@@ -908,75 +885,6 @@
         document.getElementById('wpFab').style.display = 'flex';
     }
 
-    async function handleSignup() {
-        const name = document.getElementById('signupName').value.trim();
-        const user = document.getElementById('signupUser').value.trim();
-        const pass = document.getElementById('signupPass').value.trim();
-        if (!name || !user || !pass) { toast('Please fill all fields'); return; }
-        if (pass.length < 4) { toast('Password must be at least 4 characters'); return; }
-        
-        await loadAllData();
-        if (!CLOUD_DATA.users) CLOUD_DATA.users = {};
-        if (CLOUD_DATA.users[user]) { toast('Username already exists'); return; }
-        
-        CLOUD_DATA.users[user] = { password: pass, name: name, created: new Date().toISOString() };
-        if (!CLOUD_DATA.profiles) CLOUD_DATA.profiles = {};
-        CLOUD_DATA.profiles[user] = {
-            bio: 'Building my energy. One aura at a time. ⚡',
-            wallpaper: DEFAULT_WALLPAPER,
-            selected_auras: [],
-            created: new Date().toISOString()
-        };
-        await saveAllData();
-        
-        S.username = user;
-        S.selectedAuras = [];
-        S.completedTasks = [];
-        S.streakData = {};
-        S.diary = [];
-        S.routines = [];
-        S.socialPosts = [];
-        S.likedPosts = [];
-        S.bio = 'Building my energy. One aura at a time. ⚡';
-        S.wallpaper = DEFAULT_WALLPAPER;
-        saveAuth();
-        toast('Account created! Welcome ' + name);
-        navigate('select');
-    }
-
-    async function handleLogin() {
-        const user = document.getElementById('loginUser').value.trim();
-        const pass = document.getElementById('loginPass').value.trim();
-        if (!user || !pass) { toast('Enter username and password'); return; }
-        
-        await loadAllData();
-        if (!CLOUD_DATA.users || !CLOUD_DATA.users[user] || CLOUD_DATA.users[user].password !== pass) {
-            toast('Invalid credentials');
-            return;
-        }
-        
-        S.username = user;
-        if (CLOUD_DATA.profiles && CLOUD_DATA.profiles[user]) {
-            const profile = CLOUD_DATA.profiles[user];
-            S.bio = profile.bio || 'Building my energy. One aura at a time. ⚡';
-            S.wallpaper = profile.wallpaper || DEFAULT_WALLPAPER;
-            S.selectedAuras = profile.selected_auras || [];
-        }
-        saveAuth();
-        toast('Welcome back, ' + CLOUD_DATA.users[user].name);
-        navigate('social');
-    }
-
-    function logout() {
-        if (!confirm('Logout?')) return;
-        S.username = '';
-        localStorage.removeItem(AUTH_KEY);
-        document.getElementById('wpFab').style.display = 'none';
-        toast('Logged out');
-        navigate('landing');
-    }
-
-    // ==================== TOAST ====================
     function toast(msg) {
         const t = document.createElement('div');
         t.className = 'toast';
@@ -985,7 +893,6 @@
         setTimeout(() => t.remove(), 2200);
     }
 
-    // ==================== SET BACKGROUND ====================
     function setBg(url) {
         S.wallpaper = url;
         saveAuth();
@@ -997,7 +904,6 @@
         document.head.appendChild(s);
     }
 
-    // ==================== GET TASKS ====================
     function getTasks() {
         let tasks = [];
         S.selectedAuras.forEach(key => {
@@ -1239,7 +1145,7 @@
     // ==================== CHAT FUNCTIONS ====================
     function startPoll() {
         stopPoll();
-        poll = setInterval(() => {
+        poll = setInterval(function() {
             updateChat();
         }, 2000);
     }
@@ -1254,11 +1160,10 @@
             chatMessages = CLOUD_DATA.messages;
             renderChatMessages();
         }
-        // Update online count from all users who have sent messages in last 5 min
         const now = Date.now();
         const online = new Set();
         if (CLOUD_DATA.messages) {
-            CLOUD_DATA.messages.forEach(msg => {
+            CLOUD_DATA.messages.forEach(function(msg) {
                 try {
                     const time = new Date(msg.time).getTime();
                     if (now - time < 300000) {
@@ -1267,7 +1172,6 @@
                 } catch(e) {}
             });
         }
-        // Also add current user
         if (S.username) online.add(S.username);
         document.getElementById('onlineCount').textContent = online.size;
     }
@@ -1296,7 +1200,7 @@
     }
 
     function deleteMessage(id) {
-        chatMessages = chatMessages.filter(m => m.id !== id);
+        chatMessages = chatMessages.filter(function(m) { return m.id !== id; });
         CLOUD_DATA.messages = chatMessages;
         saveAllData();
         renderChatMessages();
@@ -1305,38 +1209,33 @@
     function changeUsername() {
         const newName = prompt('Enter new username:', S.username);
         if (newName && newName.trim()) {
-            // Check if username exists
             const users = CLOUD_DATA.users || {};
             if (users[newName.trim()] && newName.trim() !== S.username) {
                 toast('Username already taken');
                 return;
             }
-            // Update user in users list
             if (users[S.username]) {
                 users[newName.trim()] = users[S.username];
                 delete users[S.username];
                 CLOUD_DATA.users = users;
             }
-            // Update profile
             if (CLOUD_DATA.profiles && CLOUD_DATA.profiles[S.username]) {
                 CLOUD_DATA.profiles[newName.trim()] = CLOUD_DATA.profiles[S.username];
                 delete CLOUD_DATA.profiles[S.username];
             }
-            // Update messages
             if (CLOUD_DATA.messages) {
-                CLOUD_DATA.messages.forEach(msg => {
+                CLOUD_DATA.messages.forEach(function(msg) {
                     if (msg.username === S.username) msg.username = newName.trim();
                 });
             }
-            // Update posts
             if (CLOUD_DATA.posts) {
-                CLOUD_DATA.posts.forEach(post => {
+                CLOUD_DATA.posts.forEach(function(post) {
                     if (post.author === S.username) post.author = newName.trim();
                 });
             }
             S.username = newName.trim();
             saveAuth();
-            await saveAllData();
+            saveAllData();
             document.getElementById('myUsername').textContent = S.username;
             toast('Username updated');
             renderChat();
@@ -1356,10 +1255,10 @@
             container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:16px;">No messages yet.</p>';
             return;
         }
-        container.innerHTML = chatMessages.map(m => {
+        container.innerHTML = chatMessages.map(function(m) {
             const me = m.username === S.username;
             const time = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            return `<div style="display:flex;justify-content:${me ? 'flex-end' : 'flex-start'};margin:3px 0;"><div style="max-width:82%;"><div class="chat-bubble ${me ? 'chat-sent' : 'chat-received'}"><div style="font-size:10px;font-weight:600;opacity:0.7;">${m.username} · ${time}</div><p style="margin:2px 0 0;">${m.text}</p></div>${me ? `<button class="btn-sm btn-danger" onclick="deleteMessage('${m.id}')" style="font-size:9px;padding:2px 5px;margin-top:1px;">🗑️</button>` : ''}</div></div>`;
+            return '<div style="display:flex;justify-content:' + (me ? 'flex-end' : 'flex-start') + ';margin:3px 0;"><div style="max-width:82%;"><div class="chat-bubble ' + (me ? 'chat-sent' : 'chat-received') + '"><div style="font-size:10px;font-weight:600;opacity:0.7;">' + m.username + ' · ' + time + '</div><p style="margin:2px 0 0;">' + m.text + '</p></div>' + (me ? '<button class="btn-sm btn-danger" onclick="window.deleteMessage(\'' + m.id + '\')" style="font-size:9px;padding:2px 5px;margin-top:1px;">🗑️</button>' : '') + '</div></div>';
         }).join('');
         container.scrollTop = container.scrollHeight;
     }
@@ -1368,16 +1267,39 @@
     function renderStories() {
         const row = document.getElementById('storyRow');
         if (!row) return;
-        const users = [...new Set(S.socialPosts.map(p => p.author))];
+        const users = [];
+        S.socialPosts.forEach(function(p) {
+            if (users.indexOf(p.author) === -1) users.push(p.author);
+        });
         if (users.length === 0) {
             row.innerHTML = '<div style="display:flex;gap:10px;padding:4px 0;color:#94a3b8;font-size:12px;">No stories yet</div>';
             return;
         }
-        row.innerHTML = users.slice(0, 10).map(u => {
-            const post = S.socialPosts.find(p => p.author === u);
+        row.innerHTML = users.slice(0, 10).map(function(u) {
+            const post = S.socialPosts.find(function(p) { return p.author === u; });
             const emoji = post ? post.avatar : '😊';
-            return `<div class="ig-story"><div class="ig-story-avatar"><div class="inner">${emoji}</div></div><span class="ig-story-name">${u}</span></div>`;
+            return '<div class="ig-story"><div class="ig-story-avatar"><div class="inner">' + emoji + '</div></div><span class="ig-story-name">' + u + '</span></div>';
         }).join('');
+    }
+
+    function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        selectedFile = file;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            selectedFileData = e.target.result;
+            const preview = document.getElementById('filePreview');
+            preview.style.display = 'block';
+            if (file.type.startsWith('image/')) {
+                preview.innerHTML = '<img src="' + e.target.result + '" style="max-height:150px;border-radius:8px;max-width:100%;">';
+            } else if (file.type.startsWith('video/')) {
+                preview.innerHTML = '<video src="' + e.target.result + '" style="max-height:150px;border-radius:8px;max-width:100%;" controls></video>';
+            }
+        };
+        reader.readAsDataURL(file);
     }
 
     async function createPost() {
@@ -1385,7 +1307,7 @@
         const text = input.value.trim();
         if (!text && !selectedFileData) { toast('Write something or add media'); return; }
         
-        const avatar = S.selectedAuras.length > 0 ? S.selectedAuras.map(k => AURAS[k].emoji).join('') : '😊';
+        const avatar = S.selectedAuras.length > 0 ? S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊';
         const randImg = UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)];
 
         await loadAllData();
@@ -1418,11 +1340,11 @@
     }
 
     function likePost(id) {
-        const post = S.socialPosts.find(x => x.id === id);
+        const post = S.socialPosts.find(function(x) { return x.id === id; });
         if (!post) return;
-        if (S.likedPosts.includes(id)) {
-            S.likedPosts = S.likedPosts.filter(x => x !== id);
-            post.likes = post.likes.filter(u => u !== S.username);
+        if (S.likedPosts.indexOf(id) > -1) {
+            S.likedPosts = S.likedPosts.filter(function(x) { return x !== id; });
+            post.likes = post.likes.filter(function(u) { return u !== S.username; });
         } else {
             S.likedPosts.push(id);
             post.likes.push(S.username);
@@ -1434,8 +1356,8 @@
 
     function deletePost(id) {
         if (!confirm('Delete this post?')) return;
-        S.socialPosts = S.socialPosts.filter(p => p.id !== id);
-        S.likedPosts = S.likedPosts.filter(x => x !== id);
+        S.socialPosts = S.socialPosts.filter(function(p) { return p.id !== id; });
+        S.likedPosts = S.likedPosts.filter(function(x) { return x !== id; });
         CLOUD_DATA.posts = S.socialPosts;
         saveAllData();
         renderSocial();
@@ -1457,65 +1379,48 @@
         if (!feed) return;
         const avatarEl = document.getElementById('postAvatarEmoji');
         if (avatarEl) {
-            avatarEl.textContent = S.selectedAuras.length > 0 ? S.selectedAuras.map(k => AURAS[k].emoji).join('') : '😊';
+            avatarEl.textContent = S.selectedAuras.length > 0 ? S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊';
         }
 
         const posts = S.socialPosts;
         if (posts.length === 0) {
-            feed.innerHTML = `<div style="text-align:center;padding:40px 0;color:#94a3b8;"><div style="font-size:48px;margin-bottom:12px;">📸</div><p>No posts yet. Share your journey!</p></div>`;
+            feed.innerHTML = '<div style="text-align:center;padding:40px 0;color:#94a3b8;"><div style="font-size:48px;margin-bottom:12px;">📸</div><p>No posts yet. Share your journey!</p></div>';
             return;
         }
 
-        feed.innerHTML = posts.map(p => {
-            const liked = S.likedPosts.includes(p.id);
+        feed.innerHTML = posts.map(function(p) {
+            const liked = S.likedPosts.indexOf(p.id) > -1;
             const timeAgo = timeSince(new Date(p.time));
             let mediaHtml = '';
             if (p.mediaType === 'video' && p.image) {
-                mediaHtml = `<video src="${p.image}" class="post-video" controls></video>`;
-            } else if (p.image && p.image.startsWith('data:') || p.image && (p.image.includes('unsplash'))) {
-                mediaHtml = `<img src="${p.image}" class="post-image" alt="Post image" />`;
+                mediaHtml = '<video src="' + p.image + '" class="post-video" controls></video>';
+            } else if (p.image && (p.image.indexOf('data:') === 0 || p.image.indexOf('unsplash') > -1)) {
+                mediaHtml = '<img src="' + p.image + '" class="post-image" alt="Post image" />';
             }
-            return `
-                <div class="ig-post">
-                    <div class="ig-post-header">
-                        <div class="ig-post-avatar">${p.avatar}</div>
-                        <span class="ig-post-user">${p.author}</span>
-                        <span class="ig-post-time">${timeAgo}</span>
-                        ${p.author === S.username ? `<button class="btn-sm btn-danger" onclick="deletePost('${p.id}')" style="font-size:11px;padding:2px 8px;">🗑️</button>` : ''}
-                    </div>
-                    ${mediaHtml}
-                    <div style="padding:0 12px 4px;">
-                        <p style="font-size:13px;margin:4px 0;">${p.text}</p>
-                    </div>
-                    <div class="ig-post-actions">
-                        <button class="ig-post-action ${liked ? 'liked' : ''}" onclick="likePost('${p.id}')">${liked ? '❤️' : '🤍'}</button>
-                        <span style="font-size:13px;font-weight:600;color:#94a3b8;">${p.likes.length} ${p.likes.length === 1 ? 'like' : 'likes'}</span>
-                    </div>
-                </div>
-            `;
+            return '<div class="ig-post"><div class="ig-post-header"><div class="ig-post-avatar">' + p.avatar + '</div><span class="ig-post-user">' + p.author + '</span><span class="ig-post-time">' + timeAgo + '</span>' + (p.author === S.username ? '<button class="btn-sm btn-danger" onclick="window.deletePost(\'' + p.id + '\')" style="font-size:11px;padding:2px 8px;">🗑️</button>' : '') + '</div>' + mediaHtml + '<div style="padding:0 12px 4px;"><p style="font-size:13px;margin:4px 0;">' + p.text + '</p></div><div class="ig-post-actions"><button class="ig-post-action ' + (liked ? 'liked' : '') + '" onclick="window.likePost(\'' + p.id + '\')">' + (liked ? '❤️' : '🤍') + '</button><span style="font-size:13px;font-weight:600;color:#94a3b8;">' + p.likes.length + ' ' + (p.likes.length === 1 ? 'like' : 'likes') + '</span></div></div>';
         }).join('');
     }
 
     // ==================== PROFILE FUNCTIONS ====================
     function renderProfile() {
-        const avatarEmoji = S.selectedAuras.length > 0 ? S.selectedAuras.map(k => AURAS[k].emoji).join('') : '😊';
+        const avatarEmoji = S.selectedAuras.length > 0 ? S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊';
         document.getElementById('profileAvatarEmoji').textContent = avatarEmoji;
         document.getElementById('profileName').textContent = S.username || '—';
         document.getElementById('profileUsername').textContent = '@' + (S.username || '—');
-        document.getElementById('profilePosts').textContent = S.socialPosts.filter(p => p.author === S.username).length;
+        document.getElementById('profilePosts').textContent = S.socialPosts.filter(function(p) { return p.author === S.username; }).length;
         document.getElementById('profileFollowers').textContent = Math.floor(Math.random() * 100) + 10;
         document.getElementById('profileFollowing').textContent = Math.floor(Math.random() * 50) + 5;
         document.getElementById('profileBio').textContent = S.bio || 'Building my energy. One aura at a time. ⚡';
 
         const grid = document.getElementById('profilePostsGrid');
-        const userPosts = S.socialPosts.filter(p => p.author === S.username);
+        const userPosts = S.socialPosts.filter(function(p) { return p.author === S.username; });
         if (userPosts.length === 0) {
             grid.innerHTML = '<p style="color:#94a3b8;text-align:center;grid-column:1/-1;padding:16px 0;">No posts yet.</p>';
             return;
         }
-        grid.innerHTML = userPosts.map(p =>
-            `<div style="aspect-ratio:1;background-image:url('${p.image || UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)]}');background-size:cover;background-position:center;border-radius:4px;cursor:pointer;" onclick="toast('${p.text.substring(0, 30)}...')"></div>`
-        ).join('');
+        grid.innerHTML = userPosts.map(function(p) {
+            return '<div style="aspect-ratio:1;background-image:url(\'' + (p.image || UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)]) + '\');background-size:cover;background-position:center;border-radius:4px;cursor:pointer;" onclick="window.toast(\'' + p.text.substring(0, 30) + '...\')"></div>';
+        }).join('');
     }
 
     function editProfile() {
@@ -1543,10 +1448,79 @@
 
     function renderWallpapers() {
         document.getElementById('wpCount').textContent = UNSPLASH.length + '+ wallpapers';
-        document.getElementById('wpGrid').innerHTML = UNSPLASH.map(url => {
+        document.getElementById('wpGrid').innerHTML = UNSPLASH.map(function(url) {
             const selected = S.wallpaper === url;
-            return `<div class="wp-thumb${selected ? ' selected' : ''}" style="background-image:url('${url}')" onclick="setWallpaper('${url}')"></div>`;
+            return '<div class="wp-thumb' + (selected ? ' selected' : '') + '" style="background-image:url(\'' + url + '\')" onclick="window.setWallpaper(\'' + url + '\')"></div>';
         }).join('');
+    }
+
+    // ==================== AUTH HANDLERS ====================
+    async function handleSignup() {
+        const name = document.getElementById('signupName').value.trim();
+        const user = document.getElementById('signupUser').value.trim();
+        const pass = document.getElementById('signupPass').value.trim();
+        if (!name || !user || !pass) { toast('Please fill all fields'); return; }
+        if (pass.length < 4) { toast('Password must be at least 4 characters'); return; }
+        
+        await loadAllData();
+        if (!CLOUD_DATA.users) CLOUD_DATA.users = {};
+        if (CLOUD_DATA.users[user]) { toast('Username already exists'); return; }
+        
+        CLOUD_DATA.users[user] = { password: pass, name: name, created: new Date().toISOString() };
+        if (!CLOUD_DATA.profiles) CLOUD_DATA.profiles = {};
+        CLOUD_DATA.profiles[user] = {
+            bio: 'Building my energy. One aura at a time. ⚡',
+            wallpaper: DEFAULT_WALLPAPER,
+            selected_auras: [],
+            created: new Date().toISOString()
+        };
+        await saveAllData();
+        
+        S.username = user;
+        S.selectedAuras = [];
+        S.completedTasks = [];
+        S.streakData = {};
+        S.diary = [];
+        S.routines = [];
+        S.socialPosts = [];
+        S.likedPosts = [];
+        S.bio = 'Building my energy. One aura at a time. ⚡';
+        S.wallpaper = DEFAULT_WALLPAPER;
+        saveAuth();
+        toast('Account created! Welcome ' + name);
+        navigate('select');
+    }
+
+    async function handleLogin() {
+        const user = document.getElementById('loginUser').value.trim();
+        const pass = document.getElementById('loginPass').value.trim();
+        if (!user || !pass) { toast('Enter username and password'); return; }
+        
+        await loadAllData();
+        if (!CLOUD_DATA.users || !CLOUD_DATA.users[user] || CLOUD_DATA.users[user].password !== pass) {
+            toast('Invalid credentials');
+            return;
+        }
+        
+        S.username = user;
+        if (CLOUD_DATA.profiles && CLOUD_DATA.profiles[user]) {
+            const profile = CLOUD_DATA.profiles[user];
+            S.bio = profile.bio || 'Building my energy. One aura at a time. ⚡';
+            S.wallpaper = profile.wallpaper || DEFAULT_WALLPAPER;
+            S.selectedAuras = profile.selected_auras || [];
+        }
+        saveAuth();
+        toast('Welcome back, ' + CLOUD_DATA.users[user].name);
+        navigate('social');
+    }
+
+    function logout() {
+        if (!confirm('Logout?')) return;
+        S.username = '';
+        localStorage.removeItem(AUTH_KEY);
+        document.getElementById('wpFab').style.display = 'none';
+        toast('Logged out');
+        navigate('landing');
     }
 
     // ==================== INIT ====================
@@ -1569,7 +1543,7 @@
             navigate('landing');
         }
         
-        setInterval(() => {
+        setInterval(function() {
             if (S.username) updateChat();
         }, 5000);
         
@@ -1599,6 +1573,8 @@
     window.logout = logout;
     window.editProfile = editProfile;
     window.handleFileSelect = handleFileSelect;
+    window.toast = toast;
+    window.renderDiary = renderDiary;
 
     // ==================== START ====================
     init();
