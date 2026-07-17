@@ -477,7 +477,8 @@
 </head>
 <body>
     <div class="signature">id³</div>
-    <button class="wp-fab" onclick="navigate('wallpapers')">🎨</button>
+    <!-- Wallpaper button - FIXED: only shows when logged in -->
+    <button class="wp-fab" id="wpFab" onclick="navigate('wallpapers')" style="display:none;">🎨</button>
     <div id="toastContainer"></div>
 
     <!-- Landing Page -->
@@ -761,6 +762,10 @@
         'https://images.unsplash.com/photo-1491466424936-e304919aada7?w=1920&q=80'
     ];
 
+    // ==================== DEFAULT WALLPAPER ====================
+    // This is the default wallpaper for new users
+    const DEFAULT_WALLPAPER = 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1920&q=80';
+
     // ==================== JSONBIN CONFIG ====================
     const JSONBIN_KEY = '$2a$10$rxszN.mST.9rXVfKlbAGwO1LsenqbMEFynIxmObPNTjYNx3A6ofZ6';
     const JSONBIN_BIN_ID = '6a5659c1f5f4af5e298e19c7';
@@ -847,7 +852,7 @@
     }
 
     // ==================== AUTH ====================
-    let S = { selectedAuras: [], completedTasks: [], streakData: {}, wallpaper: UNSPLASH[0], diary: [], routines: [], socialPosts: [], likedPosts: [], username: '', bio: 'Building my energy. One aura at a time. ⚡' };
+    let S = { selectedAuras: [], completedTasks: [], streakData: {}, wallpaper: DEFAULT_WALLPAPER, diary: [], routines: [], socialPosts: [], likedPosts: [], username: '', bio: 'Building my energy. One aura at a time. ⚡' };
     let chatMessages = [];
     let poll = null;
     const AUTH_KEY = 'winchu_auth_v2';
@@ -862,13 +867,17 @@
                     if (CLOUD_DATA.profiles && CLOUD_DATA.profiles[S.username]) {
                         const profile = CLOUD_DATA.profiles[S.username];
                         S.bio = profile.bio || 'Building my energy. One aura at a time. ⚡';
-                        S.wallpaper = profile.wallpaper || UNSPLASH[0];
+                        S.wallpaper = profile.wallpaper || DEFAULT_WALLPAPER;
                         S.selectedAuras = profile.selected_auras || [];
                     }
+                    // Show wallpaper button
+                    document.getElementById('wpFab').style.display = 'flex';
                     return true;
                 }
             }
         } catch (e) {}
+        // Hide wallpaper button when not logged in
+        document.getElementById('wpFab').style.display = 'none';
         return false;
     }
 
@@ -882,6 +891,8 @@
             last_seen: new Date().toISOString()
         };
         saveAllData();
+        // Show wallpaper button
+        document.getElementById('wpFab').style.display = 'flex';
     }
 
     async function handleSignup() {
@@ -899,7 +910,7 @@
         if (!CLOUD_DATA.profiles) CLOUD_DATA.profiles = {};
         CLOUD_DATA.profiles[user] = {
             bio: 'Building my energy. One aura at a time. ⚡',
-            wallpaper: UNSPLASH[0],
+            wallpaper: DEFAULT_WALLPAPER,
             selected_auras: [],
             created: new Date().toISOString()
         };
@@ -914,6 +925,7 @@
         S.socialPosts = [];
         S.likedPosts = [];
         S.bio = 'Building my energy. One aura at a time. ⚡';
+        S.wallpaper = DEFAULT_WALLPAPER;
         saveAuth();
         toast('Account created! Welcome ' + name);
         navigate('select');
@@ -934,7 +946,7 @@
         if (CLOUD_DATA.profiles && CLOUD_DATA.profiles[user]) {
             const profile = CLOUD_DATA.profiles[user];
             S.bio = profile.bio || 'Building my energy. One aura at a time. ⚡';
-            S.wallpaper = profile.wallpaper || UNSPLASH[0];
+            S.wallpaper = profile.wallpaper || DEFAULT_WALLPAPER;
             S.selectedAuras = profile.selected_auras || [];
         }
         saveAuth();
@@ -946,6 +958,8 @@
         if (!confirm('Logout?')) return;
         S.username = '';
         localStorage.removeItem(AUTH_KEY);
+        // Hide wallpaper button
+        document.getElementById('wpFab').style.display = 'none';
         toast('Logged out');
         navigate('landing');
     }
@@ -1480,6 +1494,8 @@
             document.getElementById('myUsername').textContent = S.username;
             navigate('social');
         } else {
+            // Hide wallpaper button when not logged in
+            document.getElementById('wpFab').style.display = 'none';
             navigate('landing');
         }
         
