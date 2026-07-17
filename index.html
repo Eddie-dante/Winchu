@@ -2,84 +2,1519 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Winchu</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Winchu · Nexus</title>
     <style>
+        :root {
+            --bg: #f1f5f9;
+            --text: #0f172a;
+            --muted: #64748b;
+            --surface: rgba(255,255,255,0.78);
+            --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --safe-bottom: env(safe-area-inset-bottom, 16px);
+            --radius: 32px;
+            --radius-sm: 16px;
+        }
         * { margin:0; padding:0; box-sizing:border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: var(--font);
             min-height: 100vh;
-            background: linear-gradient(135deg, #667eea, #764ba2, #f093fb, #f5576c, #4facfe);
-            background-size: 400% 400%;
-            animation: grad 15s ease infinite;
+            min-height: 100dvh;
+            color: var(--text);
+            background: var(--bg);
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            padding-bottom: 100px;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+            overflow-x: hidden;
         }
-        @keyframes grad {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        body::before {
+            content: '';
+            position: fixed; top:0; left:0; right:0; bottom:0;
+            background-size: cover; background-position: center;
+            background-attachment: fixed; z-index: -2;
         }
+        body::after {
+            content: '';
+            position: fixed; top:0; left:0; right:0; bottom:0;
+            background: rgba(255,255,255,0.22); z-index: -1;
+            pointer-events: none;
+        }
+        ::-webkit-scrollbar { width:3px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:rgba(0,0,0,0.1); border-radius:10px; }
+
+        .page { display:none; width:100%; animation: fadeUp 0.4s ease forwards; }
+        .page.active { display:block; }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+
         .container {
-            width: 100%;
-            max-width: 500px;
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 40px;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width:100%; max-width:480px; margin:0 auto;
+            background: var(--surface);
+            backdrop-filter: blur(24px) saturate(1.6);
+            -webkit-backdrop-filter: blur(24px) saturate(1.6);
+            border: 1px solid rgba(255,255,255,0.6);
+            border-radius: var(--radius); padding: 26px 22px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.06);
         }
-        h1 {
-            color: white;
+
+        button {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 12px 18px; border: none; border-radius: var(--radius-sm);
+            font-size: 14px; font-weight: 500; cursor: pointer;
+            font-family: var(--font); outline: none;
+            -webkit-tap-highlight-color: transparent;
+            transition: all 0.2s; color: inherit;
+        }
+        button:active { transform: scale(0.96); }
+        .btn-primary {
+            background: #0f172a; color: #fff; font-weight: 600;
+            font-size: 15px; padding: 16px; width:100%;
+            box-shadow: 0 4px 16px rgba(15,23,42,0.15);
+        }
+        .btn-primary:hover { background: #1e293b; }
+        .btn-secondary {
+            background: transparent; border: 1px solid rgba(0,0,0,0.08);
+            color: #64748b; width:100%; margin-top:8px;
+        }
+        .btn-sm {
+            padding: 7px 12px; font-size: 11px; border-radius: 10px;
+            background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.06);
+            color: #475569; width: auto;
+        }
+        .btn-danger { color: #ef4444 !important; }
+
+        .landing-content { text-align: center; }
+        .landing-icon { font-size: 72px; margin-bottom: 14px; display: block; }
+        .landing-title {
+            font-size: 44px; font-weight: 800; letter-spacing: -2px;
+            background: linear-gradient(135deg, #0f172a 60%, #475569);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+        .landing-subtitle { color: #64748b; font-size: 14px; margin-bottom: 36px; }
+
+        .counter-chip {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: rgba(0,0,0,0.04); padding: 5px 14px;
+            border-radius: 40px; font-size: 12px; color: #475569; margin-bottom: 16px;
+        }
+
+        .aura-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+        @media (max-width: 380px) { .aura-grid { grid-template-columns: 1fr; } }
+
+        .aura-btn {
+            display: flex; align-items: center; gap: 9px; padding: 11px 13px;
+            background: rgba(255,255,255,0.5); border: 1.5px solid rgba(0,0,0,0.04);
+            border-radius: 14px; cursor: pointer; transition: all 0.2s;
+        }
+        .aura-btn:hover { border-color: rgba(0,0,0,0.15); background: rgba(255,255,255,0.8); }
+        .aura-btn.selected { border-color: #0f172a; background: rgba(255,255,255,0.9); }
+        .aura-btn .emoji { font-size: 22px; flex-shrink: 0; }
+        .aura-btn .info h3 { font-size: 12px; font-weight: 600; }
+        .aura-btn .info p { font-size: 10px; color: #64748b; }
+        .aura-btn .check-mark { margin-left: auto; opacity: 0; font-size: 13px; }
+        .aura-btn.selected .check-mark { opacity: 1; }
+
+        .stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0; }
+        .stat-card {
+            background: rgba(255,255,255,0.6); border-radius: 14px;
+            padding: 16px; text-align: center; border: 1px solid rgba(0,0,0,0.04);
+        }
+        .stat-card .stat-icon { font-size: 26px; }
+        .stat-card .stat-value { font-size: 20px; font-weight: 700; }
+        .stat-card .stat-label { font-size: 9px; color: #94a3b8; text-transform: uppercase; }
+
+        .score-ring-wrap { display: flex; justify-content: center; margin: 14px 0; }
+        .score-ring { position: relative; width: 100px; height: 100px; }
+        .score-ring svg { transform: rotate(-90deg); width: 100px; height: 100px; }
+        .score-ring .center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; }
+        .score-ring .center .num { font-size: 28px; font-weight: 700; }
+        .score-ring .center .label { font-size: 8px; color: #94a3b8; text-transform: uppercase; }
+
+        .task-item {
+            display: flex; align-items: center; padding: 9px 13px;
+            background: #fff; border: 1px solid #f1f5f9; border-radius: 13px;
+            cursor: pointer; gap: 10px; margin-bottom: 5px; transition: all 0.2s;
+        }
+        .task-item:hover { border-color: #e2e8f0; }
+        .task-item.done { opacity: 0.55; }
+        .check-box {
+            width: 20px; height: 20px; border: 2px solid #cbd5e1; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center; font-size: 11px;
+            flex-shrink: 0; background: #fff;
+        }
+        .task-item.done .check-box { background: #0f172a; border-color: #0f172a; color: #fff; }
+        .task-text { font-size: 12px; flex: 1; }
+        .task-item.done .task-text { text-decoration: line-through; color: #94a3b8; }
+
+        .calendar-wrap { padding: 14px; background: rgba(255,255,255,0.5); border-radius: 16px; margin-top: 8px; }
+        .cal-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size:13px; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+        .cal-day {
+            aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+            font-size: 9px; border-radius: 6px; background: rgba(0,0,0,0.02); color: #94a3b8;
+        }
+        .cal-day.weekday { font-size: 7px; text-transform: uppercase; background: transparent; }
+        .cal-day.active { color: #fff; font-weight: 600; }
+        .cal-day.today { border: 2px solid #0f172a; background: transparent; color: #0f172a; font-weight: 600; }
+
+        .entry-card {
+            background: rgba(255,255,255,0.6); border: 1px solid rgba(0,0,0,0.04);
+            border-radius: 13px; padding: 12px; margin-bottom: 7px;
+        }
+
+        textarea, input[type="text"], input[type="search"], input[type="password"] {
+            width: 100%; padding: 10px 13px; border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 13px; font-family: var(--font); font-size: 13px;
+            outline: none; background: rgba(255,255,255,0.5); resize: vertical;
+        }
+        textarea:focus, input:focus { border-color: #0f172a; }
+
+        .chat-bubble {
+            padding: 9px 13px; border-radius: 15px; margin: 3px 0;
+            max-width: 82%; font-size: 12px; line-height: 1.4; word-wrap: break-word;
+        }
+        .chat-sent { background: #0f172a; color: #fff; margin-left: auto; }
+        .chat-received { background: #f1f5f9; color: #1e293b; margin-right: auto; }
+
+        .chat-messages { max-height: 340px; overflow-y: auto; padding: 6px 0; margin: 8px 0; }
+
+        .ig-story-row {
+            display: flex;
+            gap: 14px;
+            padding: 8px 4px 14px 4px;
+            overflow-x: auto;
+            white-space: nowrap;
+            scrollbar-width: none;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            margin-bottom: 12px;
+        }
+        .ig-story-row::-webkit-scrollbar { display: none; }
+        .ig-story {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .ig-story-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+            padding: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .ig-story-avatar .inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+        .ig-story-name {
+            font-size: 9px;
+            color: #64748b;
+            max-width: 56px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ig-post {
+            background: rgba(255,255,255,0.7);
+            border-radius: 14px;
+            margin-bottom: 14px;
+            border: 1px solid rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        .ig-post-header {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            gap: 10px;
+        }
+        .ig-post-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .ig-post-user {
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .ig-post-time {
+            font-size: 10px;
+            color: #94a3b8;
+            margin-left: auto;
+        }
+        .ig-post-image {
+            width: 100%;
+            aspect-ratio: 4/3;
+            background: #e2e8f0;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 48px;
+            color: #94a3b8;
+        }
+        .ig-post-actions {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px 4px;
+            gap: 16px;
+        }
+        .ig-post-action {
+            cursor: pointer;
+            font-size: 22px;
+            transition: transform 0.2s;
+            background: none;
+            border: none;
+            padding: 4px;
+        }
+        .ig-post-action:active { transform: scale(1.2); }
+        .ig-post-action.liked { color: #ef4444; }
+        .ig-post-likes {
+            font-size: 13px;
+            font-weight: 600;
+            padding: 0 12px 4px;
+        }
+        .ig-post-caption {
+            padding: 0 12px 8px;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .ig-post-caption strong { font-weight: 600; }
+        .ig-post-comment {
+            padding: 0 12px 10px;
+            font-size: 12px;
+            color: #64748b;
+            cursor: pointer;
+        }
+
+        .wp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin: 10px 0; }
+        .wp-thumb {
+            aspect-ratio: 16/10; border-radius: 10px; background-size: cover;
+            background-position: center; cursor: pointer; border: 2px solid transparent;
+        }
+        .wp-thumb.selected { border-color: #0f172a; }
+
+        .profile-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            margin-bottom: 16px;
+        }
+        .profile-avatar-large {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+            padding: 3px;
             margin-bottom: 10px;
         }
-        p {
-            color: rgba(255,255,255,0.8);
-            font-size: 16px;
-            margin-bottom: 20px;
+        .profile-avatar-large .inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
         }
-        button {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
+        .profile-name { font-size: 20px; font-weight: 700; }
+        .profile-username { font-size: 13px; color: #64748b; }
+        .profile-stats {
+            display: flex;
+            gap: 32px;
+            margin: 12px 0 8px;
+        }
+        .profile-stat { text-align: center; }
+        .profile-stat .num { font-size: 18px; font-weight: 700; }
+        .profile-stat .label { font-size: 11px; color: #94a3b8; }
+        .profile-bio {
+            font-size: 13px;
+            color: #475569;
+            text-align: center;
+            margin: 6px 0 10px;
+            padding: 0 16px;
+        }
+        .profile-edit-btn {
+            padding: 6px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.1);
+            background: rgba(255,255,255,0.5);
+            font-size: 12px;
             cursor: pointer;
-            transition: all 0.3s;
-            background: #0f172a;
-            color: white;
-            margin: 5px;
+            transition: all 0.2s;
         }
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        .profile-edit-btn:hover { background: rgba(0,0,0,0.05); }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: rgba(255,255,255,0.93);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            display: flex;
+            justify-content: space-evenly;
+            align-items: center;
+            padding: 5px 2px;
+            padding-bottom: calc(5px + var(--safe-bottom));
+            z-index: 1000;
+            border-top: 1px solid rgba(0,0,0,0.07);
+            gap: 0;
         }
-        .btn-secondary {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
+        @media (min-width: 600px) {
+            .bottom-nav {
+                max-width: 500px;
+                left: 50%;
+                transform: translateX(-50%);
+                border-radius: 18px 18px 0 0;
+                padding: 6px 8px;
+            }
         }
-        .btn-secondary:hover {
-            background: rgba(255,255,255,0.3);
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1px;
+            cursor: pointer;
+            color: #64748b;
+            font-size: 9px;
+            font-weight: 500;
+            padding: 5px 4px;
+            border-radius: 10px;
+            background: none;
+            border: none;
+            font-family: var(--font);
+            white-space: nowrap;
+            transition: all 0.2s;
+            flex: 1;
+            min-width: 0;
+            max-width: 70px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .nav-btn:hover { color: #0f172a; background: rgba(0,0,0,0.03); }
+        .nav-btn.active { color: #0f172a; background: rgba(0,0,0,0.05); font-weight: 600; }
+        .nav-btn .nav-icon { font-size: 18px; line-height: 1; }
+        .nav-btn .nav-label { line-height: 1; font-size: 8px; }
+        @media (min-width: 420px) {
+            .nav-btn .nav-icon { font-size: 19px; }
+            .nav-btn .nav-label { font-size: 9px; }
+        }
+        @media (max-width: 360px) {
+            .nav-btn .nav-icon { font-size: 16px; }
+            .nav-btn .nav-label { font-size: 7px; }
+        }
+
+        .signature {
+            position: fixed; bottom: 75px; right: 16px;
+            font-size: 10px; font-weight: 600; letter-spacing: 1.5px;
+            color: #0f172a; opacity: 0.2; z-index: 100; pointer-events: none;
+        }
+        .wp-fab {
+            position: fixed; bottom: 75px; left: 16px; z-index: 999;
+            background: rgba(15,23,42,0.9); width: 34px; height: 34px;
+            border-radius: 50%; font-size: 14px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            border: none; color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+        }
+
+        .toast {
+            position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+            z-index: 2000; padding: 10px 20px; border-radius: 22px;
+            font-weight: 600; font-size: 13px; pointer-events: none;
+            animation: toastIn 0.35s ease, toastOut 0.35s ease 2s forwards;
+            background: #0f172a; color: #fff;
+        }
+        @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(-16px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+        @keyframes toastOut { from { opacity:1; } to { opacity:0; transform:translateX(-50%) translateY(-16px); } }
+
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            z-index: 3000; display: flex; align-items: center; justify-content: center;
+        }
+        .modal { background: #fff; border-radius: 18px; padding: 22px; max-width: 340px; width: 90%; text-align: center; }
+        .auth-toggle { font-size: 12px; color: #64748b; margin-top: 12px; cursor: pointer; text-decoration: underline; }
+
+        @media (max-width: 480px) {
+            .container { padding: 20px 14px; border-radius: 24px; }
+            .landing-title { font-size: 30px; }
+            .landing-icon { font-size: 52px; }
+            .score-ring { width: 85px; height: 85px; }
+            .score-ring svg { width: 85px; height: 85px; }
+            .score-ring .center .num { font-size: 24px; }
+            .ig-story-avatar { width: 48px; height: 48px; }
+            .ig-post-image { aspect-ratio: 1/1; }
+            .profile-avatar-large { width: 64px; height: 64px; }
+            .profile-avatar-large .inner { font-size: 28px; }
+            .profile-stats { gap: 16px; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>⚡️ Winchu</h1>
-        <p>Shape your presence. Manifest your energy.</p>
-        <button onclick="alert('Coming soon!')">Sign In</button>
-        <button class="btn-secondary" onclick="alert('Coming soon!')">Create Account</button>
-        <p style="margin-top:20px;font-size:12px;opacity:0.5;">✨ Connected to JSONBin</p>
+    <div class="signature">id³</div>
+    <button class="wp-fab" onclick="navigate('wallpapers')">🎨</button>
+    <div id="toastContainer"></div>
+
+    <!-- Landing Page -->
+    <div class="page active" id="page-landing">
+        <div class="container landing-content">
+            <span class="landing-icon">⚡</span>
+            <h1 class="landing-title">Winchu</h1>
+            <p class="landing-subtitle">Shape your presence. Manifest your energy.</p>
+            <button class="btn-primary" onclick="navigate('login')">Sign In</button>
+            <button class="btn-secondary" onclick="navigate('signup')" style="margin-top:8px;">Create Account</button>
+        </div>
     </div>
 
+    <!-- Signup -->
+    <div class="page" id="page-signup">
+        <div class="container">
+            <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">✨ Create Account</h2>
+            <input type="text" id="signupName" placeholder="Full name" style="margin-bottom:8px;">
+            <input type="text" id="signupUser" placeholder="Username" style="margin-bottom:8px;">
+            <input type="password" id="signupPass" placeholder="Password" style="margin-bottom:16px;">
+            <button class="btn-primary" onclick="handleSignup()">Sign Up</button>
+            <div class="auth-toggle" onclick="navigate('login')">Already have an account? Log in</div>
+            <button class="btn-secondary" onclick="navigate('landing')" style="margin-top:8px;">← Back</button>
+        </div>
+    </div>
+
+    <!-- Login -->
+    <div class="page" id="page-login">
+        <div class="container">
+            <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">🔐 Sign In</h2>
+            <input type="text" id="loginUser" placeholder="Username" style="margin-bottom:8px;">
+            <input type="password" id="loginPass" placeholder="Password" style="margin-bottom:16px;">
+            <button class="btn-primary" onclick="handleLogin()">Log In</button>
+            <div class="auth-toggle" onclick="navigate('signup')">No account? Create one</div>
+            <button class="btn-secondary" onclick="navigate('landing')" style="margin-top:8px;">← Back</button>
+        </div>
+    </div>
+
+    <!-- Aura Selection -->
+    <div class="page" id="page-select">
+        <div class="container">
+            <h2 style="font-size:19px;font-weight:700;margin-bottom:3px;">Choose Your Auras</h2>
+            <p style="color:#64748b;font-size:12px;margin-bottom:10px;">Select up to 3 energies</p>
+            <div class="counter-chip"><span>✧</span> <strong id="counter">0</strong><span>/3</span></div>
+            <div class="aura-grid" id="auraGrid"></div>
+            <button class="btn-primary" onclick="confirmSelection()" style="margin-top:10px;">Continue →</button>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="page" id="page-home">
+        <div class="container">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <h2 id="homeTitle" style="font-size:17px;font-weight:700;">Dashboard</h2>
+                <span id="homeBadge" style="font-size:10px;background:rgba(0,0,0,0.04);padding:3px 10px;border-radius:18px;">⚡</span>
+            </div>
+            <div class="score-ring-wrap">
+                <div class="score-ring">
+                    <svg viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="43" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="5"/>
+                        <circle id="scoreRing" cx="50" cy="50" r="43" fill="none" stroke="#0f172a" stroke-width="5" stroke-linecap="round" stroke-dasharray="270.18" stroke-dashoffset="270.18"/>
+                    </svg>
+                    <div class="center"><div class="num" id="score">0%</div><div class="label">Strength</div></div>
+                </div>
+            </div>
+            <div class="stat-row">
+                <div class="stat-card"><div class="stat-icon">🔥</div><div class="stat-value" id="streakCount">0</div><div class="stat-label">Streak</div></div>
+                <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" id="tasksDone">0</div><div class="stat-label">Tasks</div></div>
+                <div class="stat-card"><div class="stat-icon">📖</div><div class="stat-value" id="diaryCount">0</div><div class="stat-label">Diary</div></div>
+                <div class="stat-card"><div class="stat-icon">💬</div><div class="stat-value" id="msgCount">0</div><div class="stat-label">Chats</div></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:#475569;margin-bottom:6px;">
+                <span>Today</span><span id="taskProgress" style="color:#94a3b8;">0/0</span>
+            </div>
+            <div id="tasks"></div>
+            <div class="calendar-wrap">
+                <div class="cal-header"><strong>📅 Calendar</strong><span id="monthLabel" style="font-size:11px;color:#94a3b8;">—</span></div>
+                <div class="cal-grid" id="calendar"></div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px;">
+                <button class="btn-sm" onclick="resetDay()">↺ Reset</button>
+                <button class="btn-sm" onclick="navigate('select')">✧ Auras</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diary -->
+    <div class="page" id="page-diary">
+        <div class="container">
+            <h2 style="font-size:19px;font-weight:700;margin-bottom:10px;">📖 Diary</h2>
+            <textarea id="diaryInput" rows="3" placeholder="Dear diary..."></textarea>
+            <div style="display:flex;gap:6px;margin-top:6px;">
+                <input type="text" id="diaryMood" placeholder="Mood" style="flex:1;">
+                <button class="btn-sm btn-primary" onclick="saveDiary()" style="width:auto;">💾</button>
+            </div>
+            <input type="search" id="diarySearch" placeholder="🔍 Search..." oninput="renderDiary()" style="margin-top:8px;">
+            <div id="diaryEntries" style="max-height:320px;overflow-y:auto;margin-top:8px;">
+                <p style="color:#94a3b8;text-align:center;">No entries yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Routine -->
+    <div class="page" id="page-routine">
+        <div class="container">
+            <h2 style="font-size:19px;font-weight:700;margin-bottom:10px;">📋 Routines</h2>
+            <input type="text" id="routineTitle" placeholder="Title...">
+            <textarea id="routineInput" rows="2" placeholder="Description..." style="margin-top:6px;"></textarea>
+            <button class="btn-sm btn-primary" onclick="saveRoutine()" style="margin-top:6px;width:100%;">💾 Save</button>
+            <div id="routineEntries" style="max-height:320px;overflow-y:auto;margin-top:8px;">
+                <p style="color:#94a3b8;text-align:center;">No routines yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat -->
+    <div class="page" id="page-chat">
+        <div class="container">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <h2 style="font-size:19px;font-weight:700;">💬 Chat</h2>
+                <span style="font-size:11px;color:#4ade80;">● <span id="onlineCount">0</span></span>
+            </div>
+            <div style="font-size:11px;color:#64748b;margin-bottom:6px;">
+                You: <strong id="myUsername">—</strong>
+                <button class="btn-sm" onclick="changeUsername()" style="margin-left:6px;font-size:10px;">✏️</button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <p style="color:#94a3b8;text-align:center;">Loading...</p>
+            </div>
+            <div style="display:flex;gap:6px;">
+                <input type="text" id="chatInput" placeholder="Message..." onkeypress="if(event.key==='Enter')sendMessage()" style="flex:1;">
+                <button class="btn-sm btn-primary" onclick="sendMessage()" style="width:auto;">📤</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Social Feed -->
+    <div class="page" id="page-social">
+        <div class="container" style="padding: 16px 14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <h2 style="font-size:20px;font-weight:700;">Winchu</h2>
+                <div style="display:flex;gap:12px;align-items:center;">
+                    <button class="btn-sm" onclick="navigate('wallpapers')" style="font-size:16px;background:none;border:none;padding:4px;">🎨</button>
+                    <button class="btn-sm" onclick="document.getElementById('postInput').focus()" style="font-size:16px;background:none;border:none;padding:4px;">➕</button>
+                </div>
+            </div>
+            <div class="ig-story-row" id="storyRow"></div>
+            <div style="background:rgba(255,255,255,0.5);border-radius:12px;padding:10px 12px;margin-bottom:14px;border:1px solid rgba(0,0,0,0.04);">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="ig-post-avatar" style="width:32px;height:32px;font-size:16px;flex-shrink:0;">
+                        <span id="postAvatarEmoji">😊</span>
+                    </div>
+                    <input type="text" id="postInput" placeholder="What's on your mind?" style="flex:1;border:none;background:transparent;padding:6px 0;font-size:13px;outline:none;">
+                    <button class="btn-sm btn-primary" onclick="createPost()" style="width:auto;padding:6px 14px;font-size:12px;">Post</button>
+                </div>
+            </div>
+            <div id="socialFeed" style="max-height:520px;overflow-y:auto;padding-bottom:10px;">
+                <p style="color:#94a3b8;text-align:center;padding:30px 0;">No posts yet. Share something!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile -->
+    <div class="page" id="page-profile">
+        <div class="container">
+            <div class="profile-header">
+                <div class="profile-avatar-large"><div class="inner" id="profileAvatarEmoji">😊</div></div>
+                <div class="profile-name" id="profileName">—</div>
+                <div class="profile-username" id="profileUsername">@—</div>
+                <div class="profile-stats">
+                    <div class="profile-stat"><div class="num" id="profilePosts">0</div><div class="label">Posts</div></div>
+                    <div class="profile-stat"><div class="num" id="profileFollowers">0</div><div class="label">Followers</div></div>
+                    <div class="profile-stat"><div class="num" id="profileFollowing">0</div><div class="label">Following</div></div>
+                </div>
+                <div class="profile-bio" id="profileBio">Building my energy. One aura at a time. ⚡</div>
+                <button class="profile-edit-btn" onclick="editProfile()">✏️ Edit Profile</button>
+                <button class="profile-edit-btn" onclick="logout()" style="margin-top:6px;color:#ef4444;border-color:#ef4444;">🚪 Logout</button>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:12px;">
+                <button class="btn-sm" style="flex:1;background:rgba(0,0,0,0.05);" onclick="navigate('home')">📊 Dashboard</button>
+                <button class="btn-sm" style="flex:1;background:rgba(0,0,0,0.05);" onclick="navigate('select')">✧ Auras</button>
+            </div>
+            <h3 style="font-size:14px;font-weight:600;margin-bottom:8px;">📸 Your Posts</h3>
+            <div id="profilePostsGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;">
+                <p style="color:#94a3b8;text-align:center;grid-column:1/-1;padding:16px 0;">No posts yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wallpapers -->
+    <div class="page" id="page-wallpapers">
+        <div class="container">
+            <h2 style="font-size:19px;font-weight:700;margin-bottom:8px;">🎨 Walls</h2>
+            <button class="btn-sm" onclick="randomWallpaper()" style="width:100%;margin-bottom:8px;">🎲 Random</button>
+            <p style="font-size:10px;color:#94a3b8;" id="wpCount">50+ wallpapers</p>
+            <div class="wp-grid" id="wpGrid"></div>
+        </div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav" id="bottomNav" style="display:none;">
+        <button class="nav-btn active" data-page="social" onclick="navigate('social')"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
+        <button class="nav-btn" data-page="home" onclick="navigate('home')"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></button>
+        <button class="nav-btn" data-page="diary" onclick="navigate('diary')"><span class="nav-icon">📖</span><span class="nav-label">Diary</span></button>
+        <button class="nav-btn" data-page="routine" onclick="navigate('routine')"><span class="nav-icon">📋</span><span class="nav-label">Routine</span></button>
+        <button class="nav-btn" data-page="chat" onclick="navigate('chat')"><span class="nav-icon">💬</span><span class="nav-label">Chat</span></button>
+        <button class="nav-btn" data-page="profile" onclick="navigate('profile')"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></button>
+    </nav>
+
     <script>
-        console.log('⚡️ Winchu is ready!');
-        console.log('📍 Visit the full app at the main page.');
+    // ==================== AURAS ====================
+    const AURAS = {
+        focus: { name: 'Focus', emoji: '🎯', accent: '#ff6b6b', desc: 'Concentration', tasks: ['Deep work 25 min', 'No phone 1 hour', 'Single-task', 'Clear desk', 'Pomodoro'] },
+        creativity: { name: 'Creativity', emoji: '🎨', accent: '#f06595', desc: 'Imagination', tasks: ['Free-write 10 min', 'Sketch/doodle', 'Brainstorm', 'New music', 'Rearrange'] },
+        discipline: { name: 'Discipline', emoji: '🧘', accent: '#748ffc', desc: 'Self-control', tasks: ['Wake up on time', 'Morning routine', 'Say no', 'Priority task', 'Reflection'] },
+        vitality: { name: 'Vitality', emoji: '⚡', accent: '#ffd43b', desc: 'Energy', tasks: ['Exercise 30 min', '8 glasses water', 'Whole foods', 'Cold shower', 'Stretch'] },
+        empathy: { name: 'Empathy', emoji: '🤝', accent: '#ff8787', desc: 'Connection', tasks: ['Listen fully', 'Ask feelings', 'Validate', 'Active listening', 'Compliment'] },
+        resilience: { name: 'Resilience', emoji: '🛡️', accent: '#20c997', desc: 'Bounce back', tasks: ['Reframe', 'Gratitude', 'Do hard thing', 'Journal', 'Mental break'] },
+        clarity: { name: 'Clarity', emoji: '🔮', accent: '#b197fc', desc: 'Clear mind', tasks: ['Meditate', 'Top priorities', 'Declutter', 'Digital detox', 'Review goals'] },
+        charisma: { name: 'Charisma', emoji: '✨', accent: '#f783ac', desc: 'Presence', tasks: ['Smile', 'Tell story', 'Eye contact', 'Open posture', 'Make laugh'] },
+        courage: { name: 'Courage', emoji: '🦁', accent: '#ff922b', desc: 'Face fears', tasks: ['Do scary thing', 'Speak up', 'Try new', 'Admit mistake', 'Stand up'] },
+        patience: { name: 'Patience', emoji: '⏳', accent: '#a9e34b', desc: 'Steady', tasks: ['Wait', 'Let others', 'Deep breath', 'Accept delays', 'Count to 10'] },
+        gratitude: { name: 'Gratitude', emoji: '🙏', accent: '#e599f7', desc: 'Appreciate', tasks: ['3 gratitudes', 'Thank someone', 'Notice joys', 'Nature', 'Reflect'] },
+        ambition: { name: 'Ambition', emoji: '🚀', accent: '#f03e3e', desc: 'Drive', tasks: ['Bold goal', 'Take action', 'Network', 'Learn skill', 'Visualize'] },
+        mindfulness: { name: 'Mindfulness', emoji: '🧘‍♀️', accent: '#63e6be', desc: 'Present', tasks: ['Body scan', 'Eat mindfully', '5 senses', 'Mindful walk', 'Observe'] },
+        leadership: { name: 'Leadership', emoji: '👑', accent: '#f59e0b', desc: 'Inspire', tasks: ['Delegate', 'Give direction', 'Recognize', 'Decide', 'Lead'] },
+        adventure: { name: 'Adventure', emoji: '🏔️', accent: '#3b82f6', desc: 'Explore', tasks: ['New place', 'New food', 'Say yes', 'Break routine', 'Plan'] }
+    };
+
+    // ==================== WALLPAPERS ====================
+    const UNSPLASH = [
+        'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80',
+        'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=80',
+        'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=80',
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80',
+        'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1920&q=80',
+        'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=1920&q=80',
+        'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=1920&q=80',
+        'https://images.unsplash.com/photo-1470071459606-3b5ec3a7fe05?w=1920&q=80',
+        'https://images.unsplash.com/photo-1440589473619-3cde28941638?w=1920&q=80',
+        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80',
+        'https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=1920&q=80',
+        'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1920&q=80',
+        'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1920&q=80',
+        'https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=1920&q=80',
+        'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=1920&q=80',
+        'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=1920&q=80',
+        'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920&q=80',
+        'https://images.unsplash.com/photo-1511818966892-d7b671e67291?w=1920&q=80',
+        'https://images.unsplash.com/photo-1496568816309-51d7c20e3b21?w=1920&q=80',
+        'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1920&q=80',
+        'https://images.unsplash.com/photo-1557682224-5b8590cd9ec5?w=1920&q=80',
+        'https://images.unsplash.com/photo-1557682260-96773eb01377?w=1920&q=80',
+        'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=1920&q=80',
+        'https://images.unsplash.com/photo-1558470598-a5dda9640f68?w=1920&q=80',
+        'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1920&q=80',
+        'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=1920&q=80',
+        'https://images.unsplash.com/photo-1500462918059-b1a0cb512f1d?w=1920&q=80',
+        'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=1920&q=80',
+        'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1920&q=80',
+        'https://images.unsplash.com/photo-1504333638930-c8787321eee0?w=1920&q=80',
+        'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=1920&q=80',
+        'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80',
+        'https://images.unsplash.com/photo-1505228395891-9a51e7e86bf6?w=1920&q=80',
+        'https://images.unsplash.com/photo-1471922694854-ff1b63b20036?w=1920&q=80',
+        'https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=1920&q=80',
+        'https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=1920&q=80',
+        'https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920&q=80',
+        'https://images.unsplash.com/photo-1503803548695-c2a7b4a5b875?w=1920&q=80',
+        'https://images.unsplash.com/photo-1502139214982-d0ad755818d8?w=1920&q=80',
+        'https://images.unsplash.com/photo-1506891536236-3e07892564b7?w=1920&q=80',
+        'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1920&q=80',
+        'https://images.unsplash.com/photo-1485988412941-77a35537dae4?w=1920&q=80',
+        'https://images.unsplash.com/photo-1432821596592-e2c18b78144f?w=1920&q=80',
+        'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&q=80',
+        'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1920&q=80',
+        'https://images.unsplash.com/photo-1504639725590-34d0984388bd?w=1920&q=80',
+        'https://images.unsplash.com/photo-1509114397022-ed747cca3f65?w=1920&q=80',
+        'https://images.unsplash.com/photo-1477346611705-65d1883cee1e?w=1920&q=80',
+        'https://images.unsplash.com/photo-1515630278258-407f66498911?w=1920&q=80',
+        'https://images.unsplash.com/photo-1491466424936-e304919aada7?w=1920&q=80'
+    ];
+
+    // ==================== JSONBIN CONFIG ====================
+    const JSONBIN_KEY = '$2a$10$rxszN.mST.9rXVfKlbAGwO1LsenqbMEFynIxmObPNTjYNx3A6ofZ6';
+    const JSONBIN_BIN_ID = '6a5659c1f5f4af5e298e19c7';
+
+    console.log('🔗 Winchu connected to JSONBin:', JSONBIN_BIN_ID);
+
+    // ==================== CLOUD FUNCTIONS ====================
+    async function cloudGet() {
+        try {
+            const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                headers: {
+                    'X-Master-Key': JSONBIN_KEY,
+                    'X-Bin-Meta': 'false'
+                }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ JSONBin data loaded');
+                return data;
+            }
+            return null;
+        } catch (e) {
+            console.error('❌ JSONBin error:', e.message);
+            return null;
+        }
+    }
+
+    async function cloudPut(data) {
+        try {
+            const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': JSONBIN_KEY
+                },
+                body: JSON.stringify(data)
+            });
+            if (response.ok) {
+                console.log('✅ JSONBin data saved');
+                return true;
+            }
+            return false;
+        } catch (e) {
+            console.error('❌ JSONBin save error:', e.message);
+            return false;
+        }
+    }
+
+    function loadLocalData() {
+        try {
+            const raw = localStorage.getItem('winchu_cloud_data');
+            if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        return null;
+    }
+
+    function saveLocalData(data) {
+        try {
+            localStorage.setItem('winchu_cloud_data', JSON.stringify(data));
+        } catch (e) {}
+    }
+
+    let CLOUD_DATA = { messages: [], users: {}, posts: [], diaries: [], routines: [], profiles: {} };
+
+    async function loadAllData() {
+        const cloudData = await cloudGet();
+        if (cloudData) {
+            CLOUD_DATA = cloudData;
+            saveLocalData(cloudData);
+            return CLOUD_DATA;
+        }
+        const localData = loadLocalData();
+        if (localData) {
+            CLOUD_DATA = localData;
+            return CLOUD_DATA;
+        }
+        return CLOUD_DATA;
+    }
+
+    async function saveAllData() {
+        if (!CLOUD_DATA) return;
+        saveLocalData(CLOUD_DATA);
+        await cloudPut(CLOUD_DATA);
+    }
+
+    // ==================== AUTH ====================
+    let S = { selectedAuras: [], completedTasks: [], streakData: {}, wallpaper: UNSPLASH[0], diary: [], routines: [], socialPosts: [], likedPosts: [], username: '', bio: 'Building my energy. One aura at a time. ⚡' };
+    let chatMessages = [];
+    let poll = null;
+    const AUTH_KEY = 'winchu_auth_v2';
+
+    function loadAuth() {
+        try {
+            const raw = localStorage.getItem(AUTH_KEY);
+            if (raw) {
+                const data = JSON.parse(raw);
+                if (data && data.username) {
+                    S.username = data.username;
+                    if (CLOUD_DATA.profiles && CLOUD_DATA.profiles[S.username]) {
+                        const profile = CLOUD_DATA.profiles[S.username];
+                        S.bio = profile.bio || 'Building my energy. One aura at a time. ⚡';
+                        S.wallpaper = profile.wallpaper || UNSPLASH[0];
+                        S.selectedAuras = profile.selected_auras || [];
+                    }
+                    return true;
+                }
+            }
+        } catch (e) {}
+        return false;
+    }
+
+    function saveAuth() {
+        localStorage.setItem(AUTH_KEY, JSON.stringify({ username: S.username }));
+        if (!CLOUD_DATA.profiles) CLOUD_DATA.profiles = {};
+        CLOUD_DATA.profiles[S.username] = {
+            bio: S.bio,
+            wallpaper: S.wallpaper,
+            selected_auras: S.selectedAuras,
+            last_seen: new Date().toISOString()
+        };
+        saveAllData();
+    }
+
+    async function handleSignup() {
+        const name = document.getElementById('signupName').value.trim();
+        const user = document.getElementById('signupUser').value.trim();
+        const pass = document.getElementById('signupPass').value.trim();
+        if (!name || !user || !pass) { toast('Please fill all fields'); return; }
+        if (pass.length < 4) { toast('Password must be at least 4 characters'); return; }
+        
+        await loadAllData();
+        if (!CLOUD_DATA.users) CLOUD_DATA.users = {};
+        if (CLOUD_DATA.users[user]) { toast('Username already exists'); return; }
+        
+        CLOUD_DATA.users[user] = { password: pass, name: name, created: new Date().toISOString() };
+        if (!CLOUD_DATA.profiles) CLOUD_DATA.profiles = {};
+        CLOUD_DATA.profiles[user] = {
+            bio: 'Building my energy. One aura at a time. ⚡',
+            wallpaper: UNSPLASH[0],
+            selected_auras: [],
+            created: new Date().toISOString()
+        };
+        await saveAllData();
+        
+        S.username = user;
+        S.selectedAuras = [];
+        S.completedTasks = [];
+        S.streakData = {};
+        S.diary = [];
+        S.routines = [];
+        S.socialPosts = [];
+        S.likedPosts = [];
+        S.bio = 'Building my energy. One aura at a time. ⚡';
+        saveAuth();
+        toast('Account created! Welcome ' + name);
+        navigate('select');
+    }
+
+    async function handleLogin() {
+        const user = document.getElementById('loginUser').value.trim();
+        const pass = document.getElementById('loginPass').value.trim();
+        if (!user || !pass) { toast('Enter username and password'); return; }
+        
+        await loadAllData();
+        if (!CLOUD_DATA.users || !CLOUD_DATA.users[user] || CLOUD_DATA.users[user].password !== pass) {
+            toast('Invalid credentials');
+            return;
+        }
+        
+        S.username = user;
+        if (CLOUD_DATA.profiles && CLOUD_DATA.profiles[user]) {
+            const profile = CLOUD_DATA.profiles[user];
+            S.bio = profile.bio || 'Building my energy. One aura at a time. ⚡';
+            S.wallpaper = profile.wallpaper || UNSPLASH[0];
+            S.selectedAuras = profile.selected_auras || [];
+        }
+        saveAuth();
+        toast('Welcome back, ' + CLOUD_DATA.users[user].name);
+        navigate('social');
+    }
+
+    function logout() {
+        if (!confirm('Logout?')) return;
+        S.username = '';
+        localStorage.removeItem(AUTH_KEY);
+        toast('Logged out');
+        navigate('landing');
+    }
+
+    // ==================== TOAST ====================
+    function toast(msg) {
+        const t = document.createElement('div');
+        t.className = 'toast';
+        t.textContent = msg;
+        document.getElementById('toastContainer').appendChild(t);
+        setTimeout(() => t.remove(), 2200);
+    }
+
+    // ==================== SET BACKGROUND ====================
+    function setBg(url) {
+        S.wallpaper = url;
+        saveAuth();
+        const s = document.createElement('style');
+        s.textContent = `body::before{background-image:url('${url}')!important}`;
+        const o = document.querySelector('style[data-bg]');
+        if (o) o.remove();
+        s.setAttribute('data-bg', '');
+        document.head.appendChild(s);
+    }
+
+    // ==================== GET TASKS ====================
+    function getTasks() {
+        let tasks = [];
+        S.selectedAuras.forEach(key => {
+            if (AURAS[key]) tasks = tasks.concat(AURAS[key].tasks);
+        });
+        return [...new Set(tasks)].slice(0, 8);
+    }
+
+    function calcScore() {
+        const tasks = getTasks(),
+            total = tasks.length,
+            done = S.completedTasks.filter(i => i < total).length;
+        return { pct: total > 0 ? Math.round((done / total) * 100) : 0, done, total };
+    }
+
+    function calcStreak() {
+        let s = 0;
+        const n = new Date();
+        for (let i = 0; i < 365; i++) {
+            const d = new Date(n);
+            d.setDate(d.getDate() - i);
+            if (S.streakData[d.toDateString()]) s++;
+            else break;
+        }
+        return s;
+    }
+
+    // ==================== NAVIGATION ====================
+    function navigate(page) {
+        document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+        const target = document.getElementById('page-' + page);
+        if (target) target.classList.add('active');
+
+        document.querySelectorAll('.nav-btn').forEach(b => {
+            b.classList.remove('active');
+            if (b.dataset.page === page) b.classList.add('active');
+        });
+
+        const nav = document.getElementById('bottomNav');
+        const hideNav = ['landing', 'login', 'signup', 'select'];
+        nav.style.display = hideNav.includes(page) ? 'none' : 'flex';
+
+        if (page === 'select') renderAuraGrid();
+        if (page === 'home') renderHome();
+        if (page === 'diary') renderDiary();
+        if (page === 'routine') renderRoutines();
+        if (page === 'chat') { renderChat();
+            startPoll(); } else stopPoll();
+        if (page === 'social') { renderSocial();
+            renderStories(); }
+        if (page === 'profile') renderProfile();
+        if (page === 'wallpapers') renderWallpapers();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ==================== AURA FUNCTIONS ====================
+    function toggleAura(key) {
+        const idx = S.selectedAuras.indexOf(key);
+        if (idx > -1) S.selectedAuras.splice(idx, 1);
+        else if (S.selectedAuras.length < 3) S.selectedAuras.push(key);
+        saveAuth();
+        renderAuraGrid();
+    }
+
+    function renderAuraGrid() {
+        const grid = document.getElementById('auraGrid');
+        if (!grid) return;
+        grid.innerHTML = Object.entries(AURAS).map(([key, aura]) => {
+            const sel = S.selectedAuras.includes(key);
+            return `<div class="aura-btn${sel ? ' selected' : ''}" onclick="toggleAura('${key}')">
+                <span class="emoji">${aura.emoji}</span>
+                <div class="info"><h3>${aura.name}</h3><p>${aura.desc}</p></div>
+                <span class="check-mark">✓</span>
+            </div>`;
+        }).join('');
+        document.getElementById('counter').textContent = S.selectedAuras.length;
+    }
+
+    function confirmSelection() {
+        if (S.selectedAuras.length === 0) { toast('Select at least one aura'); return; }
+        saveAuth();
+        navigate('social');
+    }
+
+    // ==================== DASHBOARD FUNCTIONS ====================
+    function toggleTask(index) {
+        const idx = S.completedTasks.indexOf(index);
+        if (idx > -1) S.completedTasks.splice(idx, 1);
+        else S.completedTasks.push(index);
+        const tasks = getTasks(),
+            total = tasks.length,
+            done = S.completedTasks.filter(x => x < total).length;
+        const today = new Date().toDateString();
+        if (done === total && total > 0) S.streakData[today] = true;
+        else delete S.streakData[today];
+        saveAuth();
+        renderHome();
+    }
+
+    function resetDay() {
+        if (!confirm('Reset tasks?')) return;
+        S.completedTasks = [];
+        delete S.streakData[new Date().toDateString()];
+        saveAuth();
+        renderHome();
+    }
+
+    function renderHome() {
+        if (S.selectedAuras.length === 0) { navigate('select'); return; }
+        const p = AURAS[S.selectedAuras[0]],
+            tasks = getTasks(),
+            { pct, done, total } = calcScore();
+        const streak = calcStreak();
+        const circ = 2 * Math.PI * 43,
+            offset = circ - (pct / 100) * circ;
+        document.getElementById('homeTitle').textContent = S.selectedAuras.map(k => AURAS[k].emoji + ' ' + AURAS[k].name).join(' + ');
+        document.getElementById('homeBadge').textContent = '⚡ ' + S.selectedAuras.map(k => AURAS[k].emoji).join('');
+        document.getElementById('score').textContent = pct + '%';
+        document.getElementById('taskProgress').textContent = done + '/' + total;
+        document.getElementById('streakCount').textContent = streak;
+        document.getElementById('tasksDone').textContent = S.completedTasks.length;
+        document.getElementById('diaryCount').textContent = S.diary.length;
+        document.getElementById('msgCount').textContent = chatMessages.filter(m => m.username === S.username).length;
+        const ring = document.getElementById('scoreRing');
+        ring.style.strokeDashoffset = offset;
+        ring.style.stroke = p.accent;
+        document.getElementById('tasks').innerHTML = tasks.map((t, i) => {
+            const c = S.completedTasks.includes(i);
+            return `<div class="task-item${c ? ' done' : ''}" onclick="toggleTask(${i})"><div class="check-box">${c ? '✓' : ''}</div><span class="task-text">${t}</span></div>`;
+        }).join('');
+        renderCalendar();
+    }
+
+    function renderCalendar() {
+        const n = new Date(),
+            y = n.getFullYear(),
+            m = n.getMonth();
+        const dim = new Date(y, m + 1, 0).getDate(),
+            fd = new Date(y, m, 1).getDay();
+        document.getElementById('monthLabel').textContent = n.toLocaleDateString('en', { month: 'long', year: 'numeric' });
+        const cal = document.getElementById('calendar');
+        cal.innerHTML = '';
+        ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].forEach(d => {
+            const div = document.createElement('div');
+            div.className = 'cal-day weekday';
+            div.textContent = d;
+            cal.appendChild(div);
+        });
+        for (let i = 0; i < fd; i++) {
+            const div = document.createElement('div');
+            div.className = 'cal-day';
+            div.style.background = 'transparent';
+            cal.appendChild(div);
+        }
+        for (let d = 1; d <= dim; d++) {
+            const ds = new Date(y, m, d).toDateString();
+            const div = document.createElement('div');
+            div.className = 'cal-day';
+            div.textContent = d;
+            if (S.streakData[ds]) {
+                div.classList.add('active');
+                if (S.selectedAuras.length) div.style.background = AURAS[S.selectedAuras[0]].accent;
+            }
+            if (d === n.getDate() && m === n.getMonth() && y === n.getFullYear()) div.classList.add('today');
+            cal.appendChild(div);
+        }
+    }
+
+    // ==================== DIARY FUNCTIONS ====================
+    function saveDiary() {
+        const content = document.getElementById('diaryInput').value.trim();
+        const mood = document.getElementById('diaryMood').value.trim() || '—';
+        if (!content) { toast('Write something'); return; }
+        S.diary.unshift({ date: new Date().toISOString(), content: content, mood: mood });
+        if (!CLOUD_DATA.diaries) CLOUD_DATA.diaries = [];
+        CLOUD_DATA.diaries = S.diary;
+        saveAuth();
+        document.getElementById('diaryInput').value = '';
+        document.getElementById('diaryMood').value = '';
+        renderDiary();
+        toast('📝 Saved');
+    }
+
+    function deleteDiary(index) {
+        S.diary.splice(index, 1);
+        if (CLOUD_DATA.diaries) CLOUD_DATA.diaries = S.diary;
+        saveAuth();
+        renderDiary();
+    }
+
+    function renderDiary() {
+        const container = document.getElementById('diaryEntries');
+        if (!container) return;
+        const search = (document.getElementById('diarySearch')?.value || '').toLowerCase();
+        let entries = S.diary;
+        if (search) entries = entries.filter(x => x.content.toLowerCase().includes(search));
+        if (entries.length === 0) {
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;">' + (search ? 'No matches.' : 'No entries yet.') + '</p>';
+            return;
+        }
+        container.innerHTML = entries.map((x, i) => {
+            const idx = S.diary.indexOf(x);
+            return `<div class="entry-card"><div style="display:flex;justify-content:space-between;margin-bottom:3px;"><small style="color:#94a3b8;">${new Date(x.date).toLocaleDateString()}</small><span style="font-size:10px;background:rgba(0,0,0,0.04);padding:2px 7px;border-radius:9px;">${x.mood}</span></div><p style="font-size:12px;white-space:pre-wrap;">${x.content}</p><button class="btn-sm btn-danger" onclick="deleteDiary(${idx})" style="margin-top:5px;">🗑️</button></div>`;
+        }).join('');
+    }
+
+    // ==================== ROUTINE FUNCTIONS ====================
+    function saveRoutine() {
+        const title = document.getElementById('routineTitle').value.trim();
+        const content = document.getElementById('routineInput').value.trim();
+        if (!title || !content) { toast('Add title & description'); return; }
+        S.routines.unshift({ id: Date.now(), title: title, content: content, date: new Date().toISOString() });
+        if (!CLOUD_DATA.routines) CLOUD_DATA.routines = [];
+        CLOUD_DATA.routines = S.routines;
+        saveAuth();
+        document.getElementById('routineTitle').value = '';
+        document.getElementById('routineInput').value = '';
+        renderRoutines();
+        toast('📋 Saved');
+    }
+
+    function deleteRoutine(id) {
+        S.routines = S.routines.filter(r => r.id !== id);
+        if (CLOUD_DATA.routines) CLOUD_DATA.routines = S.routines;
+        saveAuth();
+        renderRoutines();
+    }
+
+    function renderRoutines() {
+        const container = document.getElementById('routineEntries');
+        if (!container) return;
+        if (S.routines.length === 0) {
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;">No routines yet.</p>';
+            return;
+        }
+        container.innerHTML = S.routines.map(r =>
+            `<div class="entry-card"><strong>${r.title}</strong><small style="color:#94a3b8;display:block;">${new Date(r.date).toLocaleDateString()}</small><p style="font-size:12px;margin-top:3px;white-space:pre-wrap;">${r.content}</p><button class="btn-sm btn-danger" onclick="deleteRoutine(${r.id})" style="margin-top:5px;">🗑️</button></div>`
+        ).join('');
+    }
+
+    // ==================== CHAT FUNCTIONS ====================
+    function startPoll() {
+        stopPoll();
+        poll = setInterval(() => {
+            updateChat();
+        }, 3000);
+    }
+
+    function stopPoll() {
+        if (poll) { clearInterval(poll);
+            poll = null; }
+    }
+
+    async function updateChat() {
+        await loadAllData();
+        if (CLOUD_DATA.messages) {
+            chatMessages = CLOUD_DATA.messages;
+            renderChatMessages();
+        }
+        const online = Object.keys(CLOUD_DATA.profiles || {}).length;
+        document.getElementById('onlineCount').textContent = online;
+    }
+
+    async function sendMessage() {
+        if (!S.username) { toast('Please log in'); return; }
+        const input = document.getElementById('chatInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        await loadAllData();
+        if (!CLOUD_DATA.messages) CLOUD_DATA.messages = [];
+        CLOUD_DATA.messages.push({
+            id: 'msg_' + Date.now(),
+            username: S.username,
+            text: text,
+            time: new Date().toISOString()
+        });
+        if (CLOUD_DATA.messages.length > 200) CLOUD_DATA.messages = CLOUD_DATA.messages.slice(-200);
+        await saveAllData();
+
+        chatMessages = CLOUD_DATA.messages;
+        input.value = '';
+        renderChatMessages();
+    }
+
+    function deleteMessage(id) {
+        chatMessages = chatMessages.filter(m => m.id !== id);
+        CLOUD_DATA.messages = chatMessages;
+        saveAllData();
+        renderChatMessages();
+    }
+
+    function changeUsername() {
+        const newName = prompt('Enter new username:', S.username);
+        if (newName && newName.trim()) {
+            S.username = newName.trim();
+            saveAuth();
+            document.getElementById('myUsername').textContent = S.username;
+            toast('Username updated');
+        }
+    }
+
+    function renderChat() {
+        document.getElementById('myUsername').textContent = S.username || '—';
+        updateChat();
+    }
+
+    function renderChatMessages() {
+        const container = document.getElementById('chatMessages');
+        if (!container) return;
+        if (chatMessages.length === 0) {
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:16px;">No messages yet.</p>';
+            return;
+        }
+        container.innerHTML = chatMessages.map(m => {
+            const me = m.username === S.username;
+            const time = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            return `<div style="display:flex;justify-content:${me ? 'flex-end' : 'flex-start'};margin:3px 0;"><div style="max-width:82%;"><div class="chat-bubble ${me ? 'chat-sent' : 'chat-received'}"><div style="font-size:10px;font-weight:600;opacity:0.7;">${m.username} · ${time}</div><p style="margin:2px 0 0;">${m.text}</p></div>${me ? `<button class="btn-sm btn-danger" onclick="deleteMessage('${m.id}')" style="font-size:9px;padding:2px 5px;margin-top:1px;">🗑️</button>` : ''}</div></div>`;
+        }).join('');
+        container.scrollTop = container.scrollHeight;
+    }
+
+    // ==================== SOCIAL FUNCTIONS ====================
+    function renderStories() {
+        const row = document.getElementById('storyRow');
+        if (!row) return;
+        const users = [...new Set(S.socialPosts.map(p => p.author))];
+        if (users.length === 0) {
+            row.innerHTML = '<div style="display:flex;gap:10px;padding:4px 0;color:#94a3b8;font-size:12px;">No stories yet</div>';
+            return;
+        }
+        row.innerHTML = users.slice(0, 10).map(u => {
+            const post = S.socialPosts.find(p => p.author === u);
+            const emoji = post ? post.avatar : '😊';
+            return `<div class="ig-story"><div class="ig-story-avatar"><div class="inner">${emoji}</div></div><span class="ig-story-name">${u}</span></div>`;
+        }).join('');
+    }
+
+    async function createPost() {
+        const input = document.getElementById('postInput');
+        const text = input.value.trim();
+        if (!text) { toast('Write something'); return; }
+        const avatar = S.selectedAuras.length > 0 ? S.selectedAuras.map(k => AURAS[k].emoji).join('') : '😊';
+        const randImg = UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)];
+
+        await loadAllData();
+        if (!CLOUD_DATA.posts) CLOUD_DATA.posts = [];
+        CLOUD_DATA.posts.unshift({
+            id: Date.now(),
+            author: S.username || 'You',
+            avatar: avatar,
+            text: text,
+            time: new Date().toISOString(),
+            likes: 0,
+            image: randImg
+        });
+        if (CLOUD_DATA.posts.length > 100) CLOUD_DATA.posts = CLOUD_DATA.posts.slice(0, 100);
+        await saveAllData();
+
+        S.socialPosts = CLOUD_DATA.posts;
+        input.value = '';
+        renderSocial();
+        renderStories();
+        toast('📝 Posted!');
+    }
+
+    function likePost(id) {
+        const post = S.socialPosts.find(x => x.id === id);
+        if (!post) return;
+        if (S.likedPosts.includes(id)) {
+            S.likedPosts = S.likedPosts.filter(x => x !== id);
+            post.likes = Math.max(0, post.likes - 1);
+        } else {
+            S.likedPosts.push(id);
+            post.likes++;
+        }
+        CLOUD_DATA.posts = S.socialPosts;
+        saveAllData();
+        renderSocial();
+    }
+
+    function deletePost(id) {
+        if (!confirm('Delete this post?')) return;
+        S.socialPosts = S.socialPosts.filter(p => p.id !== id);
+        S.likedPosts = S.likedPosts.filter(x => x !== id);
+        CLOUD_DATA.posts = S.socialPosts;
+        saveAllData();
+        renderSocial();
+        renderStories();
+    }
+
+    function timeSince(date) {
+        const now = new Date();
+        const diff = Math.floor((now - date) / 1000);
+        if (diff < 60) return diff + 's';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h';
+        if (diff < 604800) return Math.floor(diff / 86400) + 'd';
+        return date.toLocaleDateString();
+    }
+
+    function renderSocial() {
+        const feed = document.getElementById('socialFeed');
+        if (!feed) return;
+        const avatarEl = document.getElementById('postAvatarEmoji');
+        if (avatarEl) {
+            avatarEl.textContent = S.selectedAuras.length > 0 ? S.selectedAuras.map(k => AURAS[k].emoji).join('') : '😊';
+        }
+
+        if (S.socialPosts.length === 0) {
+            feed.innerHTML = `<div style="text-align:center;padding:40px 0;color:#94a3b8;"><div style="font-size:48px;margin-bottom:12px;">📸</div><p>No posts yet. Share your journey!</p></div>`;
+            return;
+        }
+
+        feed.innerHTML = S.socialPosts.map(p => {
+            const liked = S.likedPosts.includes(p.id);
+            const timeAgo = timeSince(new Date(p.time));
+            return `
+                <div class="ig-post">
+                    <div class="ig-post-header">
+                        <div class="ig-post-avatar">${p.avatar}</div>
+                        <span class="ig-post-user">${p.author}</span>
+                        <span class="ig-post-time">${timeAgo}</span>
+                        ${p.author === S.username ? `<button class="btn-sm btn-danger" onclick="deletePost(${p.id})" style="font-size:11px;padding:2px 8px;">🗑️</button>` : ''}
+                    </div>
+                    <div class="ig-post-image" style="background-image:url('${p.image || UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)]}')"></div>
+                    <div class="ig-post-actions">
+                        <button class="ig-post-action ${liked ? 'liked' : ''}" onclick="likePost(${p.id})">${liked ? '❤️' : '🤍'}</button>
+                        <button class="ig-post-action" onclick="toast('💬 Comment feature coming soon')">💬</button>
+                        <button class="ig-post-action" onclick="toast('📤 Share feature coming soon')">📤</button>
+                    </div>
+                    <div class="ig-post-likes">${p.likes} ${p.likes === 1 ? 'like' : 'likes'}</div>
+                    <div class="ig-post-caption"><strong>${p.author}</strong> ${p.text}</div>
+                    <div class="ig-post-comment" onclick="toast('💬 Comment feature coming soon')">View all comments</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ==================== PROFILE FUNCTIONS ====================
+    function renderProfile() {
+        const avatarEmoji = S.selectedAuras.length > 0 ? S.selectedAuras.map(k => AURAS[k].emoji).join('') : '😊';
+        document.getElementById('profileAvatarEmoji').textContent = avatarEmoji;
+        document.getElementById('profileName').textContent = S.username || '—';
+        document.getElementById('profileUsername').textContent = '@' + (S.username || '—');
+        document.getElementById('profilePosts').textContent = S.socialPosts.length;
+        document.getElementById('profileFollowers').textContent = Math.floor(Math.random() * 100) + 10;
+        document.getElementById('profileFollowing').textContent = Math.floor(Math.random() * 50) + 5;
+        document.getElementById('profileBio').textContent = S.bio || 'Building my energy. One aura at a time. ⚡';
+
+        const grid = document.getElementById('profilePostsGrid');
+        const userPosts = S.socialPosts.filter(p => p.author === S.username);
+        if (userPosts.length === 0) {
+            grid.innerHTML = '<p style="color:#94a3b8;text-align:center;grid-column:1/-1;padding:16px 0;">No posts yet.</p>';
+            return;
+        }
+        grid.innerHTML = userPosts.map(p =>
+            `<div style="aspect-ratio:1;background-image:url('${p.image || UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)]}');background-size:cover;background-position:center;border-radius:4px;cursor:pointer;" onclick="toast('${p.text.substring(0, 30)}...')"></div>`
+        ).join('');
+    }
+
+    function editProfile() {
+        const newBio = prompt('Edit your bio:', S.bio || '');
+        if (newBio !== null) {
+            S.bio = newBio.trim() || 'Building my energy. One aura at a time. ⚡';
+            saveAuth();
+            renderProfile();
+            toast('✅ Bio updated');
+        }
+    }
+
+    // ==================== WALLPAPER FUNCTIONS ====================
+    function randomWallpaper() {
+        setWallpaper(UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)]);
+    }
+
+    function setWallpaper(url) {
+        S.wallpaper = url;
+        saveAuth();
+        setBg(url);
+        renderWallpapers();
+        toast('✅ Applied');
+    }
+
+    function renderWallpapers() {
+        document.getElementById('wpCount').textContent = UNSPLASH.length + '+ wallpapers';
+        document.getElementById('wpGrid').innerHTML = UNSPLASH.map(url => {
+            const selected = S.wallpaper === url;
+            return `<div class="wp-thumb${selected ? ' selected' : ''}" style="background-image:url('${url}')" onclick="setWallpaper('${url}')"></div>`;
+        }).join('');
+    }
+
+    // ==================== INIT ====================
+    async function init() {
+        console.log('🚀 Winchu starting...');
+        await loadAllData();
+        
+        if (CLOUD_DATA.messages) chatMessages = CLOUD_DATA.messages;
+        if (CLOUD_DATA.posts) S.socialPosts = CLOUD_DATA.posts;
+        if (CLOUD_DATA.diaries) S.diary = CLOUD_DATA.diaries;
+        if (CLOUD_DATA.routines) S.routines = CLOUD_DATA.routines;
+
+        const loggedIn = loadAuth();
+        if (loggedIn) {
+            setBg(S.wallpaper);
+            document.getElementById('myUsername').textContent = S.username;
+            navigate('social');
+        } else {
+            navigate('landing');
+        }
+        
+        setInterval(() => {
+            if (S.username) updateChat();
+        }, 5000);
+        
+        console.log('⚡ Winchu · Nexus with JSONBin ✅');
+    }
+
+    // ==================== EXPOSE TO WINDOW ====================
+    window.navigate = navigate;
+    window.toggleAura = toggleAura;
+    window.confirmSelection = confirmSelection;
+    window.toggleTask = toggleTask;
+    window.resetDay = resetDay;
+    window.saveDiary = saveDiary;
+    window.deleteDiary = deleteDiary;
+    window.saveRoutine = saveRoutine;
+    window.deleteRoutine = deleteRoutine;
+    window.sendMessage = sendMessage;
+    window.deleteMessage = deleteMessage;
+    window.changeUsername = changeUsername;
+    window.createPost = createPost;
+    window.likePost = likePost;
+    window.deletePost = deletePost;
+    window.setWallpaper = setWallpaper;
+    window.randomWallpaper = randomWallpaper;
+    window.handleSignup = handleSignup;
+    window.handleLogin = handleLogin;
+    window.logout = logout;
+    window.editProfile = editProfile;
+
+    // ==================== START ====================
+    init();
     </script>
 </body>
 </html>
