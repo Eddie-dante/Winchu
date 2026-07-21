@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Winchu · Nexus</title>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
         :root {
             --bg: #f1f5f9;
@@ -19,7 +22,6 @@
         body {
             font-family: var(--font);
             min-height: 100vh;
-            min-height: 100dvh;
             color: var(--text);
             background: var(--bg);
             display: flex;
@@ -28,8 +30,6 @@
             padding: 20px;
             padding-bottom: 100px;
             -webkit-tap-highlight-color: transparent;
-            -webkit-user-select: none;
-            user-select: none;
             overflow-x: hidden;
         }
         body::before {
@@ -67,7 +67,6 @@
             padding: 12px 18px; border: none; border-radius: var(--radius-sm);
             font-size: 14px; font-weight: 500; cursor: pointer;
             font-family: var(--font); outline: none;
-            -webkit-tap-highlight-color: transparent;
             transition: all 0.2s; color: inherit;
         }
         button:active { transform: scale(0.96); }
@@ -771,7 +770,7 @@
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:8px;">🎨 Walls</h2>
             <button class="btn-sm" onclick="window.randomWallpaper()" style="width:100%;margin-bottom:8px;">🎲 Random</button>
-            <p style="font-size:10px;color:#94a3b8;" id="wpCount">Loading wallpapers...</p>
+            <p style="font-size:10px;color:#94a3b8;" id="wpCount">50+ wallpapers</p>
             <div class="wp-grid" id="wpGrid"></div>
         </div>
     </div>
@@ -787,6 +786,24 @@
     </nav>
 
     <script>
+    // ==================== FIREBASE CONFIG ====================
+    const firebaseConfig = {
+        apiKey: "AIzaSyBxRC99vpLBRpkhXmUiYVXi0lFaN5ayXj8",
+        authDomain: "nexus-wegem.firebaseapp.com",
+        databaseURL: "https://nexus-wegem-default-rtdb.firebaseio.com",
+        projectId: "nexus-wegem",
+        storageBucket: "nexus-wegem.firebasestorage.app",
+        messagingSenderId: "383870608188",
+        appId: "1:383870608188:web:043f97e81bcb6dbb68b439",
+        measurementId: "G-GGNFGS1MEL"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    console.log('🔥 Firebase initialized!');
+
     // ==================== AURAS ====================
     const AURAS = {
         focus: { name: 'Focus', emoji: '🎯', accent: '#ff6b6b', desc: 'Concentration', tasks: ['Deep work 25 min', 'No phone 1 hour', 'Single-task', 'Clear desk', 'Pomodoro'] },
@@ -834,112 +851,8 @@
         'https://images.unsplash.com/photo-1736580602088-73d0f3ad8add?w=1920&q=80'
     ];
 
-    console.log(`✅ Total wallpapers: ${UNSPLASH.length}`);
-
     // ==================== DEFAULT WALLPAPER ====================
     const DEFAULT_WALLPAPER = 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1920&q=80';
-
-    // ==================== JSONBIN CONFIG ====================
-    const JSONBIN_KEY = '$2a$10$rxszN.mST.9rXVfKlbAGwO1LsenqbMEFynIxmObPNTjYNx3A6ofZ6';
-    const JSONBIN_BIN_ID = '6a5659c1f5f4af5e298e19c7';
-
-    console.log('🔗 Winchu connected to JSONBin:', JSONBIN_BIN_ID);
-
-    // ==================== CLOUD FUNCTIONS ====================
-    let CLOUD_DATA = { messages: [], users: {}, posts: [], diaries: [], routines: [], profiles: {} };
-
-    async function cloudGet() {
-        try {
-            const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-                headers: {
-                    'X-Master-Key': JSONBIN_KEY,
-                    'X-Bin-Meta': 'false'
-                }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                console.log('✅ JSONBin data loaded');
-                return data;
-            }
-            console.warn('⚠️ JSONBin get failed:', response.status);
-            return null;
-        } catch (e) {
-            console.error('❌ JSONBin error:', e.message);
-            return null;
-        }
-    }
-
-    async function cloudPut(data) {
-        try {
-            const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Master-Key': JSONBIN_KEY
-                },
-                body: JSON.stringify(data)
-            });
-            if (response.ok) {
-                console.log('✅ JSONBin data saved');
-                return true;
-            }
-            console.warn('⚠️ JSONBin put failed:', response.status);
-            return false;
-        } catch (e) {
-            console.error('❌ JSONBin save error:', e.message);
-            return false;
-        }
-    }
-
-    function loadLocalData() {
-        try {
-            const raw = localStorage.getItem('winchu_cloud_data');
-            if (raw) return JSON.parse(raw);
-        } catch (e) {}
-        return null;
-    }
-
-    function saveLocalData(data) {
-        try {
-            localStorage.setItem('winchu_cloud_data', JSON.stringify(data));
-        } catch (e) {}
-    }
-
-    async function loadAllData() {
-        try {
-            const cloudData = await cloudGet();
-            if (cloudData && Object.keys(cloudData).length > 0) {
-                CLOUD_DATA = cloudData;
-                saveLocalData(cloudData);
-                console.log('📦 Using cloud data');
-                return CLOUD_DATA;
-            }
-        } catch (e) {
-            console.error('Cloud load error:', e);
-        }
-        const localData = loadLocalData();
-        if (localData && Object.keys(localData).length > 0) {
-            CLOUD_DATA = localData;
-            console.log('📦 Using local data (cloud unavailable)');
-            return CLOUD_DATA;
-        }
-        console.log('📦 Using empty data (first run)');
-        // Initialize empty data structure
-        CLOUD_DATA = { messages: [], users: {}, posts: [], diaries: [], routines: [], profiles: {} };
-        saveLocalData(CLOUD_DATA);
-        return CLOUD_DATA;
-    }
-
-    async function saveAllData() {
-        if (!CLOUD_DATA) return;
-        saveLocalData(CLOUD_DATA);
-        const saved = await cloudPut(CLOUD_DATA);
-        if (saved) {
-            console.log('✅ Data synced to cloud');
-        } else {
-            console.log('📦 Data saved locally only (cloud failed)');
-        }
-    }
 
     // ==================== MAIN APP STATE ====================
     let S = {
@@ -956,11 +869,37 @@
         avatar: null
     };
     let chatMessages = [];
-    let poll = null;
     let selectedFile = null;
     let selectedFileData = null;
     let selectedAvatarData = null;
     const AUTH_KEY = 'winchu_auth_v3';
+    let currentUser = null;
+    let messagesListener = null;
+    let postsListener = null;
+    let usersListener = null;
+
+    // ==================== FIREBASE HELPERS ====================
+    function getRef(path) {
+        return database.ref(path);
+    }
+
+    async function pushData(path, data) {
+        const ref = getRef(path);
+        const newRef = ref.push();
+        await newRef.set(data);
+        return newRef.key;
+    }
+
+    async function setData(path, data) {
+        const ref = getRef(path);
+        await ref.set(data);
+    }
+
+    async function getData(path) {
+        const ref = getRef(path);
+        const snapshot = await ref.once('value');
+        return snapshot.val();
+    }
 
     // ==================== AUTH ====================
     function loadAuth() {
@@ -970,34 +909,17 @@
                 const data = JSON.parse(raw);
                 if (data && data.username) {
                     S.username = data.username;
-                    if (CLOUD_DATA.profiles && CLOUD_DATA.profiles[S.username]) {
-                        const profile = CLOUD_DATA.profiles[S.username];
-                        S.bio = profile.bio || 'Building my energy. One aura at a time. ⚡';
-                        S.wallpaper = profile.wallpaper || DEFAULT_WALLPAPER;
-                        S.selectedAuras = profile.selected_auras || [];
-                        S.avatar = profile.avatar || null;
-                    }
-                    document.getElementById('wpFab').style.display = 'flex';
+                    currentUser = data;
                     return true;
                 }
             }
         } catch (e) { console.error('Load auth error:', e); }
-        document.getElementById('wpFab').style.display = 'none';
         return false;
     }
 
     function saveAuth() {
         localStorage.setItem(AUTH_KEY, JSON.stringify({ username: S.username }));
-        if (!CLOUD_DATA.profiles) CLOUD_DATA.profiles = {};
-        CLOUD_DATA.profiles[S.username] = {
-            bio: S.bio,
-            wallpaper: S.wallpaper,
-            selected_auras: S.selectedAuras,
-            avatar: S.avatar,
-            last_seen: new Date().toISOString()
-        };
-        saveAllData();
-        document.getElementById('wpFab').style.display = 'flex';
+        currentUser = { username: S.username };
     }
 
     function toast(msg) {
@@ -1010,13 +932,16 @@
 
     function setBg(url) {
         S.wallpaper = url;
-        saveAuth();
         const s = document.createElement('style');
         s.textContent = `body::before{background-image:url('${url}')!important}`;
         const o = document.querySelector('style[data-bg]');
         if (o) o.remove();
         s.setAttribute('data-bg', '');
         document.head.appendChild(s);
+        // Save to Firebase
+        if (S.username) {
+            setData(`users/${S.username}/wallpaper`, url);
+        }
     }
 
     function getTasks() {
@@ -1048,13 +973,8 @@
 
     // ==================== AVATAR FUNCTIONS ====================
     function getAvatarHTML(username, size) {
-        const profile = CLOUD_DATA.profiles && CLOUD_DATA.profiles[username] ? CLOUD_DATA.profiles[username] : {};
-        const avatar = profile.avatar;
-        if (avatar && avatar.startsWith('data:')) {
-            return `<img src="${avatar}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;" />`;
-        }
-        const colors = ['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8','#F7B787','#FF8A80','#B388FF','#82B1FF','#B9F6CA','#FFE57F','#FF80AB','#EA80FC','#8C9EFF'];
-        const color = colors[username.length % colors.length];
+        // Check if we have avatar in Firebase users
+        const color = ['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8','#F7B787','#FF8A80','#B388FF','#82B1FF','#B9F6CA','#FFE57F','#FF80AB','#EA80FC','#8C9EFF'][username.length % 16];
         return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:${size*0.4}px;">${username.charAt(0).toUpperCase()}</div>`;
     }
 
@@ -1066,7 +986,9 @@
         reader.onload = function(e) {
             selectedAvatarData = e.target.result;
             S.avatar = selectedAvatarData;
-            saveAuth();
+            if (S.username) {
+                setData(`users/${S.username}/avatar`, selectedAvatarData);
+            }
             renderProfile();
             toast('✅ Avatar updated!');
         };
@@ -1078,49 +1000,38 @@
         const container = document.getElementById('usersList');
         if (!container) return;
 
-        const users = CLOUD_DATA.users || {};
-        const usernames = Object.keys(users);
+        const usersRef = getRef('users');
+        usersRef.once('value', function(snapshot) {
+            const users = snapshot.val() || {};
+            const usernames = Object.keys(users);
 
-        if (usernames.length === 0) {
-            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">No users yet.</p>';
-            return;
-        }
+            if (usernames.length === 0) {
+                container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">No users yet.</p>';
+                return;
+            }
 
-        const now = Date.now();
-        const onlineUsers = new Set();
-        if (CLOUD_DATA.messages) {
-            CLOUD_DATA.messages.forEach(msg => {
-                try {
-                    const time = new Date(msg.time).getTime();
-                    if (now - time < 300000) {
-                        onlineUsers.add(msg.username);
-                    }
-                } catch (e) {}
-            });
-        }
-        if (S.username) onlineUsers.add(S.username);
+            container.innerHTML = usernames.map(u => {
+                const isMe = u === S.username;
+                const userData = users[u] || {};
+                const isOnline = userData.last_seen && (Date.now() - new Date(userData.last_seen).getTime() < 60000);
+                const postCount = S.socialPosts ? S.socialPosts.filter(p => p.author === u).length : 0;
+                const avatarHTML = getAvatarHTML(u, 40);
 
-        container.innerHTML = usernames.map(u => {
-            const isOnline = onlineUsers.has(u);
-            const profile = CLOUD_DATA.profiles && CLOUD_DATA.profiles[u] ? CLOUD_DATA.profiles[u] : {};
-            const isMe = u === S.username;
-            const postCount = S.socialPosts ? S.socialPosts.filter(p => p.author === u).length : 0;
-            const avatarHTML = getAvatarHTML(u, 40);
-
-            return `
-                <div class="user-card">
-                    <div class="user-avatar">${avatarHTML}</div>
-                    <div class="user-info">
-                        <div class="name">
-                            ${isMe ? '⭐ ' : ''}${u}
-                            <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span>
-                            ${isOnline ? '🟢 Online' : '⚪ Offline'}
+                return `
+                    <div class="user-card">
+                        <div class="user-avatar">${avatarHTML}</div>
+                        <div class="user-info">
+                            <div class="name">
+                                ${isMe ? '⭐ ' : ''}${u}
+                                <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span>
+                                ${isOnline ? '🟢 Online' : '⚪ Offline'}
+                            </div>
+                            <div class="bio">${userData.bio || 'No bio yet'} • ${postCount} posts</div>
                         </div>
-                        <div class="bio">${profile.bio || 'No bio yet'} • ${postCount} posts</div>
                     </div>
-                </div>
-            `;
-        }).join('');
+                `;
+            }).join('');
+        });
     }
 
     // ==================== NAVIGATION ====================
@@ -1143,10 +1054,8 @@
         if (page === 'users') renderUsers();
         if (page === 'diary') renderDiary();
         if (page === 'routine') renderRoutines();
-        if (page === 'chat') { renderChat();
-            startPoll(); } else stopPoll();
-        if (page === 'social') { renderSocial();
-            renderStories(); }
+        if (page === 'chat') renderChat();
+        if (page === 'social') renderSocial();
         if (page === 'profile') renderProfile();
         if (page === 'wallpapers') renderWallpapers();
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1157,7 +1066,6 @@
         const idx = S.selectedAuras.indexOf(key);
         if (idx > -1) S.selectedAuras.splice(idx, 1);
         else if (S.selectedAuras.length < 3) S.selectedAuras.push(key);
-        saveAuth();
         renderAuraGrid();
     }
 
@@ -1177,8 +1085,11 @@
 
     function confirmSelection() {
         if (S.selectedAuras.length === 0) { toast('Select at least one aura'); return; }
-        saveAuth();
+        if (S.username) {
+            setData(`users/${S.username}/selected_auras`, S.selectedAuras);
+        }
         navigate('social');
+        toast('Auras activated! ✨');
     }
 
     // ==================== DASHBOARD FUNCTIONS ====================
@@ -1192,7 +1103,6 @@
         const today = new Date().toDateString();
         if (done === total && total > 0) S.streakData[today] = true;
         else delete S.streakData[today];
-        saveAuth();
         renderHome();
     }
 
@@ -1200,7 +1110,6 @@
         if (!confirm('Reset tasks?')) return;
         S.completedTasks = [];
         delete S.streakData[new Date().toDateString()];
-        saveAuth();
         renderHome();
     }
 
@@ -1219,7 +1128,7 @@
         document.getElementById('streakCount').textContent = streak;
         document.getElementById('tasksDone').textContent = S.completedTasks.length;
         document.getElementById('diaryCount').textContent = S.diary.length;
-        document.getElementById('msgCount').textContent = chatMessages.filter(m => m.username === S.username).length;
+        document.getElementById('msgCount').textContent = chatMessages.length;
         const ring = document.getElementById('scoreRing');
         ring.style.strokeDashoffset = offset;
         ring.style.stroke = p.accent;
@@ -1270,36 +1179,27 @@
         const content = document.getElementById('diaryInput').value.trim();
         const mood = document.getElementById('diaryMood').value.trim() || '—';
         if (!content) { toast('Write something'); return; }
-        S.diary.unshift({ date: new Date().toISOString(), content: content, mood: mood });
-        if (!CLOUD_DATA.diaries) CLOUD_DATA.diaries = [];
-        CLOUD_DATA.diaries = S.diary;
-        saveAuth();
+        const entry = { content: content, mood: mood, date: new Date().toISOString() };
+        S.diary.unshift(entry);
+        if (S.username) {
+            const diaryRef = getRef(`diary/${S.username}`);
+            diaryRef.push(entry);
+        }
         document.getElementById('diaryInput').value = '';
         document.getElementById('diaryMood').value = '';
         renderDiary();
         toast('📝 Saved');
     }
 
-    function deleteDiary(index) {
-        S.diary.splice(index, 1);
-        if (CLOUD_DATA.diaries) CLOUD_DATA.diaries = S.diary;
-        saveAuth();
-        renderDiary();
-    }
-
     function renderDiary() {
         const container = document.getElementById('diaryEntries');
         if (!container) return;
-        const search = (document.getElementById('diarySearch')?.value || '').toLowerCase();
-        let entries = S.diary;
-        if (search) entries = entries.filter(x => x.content.toLowerCase().includes(search));
-        if (entries.length === 0) {
-            container.innerHTML = '<p style="color:#94a3b8;text-align:center;">' + (search ? 'No matches.' : 'No entries yet.') + '</p>';
+        if (S.diary.length === 0) {
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;">No entries yet.</p>';
             return;
         }
-        container.innerHTML = entries.map((x, i) => {
-            const idx = S.diary.indexOf(x);
-            return `<div class="entry-card"><div style="display:flex;justify-content:space-between;margin-bottom:3px;"><small style="color:#94a3b8;">${new Date(x.date).toLocaleDateString()}</small><span style="font-size:10px;background:rgba(0,0,0,0.04);padding:2px 7px;border-radius:9px;">${x.mood}</span></div><p style="font-size:12px;white-space:pre-wrap;">${x.content}</p><button class="btn-sm btn-danger" onclick="deleteDiary(${idx})" style="margin-top:5px;">🗑️</button></div>`;
+        container.innerHTML = S.diary.map((x, i) => {
+            return `<div class="entry-card"><div style="display:flex;justify-content:space-between;margin-bottom:3px;"><small style="color:#94a3b8;">${new Date(x.date).toLocaleDateString()}</small><span style="font-size:10px;background:rgba(0,0,0,0.04);padding:2px 7px;border-radius:9px;">${x.mood}</span></div><p style="font-size:12px;white-space:pre-wrap;">${x.content}</p></div>`;
         }).join('');
     }
 
@@ -1308,21 +1208,16 @@
         const title = document.getElementById('routineTitle').value.trim();
         const content = document.getElementById('routineInput').value.trim();
         if (!title || !content) { toast('Add title & description'); return; }
-        S.routines.unshift({ id: Date.now(), title: title, content: content, date: new Date().toISOString() });
-        if (!CLOUD_DATA.routines) CLOUD_DATA.routines = [];
-        CLOUD_DATA.routines = S.routines;
-        saveAuth();
+        const routine = { title: title, content: content, date: new Date().toISOString() };
+        S.routines.unshift(routine);
+        if (S.username) {
+            const routineRef = getRef(`routines/${S.username}`);
+            routineRef.push(routine);
+        }
         document.getElementById('routineTitle').value = '';
         document.getElementById('routineInput').value = '';
         renderRoutines();
         toast('📋 Saved');
-    }
-
-    function deleteRoutine(id) {
-        S.routines = S.routines.filter(r => r.id !== id);
-        if (CLOUD_DATA.routines) CLOUD_DATA.routines = S.routines;
-        saveAuth();
-        renderRoutines();
     }
 
     function renderRoutines() {
@@ -1333,125 +1228,62 @@
             return;
         }
         container.innerHTML = S.routines.map(r =>
-            `<div class="entry-card"><strong>${r.title}</strong><small style="color:#94a3b8;display:block;">${new Date(r.date).toLocaleDateString()}</small><p style="font-size:12px;margin-top:3px;white-space:pre-wrap;">${r.content}</p><button class="btn-sm btn-danger" onclick="deleteRoutine(${r.id})" style="margin-top:5px;">🗑️</button></div>`
+            `<div class="entry-card"><strong>${r.title}</strong><small style="color:#94a3b8;display:block;">${new Date(r.date).toLocaleDateString()}</small><p style="font-size:12px;margin-top:3px;white-space:pre-wrap;">${r.content}</p></div>`
         ).join('');
     }
 
     // ==================== CHAT FUNCTIONS ====================
-    function startPoll() {
-        stopPoll();
-        poll = setInterval(function() {
-            updateChat();
-        }, 3000);
-    }
-
-    function stopPoll() {
-        if (poll) { clearInterval(poll);
-            poll = null; }
-    }
-
-    async function updateChat() {
-        await loadAllData();
-        if (CLOUD_DATA.messages) {
-            chatMessages = CLOUD_DATA.messages;
+    function setupMessagesListener() {
+        if (messagesListener) {
+            messagesListener.off();
+        }
+        const messagesRef = getRef('messages');
+        messagesListener = messagesRef.orderByKey().limitToLast(50);
+        messagesListener.on('child_added', function(snapshot) {
+            const msg = snapshot.val();
+            msg.id = snapshot.key;
+            chatMessages.push(msg);
+            if (chatMessages.length > 50) chatMessages.shift();
             renderChatMessages();
-        }
-        const now = Date.now();
-        const online = new Set();
-        if (CLOUD_DATA.messages) {
-            CLOUD_DATA.messages.forEach(function(msg) {
-                try {
-                    const time = new Date(msg.time).getTime();
-                    if (now - time < 300000) {
-                        online.add(msg.username);
-                    }
-                } catch (e) {}
-            });
-        }
-        if (S.username) online.add(S.username);
-        document.getElementById('onlineCount').textContent = online.size;
-        if (document.getElementById('page-users').classList.contains('active')) {
-            renderUsers();
-        }
+        });
     }
 
-    async function sendMessage() {
+    function sendMessage() {
         if (!S.username) { toast('Please log in'); return; }
         const input = document.getElementById('chatInput');
         const text = input.value.trim();
         if (!text) return;
 
-        try {
-            await loadAllData();
-            if (!CLOUD_DATA.messages) CLOUD_DATA.messages = [];
-            CLOUD_DATA.messages.push({
-                id: 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-                username: S.username,
-                text: text,
-                time: new Date().toISOString()
-            });
-            if (CLOUD_DATA.messages.length > 500) CLOUD_DATA.messages = CLOUD_DATA.messages.slice(-500);
-            await saveAllData();
-
-            chatMessages = CLOUD_DATA.messages;
-            input.value = '';
-            renderChatMessages();
-            updateChat();
-            toast('✅ Message sent');
-        } catch (e) {
-            console.error('Send message error:', e);
-            toast('❌ Failed to send message');
-        }
-    }
-
-    function deleteMessage(id) {
-        chatMessages = chatMessages.filter(function(m) { return m.id !== id; });
-        CLOUD_DATA.messages = chatMessages;
-        saveAllData();
-        renderChatMessages();
-    }
-
-    function changeUsername() {
-        const newName = prompt('Enter new username:', S.username);
-        if (newName && newName.trim()) {
-            const users = CLOUD_DATA.users || {};
-            if (users[newName.trim()] && newName.trim() !== S.username) {
-                toast('Username already taken');
-                return;
-            }
-            if (users[S.username]) {
-                users[newName.trim()] = users[S.username];
-                delete users[S.username];
-                CLOUD_DATA.users = users;
-            }
-            if (CLOUD_DATA.profiles && CLOUD_DATA.profiles[S.username]) {
-                CLOUD_DATA.profiles[newName.trim()] = CLOUD_DATA.profiles[S.username];
-                delete CLOUD_DATA.profiles[S.username];
-            }
-            if (CLOUD_DATA.messages) {
-                CLOUD_DATA.messages.forEach(function(msg) {
-                    if (msg.username === S.username) msg.username = newName.trim();
-                });
-            }
-            if (CLOUD_DATA.posts) {
-                CLOUD_DATA.posts.forEach(function(post) {
-                    if (post.author === S.username) post.author = newName.trim();
-                });
-            }
-            S.username = newName.trim();
-            saveAuth();
-            saveAllData();
-            document.getElementById('myUsername').textContent = S.username;
-            toast('Username updated');
-            renderChat();
-            renderSocial();
-            renderUsers();
+        const message = {
+            username: S.username,
+            text: text,
+            time: new Date().toISOString()
+        };
+        const messagesRef = getRef('messages');
+        messagesRef.push(message);
+        input.value = '';
+        // Update last seen
+        if (S.username) {
+            setData(`users/${S.username}/last_seen`, new Date().toISOString());
         }
     }
 
     function renderChat() {
         document.getElementById('myUsername').textContent = S.username || '—';
-        updateChat();
+        // Show online count
+        const usersRef = getRef('users');
+        usersRef.once('value', function(snapshot) {
+            const users = snapshot.val() || {};
+            const now = Date.now();
+            let online = 0;
+            Object.keys(users).forEach(u => {
+                if (users[u].last_seen && (now - new Date(users[u].last_seen).getTime() < 60000)) {
+                    online++;
+                }
+            });
+            document.getElementById('onlineCount').textContent = online;
+        });
+        setupMessagesListener();
     }
 
     function renderChatMessages() {
@@ -1461,117 +1293,141 @@
             container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:16px;">No messages yet.</p>';
             return;
         }
-        container.innerHTML = chatMessages.map(function(m) {
+        container.innerHTML = chatMessages.map(m => {
             const me = m.username === S.username;
             const time = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            return '<div style="display:flex;justify-content:' + (me ? 'flex-end' : 'flex-start') + ';margin:3px 0;"><div style="max-width:82%;"><div class="chat-bubble ' + (me ? 'chat-sent' : 'chat-received') + '"><div style="font-size:10px;font-weight:600;opacity:0.7;">' + m.username + ' · ' + time + '</div><p style="margin:2px 0 0;">' + m.text + '</p></div>' + (me ? '<button class="btn-sm btn-danger" onclick="window.deleteMessage(\'' + m.id + '\')" style="font-size:9px;padding:2px 5px;margin-top:1px;">🗑️</button>' : '') + '</div></div>';
+            return `<div style="display:flex;justify-content:${me ? 'flex-end' : 'flex-start'};margin:3px 0;"><div style="max-width:82%;"><div class="chat-bubble ${me ? 'chat-sent' : 'chat-received'}"><div style="font-size:10px;font-weight:600;opacity:0.7;">${m.username} · ${time}</div><p style="margin:2px 0 0;">${m.text}</p></div></div></div>`;
         }).join('');
         container.scrollTop = container.scrollHeight;
     }
 
-    // ==================== SOCIAL FUNCTIONS ====================
-    function renderStories() {
-        const row = document.getElementById('storyRow');
-        if (!row) return;
-        const users = [];
-        S.socialPosts.forEach(function(p) {
-            if (users.indexOf(p.author) === -1) users.push(p.author);
-        });
-        if (users.length === 0) {
-            row.innerHTML = '<div style="display:flex;gap:10px;padding:4px 0;color:#94a3b8;font-size:12px;">No stories yet</div>';
-            return;
+    function changeUsername() {
+        const newName = prompt('Enter new username:', S.username);
+        if (newName && newName.trim()) {
+            S.username = newName.trim();
+            saveAuth();
+            document.getElementById('myUsername').textContent = S.username;
+            toast('Username updated');
+            // Update in Firebase
+            if (S.username) {
+                setData(`users/${S.username}/username`, S.username);
+                setData(`users/${S.username}/last_seen`, new Date().toISOString());
+            }
         }
-        row.innerHTML = users.slice(0, 10).map(function(u) {
-            const post = S.socialPosts.find(function(p) { return p.author === u; });
-            const emoji = post ? post.avatar : '😊';
-            return '<div class="ig-story"><div class="ig-story-avatar"><div class="inner">' + emoji + '</div></div><span class="ig-story-name">' + u + '</span></div>';
-        }).join('');
+    }
+
+    // ==================== SOCIAL FUNCTIONS ====================
+    function setupPostsListener() {
+        if (postsListener) {
+            postsListener.off();
+        }
+        const postsRef = getRef('posts');
+        postsListener = postsRef.orderByKey().limitToLast(50);
+        postsListener.on('child_added', function(snapshot) {
+            const post = snapshot.val();
+            post.id = snapshot.key;
+            // Check if post already exists
+            if (!S.socialPosts.find(p => p.id === post.id)) {
+                S.socialPosts.unshift(post);
+                if (S.socialPosts.length > 50) S.socialPosts.pop();
+                renderSocial();
+                renderStories();
+            }
+        });
     }
 
     function handleFileSelect(event) {
         const file = event.target.files[0];
         if (!file) return;
-
-        selectedFile = file;
-
         const reader = new FileReader();
         reader.onload = function(e) {
             selectedFileData = e.target.result;
             const preview = document.getElementById('filePreview');
             preview.style.display = 'block';
-            if (file.type.startsWith('image/')) {
-                preview.innerHTML = '<img src="' + e.target.result + '" style="max-height:150px;border-radius:8px;max-width:100%;">';
-            } else if (file.type.startsWith('video/')) {
-                preview.innerHTML = '<video src="' + e.target.result + '" style="max-height:150px;border-radius:8px;max-width:100%;" controls></video>';
-            }
+            preview.innerHTML = '<img src="' + e.target.result + '" style="max-height:150px;border-radius:8px;max-width:100%;">';
         };
         reader.readAsDataURL(file);
     }
 
-    async function createPost() {
+    function createPost() {
         const input = document.getElementById('postInput');
         const text = input.value.trim();
         if (!text && !selectedFileData) { toast('Write something or add media'); return; }
 
-        const avatar = S.avatar || (S.selectedAuras.length > 0 ? S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊');
-
-        try {
-            await loadAllData();
-            if (!CLOUD_DATA.posts) CLOUD_DATA.posts = [];
-
-            const post = {
-                id: 'post_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-                author: S.username || 'You',
-                avatar: avatar,
-                text: text || '',
-                time: new Date().toISOString(),
-                likes: [],
-                image: selectedFileData || null,
-                mediaType: selectedFile ? (selectedFile.type.startsWith('video/') ? 'video' : 'image') : 'image'
-            };
-
-            CLOUD_DATA.posts.unshift(post);
-            if (CLOUD_DATA.posts.length > 200) CLOUD_DATA.posts = CLOUD_DATA.posts.slice(0, 200);
-            await saveAllData();
-
-            S.socialPosts = CLOUD_DATA.posts;
-            input.value = '';
-            selectedFile = null;
-            selectedFileData = null;
-            document.getElementById('filePreview').style.display = 'none';
-            document.getElementById('filePreview').innerHTML = '';
-            renderSocial();
-            renderStories();
-            toast('📝 Posted!');
-        } catch (e) {
-            console.error('Create post error:', e);
-            toast('❌ Failed to post');
-        }
+        const avatar = S.selectedAuras.length > 0 ? S.selectedAuras.map(k => AURAS[k].emoji).join('') : '😊';
+        const post = {
+            author: S.username || 'You',
+            avatar: avatar,
+            text: text || '',
+            image: selectedFileData || null,
+            time: new Date().toISOString(),
+            likes: []
+        };
+        const postsRef = getRef('posts');
+        postsRef.push(post);
+        input.value = '';
+        selectedFile = null;
+        selectedFileData = null;
+        document.getElementById('filePreview').style.display = 'none';
+        document.getElementById('filePreview').innerHTML = '';
+        toast('📝 Posted!');
     }
 
     function likePost(id) {
-        const post = S.socialPosts.find(function(x) { return x.id === id; });
+        if (!id) return;
+        const post = S.socialPosts.find(p => p.id === id);
         if (!post) return;
-        if (S.likedPosts.indexOf(id) > -1) {
-            S.likedPosts = S.likedPosts.filter(function(x) { return x !== id; });
-            post.likes = post.likes.filter(function(u) { return u !== S.username; });
+        const likes = post.likes || [];
+        const idx = likes.indexOf(S.username);
+        if (idx > -1) {
+            likes.splice(idx, 1);
         } else {
-            S.likedPosts.push(id);
-            post.likes.push(S.username);
+            likes.push(S.username);
         }
-        CLOUD_DATA.posts = S.socialPosts;
-        saveAllData();
+        post.likes = likes;
+        // Update in Firebase
+        const postRef = getRef(`posts/${id}/likes`);
+        postRef.set(likes);
         renderSocial();
     }
 
     function deletePost(id) {
         if (!confirm('Delete this post?')) return;
-        S.socialPosts = S.socialPosts.filter(function(p) { return p.id !== id; });
-        S.likedPosts = S.likedPosts.filter(function(x) { return x !== id; });
-        CLOUD_DATA.posts = S.socialPosts;
-        saveAllData();
+        const postRef = getRef(`posts/${id}`);
+        postRef.remove();
+        S.socialPosts = S.socialPosts.filter(p => p.id !== id);
         renderSocial();
         renderStories();
+    }
+
+    function renderStories() {
+        const row = document.getElementById('storyRow');
+        if (!row) return;
+        const users = [...new Set(S.socialPosts.map(p => p.author))];
+        if (users.length === 0) {
+            row.innerHTML = '<div style="display:flex;gap:10px;padding:4px 0;color:#94a3b8;font-size:12px;">No stories yet</div>';
+            return;
+        }
+        row.innerHTML = users.slice(0, 10).map(u => {
+            const post = S.socialPosts.find(p => p.author === u);
+            const emoji = post ? post.avatar : '😊';
+            return `<div class="ig-story"><div class="ig-story-avatar"><div class="inner">${emoji}</div></div><span class="ig-story-name">${u}</span></div>`;
+        }).join('');
+    }
+
+    function renderSocial() {
+        const feed = document.getElementById('socialFeed');
+        if (!feed) return;
+        if (S.socialPosts.length === 0) {
+            feed.innerHTML = '<div style="text-align:center;padding:40px 0;color:#94a3b8;"><div style="font-size:48px;margin-bottom:12px;">📸</div><p>No posts yet. Share your journey!</p></div>';
+            return;
+        }
+        feed.innerHTML = S.socialPosts.map(p => {
+            const liked = (p.likes || []).includes(S.username);
+            const timeAgo = timeSince(new Date(p.time));
+            const avatarDisplay = p.avatar || '😊';
+            return `<div class="ig-post"><div class="ig-post-header"><div class="ig-post-avatar">${avatarDisplay}</div><span class="ig-post-user">${p.author}</span><span class="ig-post-time">${timeAgo}</span>${p.author === S.username ? `<button class="btn-sm btn-danger" onclick="deletePost('${p.id}')" style="font-size:11px;padding:2px 8px;">🗑️</button>` : ''}</div>${p.image ? `<img src="${p.image}" class="post-image" />` : ''}<div style="padding:0 12px 4px;"><p style="font-size:13px;margin:4px 0;">${p.text}</p></div><div class="ig-post-actions"><button class="ig-post-action ${liked ? 'liked' : ''}" onclick="likePost('${p.id}')">${liked ? '❤️' : '🤍'}</button><span style="font-size:13px;font-weight:600;color:#94a3b8;">${(p.likes || []).length} likes</span></div></div>`;
+        }).join('');
     }
 
     function timeSince(date) {
@@ -1584,73 +1440,35 @@
         return date.toLocaleDateString();
     }
 
-    function renderSocial() {
-        const feed = document.getElementById('socialFeed');
-        if (!feed) return;
-        const avatarEl = document.getElementById('postAvatarEmoji');
-        if (avatarEl) {
-            avatarEl.textContent = S.avatar ? '🖼️' : (S.selectedAuras.length > 0 ? S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊');
-        }
-
-        const posts = S.socialPosts;
-        if (posts.length === 0) {
-            feed.innerHTML = '<div style="text-align:center;padding:40px 0;color:#94a3b8;"><div style="font-size:48px;margin-bottom:12px;">📸</div><p>No posts yet. Share your journey!</p></div>';
-            return;
-        }
-
-        feed.innerHTML = posts.map(function(p) {
-            const liked = S.likedPosts.indexOf(p.id) > -1;
-            const timeAgo = timeSince(new Date(p.time));
-            let mediaHtml = '';
-            if (p.mediaType === 'video' && p.image) {
-                mediaHtml = '<video src="' + p.image + '" class="post-video" controls></video>';
-            } else if (p.image && (p.image.indexOf('data:') === 0)) {
-                mediaHtml = '<img src="' + p.image + '" class="post-image" alt="Post image" />';
-            }
-            const avatarDisplay = p.avatar && p.avatar.startsWith('data:') ?
-                '<img src="' + p.avatar + '" style="width:36px;height:36px;border-radius:50%;object-fit:cover;" />' :
-                p.avatar || '😊';
-            return '<div class="ig-post"><div class="ig-post-header"><div class="ig-post-avatar" style="overflow:hidden;">' + avatarDisplay + '</div><span class="ig-post-user">' + p.author + '</span><span class="ig-post-time">' + timeAgo + '</span>' + (p.author === S.username ? '<button class="btn-sm btn-danger" onclick="window.deletePost(\'' + p.id + '\')" style="font-size:11px;padding:2px 8px;">🗑️</button>' : '') + '</div>' + mediaHtml + '<div style="padding:0 12px 4px;"><p style="font-size:13px;margin:4px 0;">' + p.text + '</p></div><div class="ig-post-actions"><button class="ig-post-action ' + (liked ? 'liked' : '') + '" onclick="window.likePost(\'' + p.id + '\')">' + (liked ? '❤️' : '🤍') + '</button><span style="font-size:13px;font-weight:600;color:#94a3b8;">' + p.likes.length + ' ' + (p.likes.length === 1 ? 'like' : 'likes') + '</span></div></div>';
-        }).join('');
-    }
-
     // ==================== PROFILE FUNCTIONS ====================
     function renderProfile() {
-        const avatarEmoji = S.avatar ? '🖼️' : (S.selectedAuras.length > 0 ? S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊');
-
-        const avatarContainer = document.getElementById('profileAvatarContainer');
-        if (avatarContainer) {
-            if (S.avatar) {
-                avatarContainer.innerHTML = '<div class="inner" style="overflow:hidden;padding:0;"><img src="' + S.avatar + '" style="width:100%;height:100%;object-fit:cover;" /></div>';
-            } else {
-                avatarContainer.innerHTML = '<div class="inner" id="profileAvatarEmoji">' + avatarEmoji + '</div>';
-            }
-        }
-
+        const avatarEmoji = S.selectedAuras.length > 0 ? S.selectedAuras.map(k => AURAS[k].emoji).join('') : '😊';
+        document.getElementById('profileAvatarEmoji').textContent = avatarEmoji;
         document.getElementById('profileName').textContent = S.username || '—';
         document.getElementById('profileUsername').textContent = '@' + (S.username || '—');
-        document.getElementById('profilePosts').textContent = S.socialPosts.filter(function(p) { return p.author === S.username; }).length;
+        document.getElementById('profilePosts').textContent = S.socialPosts.filter(p => p.author === S.username).length;
         document.getElementById('profileFollowers').textContent = Math.floor(Math.random() * 100) + 10;
         document.getElementById('profileFollowing').textContent = Math.floor(Math.random() * 50) + 5;
         document.getElementById('profileBio').textContent = S.bio || 'Building my energy. One aura at a time. ⚡';
 
         const grid = document.getElementById('profilePostsGrid');
-        const userPosts = S.socialPosts.filter(function(p) { return p.author === S.username; });
+        const userPosts = S.socialPosts.filter(p => p.author === S.username);
         if (userPosts.length === 0) {
             grid.innerHTML = '<p style="color:#94a3b8;text-align:center;grid-column:1/-1;padding:16px 0;">No posts yet.</p>';
             return;
         }
-        grid.innerHTML = userPosts.map(function(p) {
-            const img = p.image && (p.image.indexOf('data:') === 0) ? p.image : UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)];
-            return '<div style="aspect-ratio:1;background-image:url(\'' + img + '\');background-size:cover;background-position:center;border-radius:4px;cursor:pointer;" onclick="window.toast(\'' + p.text.substring(0, 30) + '...\')"></div>';
-        }).join('');
+        grid.innerHTML = userPosts.map(p =>
+            `<div style="aspect-ratio:1;background-image:url('${p.image || UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)]}');background-size:cover;background-position:center;border-radius:4px;cursor:pointer;" onclick="toast('${p.text.substring(0, 30)}...')"></div>`
+        ).join('');
     }
 
     function editProfile() {
         const newBio = prompt('Edit your bio:', S.bio || '');
         if (newBio !== null) {
             S.bio = newBio.trim() || 'Building my energy. One aura at a time. ⚡';
-            saveAuth();
+            if (S.username) {
+                setData(`users/${S.username}/bio`, S.bio);
+            }
             renderProfile();
             toast('✅ Bio updated');
         }
@@ -1663,86 +1481,109 @@
 
     function setWallpaper(url) {
         S.wallpaper = url;
-        saveAuth();
         setBg(url);
         renderWallpapers();
         toast('✅ Applied');
     }
 
     function renderWallpapers() {
-        const count = document.getElementById('wpCount');
-        const grid = document.getElementById('wpGrid');
-
-        if (count) count.textContent = UNSPLASH.length + ' wallpapers';
-        if (!grid) return;
-
-        grid.innerHTML = UNSPLASH.map(function(url) {
+        document.getElementById('wpCount').textContent = UNSPLASH.length + '+ wallpapers';
+        document.getElementById('wpGrid').innerHTML = UNSPLASH.map(url => {
             const selected = S.wallpaper === url;
-            return '<div class="wp-thumb' + (selected ? ' selected' : '') + '" style="background-image:url(\'' + url + '\')" onclick="window.setWallpaper(\'' + url + '\')"></div>';
+            return `<div class="wp-thumb${selected ? ' selected' : ''}" style="background-image:url('${url}')" onclick="setWallpaper('${url}')"></div>`;
         }).join('');
     }
 
     // ==================== AUTH HANDLERS ====================
-    async function handleSignup() {
+    function handleSignup() {
         const name = document.getElementById('signupName').value.trim();
         const user = document.getElementById('signupUser').value.trim();
         const pass = document.getElementById('signupPass').value.trim();
         if (!name || !user || !pass) { toast('Please fill all fields'); return; }
         if (pass.length < 4) { toast('Password must be at least 4 characters'); return; }
 
-        await loadAllData();
-        if (!CLOUD_DATA.users) CLOUD_DATA.users = {};
-        if (CLOUD_DATA.users[user]) { toast('Username already exists'); return; }
+        const usersRef = getRef('users');
+        usersRef.once('value', function(snapshot) {
+            const users = snapshot.val() || {};
+            if (users[user]) {
+                toast('Username already exists');
+                return;
+            }
+            users[user] = {
+                name: name,
+                password: pass,
+                bio: 'Building my energy. One aura at a time. ⚡',
+                wallpaper: DEFAULT_WALLPAPER,
+                selected_auras: [],
+                created: new Date().toISOString(),
+                last_seen: new Date().toISOString()
+            };
+            usersRef.set(users);
 
-        CLOUD_DATA.users[user] = { password: pass, name: name, created: new Date().toISOString() };
-        if (!CLOUD_DATA.profiles) CLOUD_DATA.profiles = {};
-        CLOUD_DATA.profiles[user] = {
-            bio: 'Building my energy. One aura at a time. ⚡',
-            wallpaper: DEFAULT_WALLPAPER,
-            selected_auras: [],
-            avatar: null,
-            created: new Date().toISOString()
-        };
-        await saveAllData();
-
-        S.username = user;
-        S.selectedAuras = [];
-        S.completedTasks = [];
-        S.streakData = {};
-        S.diary = [];
-        S.routines = [];
-        S.socialPosts = [];
-        S.likedPosts = [];
-        S.bio = 'Building my energy. One aura at a time. ⚡';
-        S.wallpaper = DEFAULT_WALLPAPER;
-        S.avatar = null;
-        saveAuth();
-        toast('Account created! Welcome ' + name);
-        navigate('select');
+            S.username = user;
+            S.selectedAuras = [];
+            S.completedTasks = [];
+            S.streakData = {};
+            S.diary = [];
+            S.routines = [];
+            S.socialPosts = [];
+            S.likedPosts = [];
+            S.bio = 'Building my energy. One aura at a time. ⚡';
+            S.wallpaper = DEFAULT_WALLPAPER;
+            saveAuth();
+            setBg(DEFAULT_WALLPAPER);
+            toast('Account created! Welcome ' + name);
+            navigate('select');
+        });
     }
 
-    async function handleLogin() {
+    function handleLogin() {
         const user = document.getElementById('loginUser').value.trim();
         const pass = document.getElementById('loginPass').value.trim();
         if (!user || !pass) { toast('Enter username and password'); return; }
 
-        await loadAllData();
-        if (!CLOUD_DATA.users || !CLOUD_DATA.users[user] || CLOUD_DATA.users[user].password !== pass) {
-            toast('Invalid credentials');
-            return;
-        }
+        const usersRef = getRef('users');
+        usersRef.once('value', function(snapshot) {
+            const users = snapshot.val() || {};
+            if (!users[user] || users[user].password !== pass) {
+                toast('Invalid credentials');
+                return;
+            }
+            S.username = user;
+            S.bio = users[user].bio || 'Building my energy. One aura at a time. ⚡';
+            S.wallpaper = users[user].wallpaper || DEFAULT_WALLPAPER;
+            S.selectedAuras = users[user].selected_auras || [];
+            saveAuth();
+            setBg(S.wallpaper);
+            // Update last seen
+            setData(`users/${S.username}/last_seen`, new Date().toISOString());
+            // Load user data
+            loadUserData();
+            toast('Welcome back, ' + users[user].name);
+            navigate('social');
+        });
+    }
 
-        S.username = user;
-        if (CLOUD_DATA.profiles && CLOUD_DATA.profiles[user]) {
-            const profile = CLOUD_DATA.profiles[user];
-            S.bio = profile.bio || 'Building my energy. One aura at a time. ⚡';
-            S.wallpaper = profile.wallpaper || DEFAULT_WALLPAPER;
-            S.selectedAuras = profile.selected_auras || [];
-            S.avatar = profile.avatar || null;
-        }
-        saveAuth();
-        toast('Welcome back, ' + CLOUD_DATA.users[user].name);
-        navigate('social');
+    function loadUserData() {
+        if (!S.username) return;
+        // Load diary
+        const diaryRef = getRef(`diary/${S.username}`);
+        diaryRef.once('value', function(snapshot) {
+            const data = snapshot.val();
+            if (data) {
+                S.diary = Object.values(data).reverse();
+            }
+            renderDiary();
+        });
+        // Load routines
+        const routineRef = getRef(`routines/${S.username}`);
+        routineRef.once('value', function(snapshot) {
+            const data = snapshot.val();
+            if (data) {
+                S.routines = Object.values(data).reverse();
+            }
+            renderRoutines();
+        });
     }
 
     function logout() {
@@ -1750,42 +1591,38 @@
         S.username = '';
         localStorage.removeItem(AUTH_KEY);
         document.getElementById('wpFab').style.display = 'none';
+        if (messagesListener) messagesListener.off();
+        if (postsListener) postsListener.off();
         toast('Logged out');
         navigate('landing');
     }
 
     // ==================== INIT ====================
-    async function init() {
-        console.log('🚀 Winchu starting...');
-        await loadAllData();
-
-        // Load data into state
-        if (CLOUD_DATA.messages) chatMessages = CLOUD_DATA.messages;
-        if (CLOUD_DATA.posts) S.socialPosts = CLOUD_DATA.posts;
-        if (CLOUD_DATA.diaries) S.diary = CLOUD_DATA.diaries;
-        if (CLOUD_DATA.routines) S.routines = CLOUD_DATA.routines;
-
+    function init() {
+        console.log('🚀 Winchu starting with Firebase Realtime!');
         const loggedIn = loadAuth();
         if (loggedIn) {
+            document.getElementById('wpFab').style.display = 'flex';
             setBg(S.wallpaper);
             document.getElementById('myUsername').textContent = S.username;
+            // Load user data
+            loadUserData();
+            // Setup listeners
+            setupMessagesListener();
+            setupPostsListener();
+            // Update last seen every 30 seconds
+            setInterval(function() {
+                if (S.username) {
+                    setData(`users/${S.username}/last_seen`, new Date().toISOString());
+                }
+            }, 30000);
             navigate('social');
         } else {
             document.getElementById('wpFab').style.display = 'none';
             navigate('landing');
         }
-
-        // Start polling for updates
-        setInterval(function() {
-            if (S.username) updateChat();
-        }, 5000);
-
-        console.log('⚡ Winchu · Nexus with JSONBin ✅');
-        console.log('📊 Data loaded:', {
-            messages: CLOUD_DATA.messages ? CLOUD_DATA.messages.length : 0,
-            users: Object.keys(CLOUD_DATA.users || {}).length,
-            posts: CLOUD_DATA.posts ? CLOUD_DATA.posts.length : 0
-        });
+        console.log('⚡ Winchu · Nexus with Firebase Realtime ✅');
+        console.log('🔥 Database URL: https://nexus-wegem-default-rtdb.firebaseio.com/');
     }
 
     // ==================== EXPOSE TO WINDOW ====================
@@ -1795,11 +1632,8 @@
     window.toggleTask = toggleTask;
     window.resetDay = resetDay;
     window.saveDiary = saveDiary;
-    window.deleteDiary = deleteDiary;
     window.saveRoutine = saveRoutine;
-    window.deleteRoutine = deleteRoutine;
     window.sendMessage = sendMessage;
-    window.deleteMessage = deleteMessage;
     window.changeUsername = changeUsername;
     window.createPost = createPost;
     window.likePost = likePost;
@@ -1815,7 +1649,6 @@
     window.toast = toast;
     window.renderDiary = renderDiary;
     window.renderUsers = renderUsers;
-    window.getAvatarHTML = getAvatarHTML;
 
     // ==================== START ====================
     init();
