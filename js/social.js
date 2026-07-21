@@ -1,171 +1,328 @@
-// ==================== SOCIAL LOGIC ====================
-function setupPostsListener() {
+// Social Feed Module
+window.postsListener = null;
+window.selectedFile = null;
+window.selectedFileData = null;
+
+// Setup Posts Listener
+window.setupPostsListener = function() {
     if (window.postsListener) {
         window.postsListener.off();
     }
+    
     const postsRef = getRef('posts');
     window.postsListener = postsRef.orderByKey().limitToLast(50);
-    window.postsListener.on('child_added', function(snapshot) {
+    
+    window.postsListener.on('child_added', (snapshot) => {
         const post = snapshot.val();
         post.id = snapshot.key;
+        
         if (!window.S.socialPosts.find(p => p.id === post.id)) {
             window.S.socialPosts.unshift(post);
-            if (window.S.socialPosts.length > 50) window.S.socialPosts.pop();
-            renderSocial();
-            renderStories();
+            if (window.S.socialPosts.length > 50) {
+                window.S.socialPosts.pop();
+            }
+            
+            if (window.renderSocial) window.renderSocial();
+            if (window.renderProfile) window.renderProfile();
+            if (window.renderStories) window.renderStories();
+            saveUserState();
         }
     });
-}
-window.setupPostsListener = setupPostsListener;
+    
+    window.postsListener.on('child_changed', (snapshot) => {
+        const post = snapshot.val();
+        post.id = snapshot.key;
+        
+        const index = window.S.socialPosts.findIndex(p => p.id === post.id);
+        if (index > -1) {
+            window.S.socialPosts[index] = post;
+            if (window.renderSocial) window.renderSocial();
+            saveUserState();
+        }
+    });
+    
+    window.postsListener.on('child_removed', (snapshot) => {
+        window.S.socialPosts = window.S.socialPosts.filter(p => p.id !== snapshot.key);
+        if (window.renderSocial) window.renderSocial();
+        if (window.renderProfile) window.renderProfile();
+        saveUserState();
+    });
+};
 
-function handleFileSelect(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        window.selectedFileData = e.target.result;
-        const preview = document.getElementById('filePreview');
-        preview.style.display = 'block';
-        preview.innerHTML = '<img src="' + e.target.result + '" style="max-height:150px;border-radius:8px;max-width:100%;">';
-    };
-    reader.readAsDataURL(file);
-}
-window.handleFileSelect = handleFileSelect;
+// Render Social Feed
+window.renderSocial = function() {
+    const feed = document.getElementById('socialFeed');
+    if (!feed) return;
+    
+    if (!window.S.username) {
+        feed.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:30px 0;">Please log in to see posts</p>';
+        return;
+    }
+    
+    if (!window.S.socialPosts || window.S.socialPosts.length === 0) {
+        feed.innerHTML = `
+            <div style="text-align:center;padding:40px 0;color:#94a3b8;">
+                <div style="font-size:48px;margin-bottom:12px;">📸</div>
+                <p>No posts yet. Share something!</p>
+            </div>`;
+        return;
+    }
+    
+    let html = '';
+    window.S.socialPosts.forEach(p => {
+        const liked = (p.likes || []).includes(window.S.username);
+        const timeAgo = window.timeSince ? window.timeSince(new Date(p.time)) : 'recent';
+        const avatarDisplay = p.avatar || '😊';
+        const commentCount = (p.comments || []).length;
+        const canDelete = p.author === window.S.username;
+        const likeCount = (p.likes || []).length;
+        
+        html += `
+            <div class="ig-post" onclick="window.viewPostDetail('${p.id}')">
+                <div class="ig-post-header">
+                    <div class="ig-post-avatar">${avatarDisplay}</div>
+                    <span class="ig-post-user">${p.author}</span>
+                    <span class="ig-post-time">${timeAgo}</span>
+                    ${canDelete ? `<button class="btn-sm btn-danger" onclick="event.stopPropagation(); window.deletePost('${p.id}')" style="font-size:11px;padding:2px 8px;">🗑️</button>` : ''}
+                </div>
+                ${p.image ? `<img src="${p.image}" class="post-image" alt="Post" />` : ''}
+                <div style="padding:0 12px 4px;">
+                    <p style="font-size:13px;margin:4px 0;">${escapeHtml(p.text || '')}</p>
+                </div>
+                <div class="ig-post-actions" onclick="event.stopPropagation();">
+                    <button class="ig-post-action ${liked ? 'liked' : ''}" onclick="window.likePost('${p.id}')">
+                        ${liked ? '❤️' : '🤍'}
+                    </button>
+                    <span style="font-size:13px;font-weight:600;color:#94a3b8;">${likeCount}</span>
+                    <button class="ig-post-action" onclick="window.commentOnPost('${p.id}')">💬</button>
+                    <span style="font-size:13px;font-weight:600;color:#94a3b8;">${commentCount}</span>
+                    ${p.image ? `<button class="ig-post-action" onclick="window.downloadMedia('${p.image}', 'winchu-post.jpg')">⬇️</button>` : ''}
+                </div>
+                ${commentCount > 0 ? `
+                    <div class="ig-post-comments" onclick="event.stopPropagation(); window.viewPostDetail('${p.id}')">
+                        View ${commentCount} comment${commentCount > 1 ? 's' : ''}
+                    </div>` : ''}
+            </div>`;
+    });
+    
+    feed.innerHTML = html;
+};
 
-function createPost() {
+// Create Post
+window.createPost = function() {
+    if (!window.S.username) {
+        window.toast('Please log in');
+        return;
+    }
+    
     const input = document.getElementById('postInput');
     const text = input.value.trim();
+    
     if (!text && !window.selectedFileData) {
         window.toast('Write something or add media');
         return;
     }
-
-    const avatar = window.S.selectedAuras.length > 0 ? window.S.selectedAuras.map(k => AURAS[k].emoji).join('') : '😊';
+    
+    const avatar = window.S.avatar || 
+        (window.S.selectedAuras.length > 0 ? 
+            window.S.selectedAuras.map(k => AURAS[k].emoji).join('') : '😊');
+    
     const post = {
-        author: window.S.username || 'You',
+        author: window.S.username,
         avatar: avatar,
         text: text || '',
         image: window.selectedFileData || null,
         time: new Date().toISOString(),
-        likes: []
+        likes: [],
+        comments: []
     };
-    const postsRef = getRef('posts');
-    postsRef.push(post);
+    
+    pushData('posts', post)
+        .then(() => {
+            window.toast('📝 Posted!');
+        })
+        .catch(err => {
+            console.error('Post error:', err);
+            window.toast('Failed to post');
+        });
+    
+    // Clear input
     input.value = '';
     window.selectedFile = null;
     window.selectedFileData = null;
-    document.getElementById('filePreview').style.display = 'none';
-    document.getElementById('filePreview').innerHTML = '';
-    window.toast('📝 Posted!');
-}
-window.createPost = createPost;
+    
+    const preview = document.getElementById('filePreview');
+    if (preview) {
+        preview.style.display = 'none';
+        preview.innerHTML = '';
+    }
+    
+    saveUserState();
+};
 
-function likePost(id) {
-    if (!id) return;
-    const post = window.S.socialPosts.find(p => p.id === id);
+// Handle File Select
+window.handleFileSelect = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        window.toast('File too large (max 5MB)');
+        return;
+    }
+    
+    window.selectedFile = file;
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        window.selectedFileData = e.target.result;
+        const preview = document.getElementById('filePreview');
+        
+        if (file.type.startsWith('image/')) {
+            preview.innerHTML = `<img src="${e.target.result}" style="max-height:150px;border-radius:8px;max-width:100%;" alt="Preview" />`;
+        } else if (file.type.startsWith('video/')) {
+            preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:150px;border-radius:8px;max-width:100%;"></video>`;
+        }
+        
+        preview.style.display = 'block';
+    };
+    
+    reader.readAsDataURL(file);
+};
+
+// Like Post
+window.likePost = function(postId) {
+    if (!window.S.username) {
+        window.toast('Please log in');
+        return;
+    }
+    
+    const post = window.S.socialPosts.find(p => p.id === postId);
     if (!post) return;
-    const likes = post.likes || [];
-    const idx = likes.indexOf(window.S.username);
-    if (idx > -1) {
-        likes.splice(idx, 1);
+    
+    let likes = post.likes || [];
+    const index = likes.indexOf(window.S.username);
+    
+    if (index > -1) {
+        likes.splice(index, 1);
     } else {
         likes.push(window.S.username);
     }
+    
     post.likes = likes;
-    const postRef = getRef(`posts/${id}/likes`);
-    postRef.set(likes);
-    renderSocial();
-}
-window.likePost = likePost;
+    getRef('posts/' + postId + '/likes').set(likes);
+    
+    window.renderSocial();
+    window.renderProfile();
+    saveUserState();
+};
 
-function deletePost(id) {
-    if (!confirm('Delete this post?')) return;
-    const postRef = getRef(`posts/${id}`);
-    postRef.remove();
-    window.S.socialPosts = window.S.socialPosts.filter(p => p.id !== id);
-    renderSocial();
-    renderStories();
-}
-window.deletePost = deletePost;
+// Comment on Post
+window.commentOnPost = function(postId) {
+    if (!window.S.username) {
+        window.toast('Please log in');
+        return;
+    }
+    
+    showDialog({
+        emoji: '💬',
+        title: 'Add Comment',
+        subtitle: 'Write your comment',
+        placeholder: 'Type your comment...',
+        confirmText: 'Post'
+    }).then(result => {
+        if (result && result.trim()) {
+            const post = window.S.socialPosts.find(p => p.id === postId);
+            if (!post) return;
+            
+            const comments = post.comments || [];
+            comments.push({
+                username: window.S.username,
+                text: result.trim(),
+                time: new Date().toISOString()
+            });
+            
+            post.comments = comments;
+            getRef('posts/' + postId + '/comments').set(comments);
+            
+            window.renderSocial();
+            window.toast('Comment added! 💬');
+            saveUserState();
+        }
+    });
+};
 
-function renderStories() {
+// Delete Post
+window.deletePost = function(postId) {
+    showDialog({
+        emoji: '🗑️',
+        title: 'Delete Post',
+        subtitle: 'Are you sure you want to delete this post?',
+        confirmText: 'Delete',
+        danger: true
+    }).then(result => {
+        if (result !== null) {
+            getRef('posts/' + postId).remove()
+                .then(() => {
+                    window.S.socialPosts = window.S.socialPosts.filter(p => p.id !== postId);
+                    window.renderSocial();
+                    window.renderProfile();
+                    window.toast('Post deleted');
+                    saveUserState();
+                })
+                .catch(() => {
+                    window.toast('Failed to delete post');
+                });
+        }
+    });
+};
+
+// Download Media
+window.downloadMedia = function(url, filename) {
+    if (!url) {
+        window.toast('No media to download');
+        return;
+    }
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'winchu-media.jpg';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.toast('Downloading...');
+};
+
+// Render Stories
+window.renderStories = function() {
     const row = document.getElementById('storyRow');
     if (!row) return;
+    
     const users = [...new Set(window.S.socialPosts.map(p => p.author))];
+    
     if (users.length === 0) {
         row.innerHTML = '<div style="display:flex;gap:10px;padding:4px 0;color:#94a3b8;font-size:12px;">No stories yet</div>';
         return;
     }
+    
     row.innerHTML = users.slice(0, 10).map(u => {
         const post = window.S.socialPosts.find(p => p.author === u);
-        const emoji = post ? post.avatar : '😊';
-        return `<div class="ig-story"><div class="ig-story-avatar"><div class="inner">${emoji}</div></div><span class="ig-story-name">${u}</span></div>`;
-    }).join('');
-}
-window.renderStories = renderStories;
-
-function renderSocial() {
-    const feed = document.getElementById('socialFeed');
-    if (!feed) return;
-    if (window.S.socialPosts.length === 0) {
-        feed.innerHTML = '<div style="text-align:center;padding:40px 0;color:#94a3b8;"><div style="font-size:48px;margin-bottom:12px;">📸</div><p>No posts yet. Share your journey!</p></div>';
-        return;
-    }
-    feed.innerHTML = window.S.socialPosts.map(p => {
-        const liked = (p.likes || []).includes(window.S.username);
-        const timeAgo = timeSince(new Date(p.time));
-        const avatarDisplay = p.avatar || '😊';
-        return `<div class="ig-post"><div class="ig-post-header"><div class="ig-post-avatar">${avatarDisplay}</div><span class="ig-post-user">${p.author}</span><span class="ig-post-time">${timeAgo}</span>${p.author === window.S.username ? `<button class="btn-sm btn-danger" onclick="deletePost('${p.id}')" style="font-size:11px;padding:2px 8px;">🗑️</button>` : ''}</div>${p.image ? `<img src="${p.image}" class="post-image" />` : ''}<div style="padding:0 12px 4px;"><p style="font-size:13px;margin:4px 0;">${p.text}</p></div><div class="ig-post-actions"><button class="ig-post-action ${liked ? 'liked' : ''}" onclick="likePost('${p.id}')">${liked ? '❤️' : '🤍'}</button><span style="font-size:13px;font-weight:600;color:#94a3b8;">${(p.likes || []).length} likes</span></div></div>`;
-    }).join('');
-}
-window.renderSocial = renderSocial;
-
-function timeSince(date) {
-    const now = new Date();
-    const diff = Math.floor((now - date) / 1000);
-    if (diff < 60) return diff + 's';
-    if (diff < 3600) return Math.floor(diff / 60) + 'm';
-    if (diff < 86400) return Math.floor(diff / 3600) + 'h';
-    if (diff < 604800) return Math.floor(diff / 86400) + 'd';
-    return date.toLocaleDateString();
-}
-
-function renderUsers() {
-    const container = document.getElementById('usersList');
-    if (!container) return;
-
-    const usersRef = getRef('users');
-    usersRef.once('value', function(snapshot) {
-        const users = snapshot.val() || {};
-        const usernames = Object.keys(users);
-
-        if (usernames.length === 0) {
-            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">No users yet.</p>';
-            return;
-        }
-
-        container.innerHTML = usernames.map(u => {
-            const isMe = u === window.S.username;
-            const userData = users[u] || {};
-            const isOnline = userData.last_seen && (Date.now() - new Date(userData.last_seen).getTime() < 60000);
-            const postCount = window.S.socialPosts ? window.S.socialPosts.filter(p => p.author === u).length : 0;
-            const color = ['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8','#F7B787','#FF8A80','#B388FF','#82B1FF','#B9F6CA','#FFE57F','#FF80AB','#EA80FC','#8C9EFF'][u.length % 16];
-            const avatarHTML = `<div style="width:40px;height:40px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:16px;">${u.charAt(0).toUpperCase()}</div>`;
-
-            return `
-                <div class="user-card">
-                    <div class="user-avatar">${avatarHTML}</div>
-                    <div class="user-info">
-                        <div class="name">
-                            ${isMe ? '⭐ ' : ''}${u}
-                            <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span>
-                            ${isOnline ? '🟢 Online' : '⚪ Offline'}
-                        </div>
-                        <div class="bio">${userData.bio || 'No bio yet'} • ${postCount} posts</div>
-                    </div>
+        const avatar = post ? (post.avatar || '😊') : '😊';
+        return `
+            <div class="ig-story">
+                <div class="ig-story-avatar">
+                    <div class="inner">${avatar}</div>
                 </div>
-            `;
-        }).join('');
-    });
+                <span class="ig-story-name">${u}</span>
+            </div>`;
+    }).join('');
+};
+
+// Escape HTML for posts
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
-window.renderUsers = renderUsers;
+
+console.log('📱 Social module loaded');
