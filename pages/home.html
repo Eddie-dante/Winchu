@@ -1,0 +1,38 @@
+<div class="page" id="page-home">
+    <div class="container">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <h2 id="homeTitle" style="font-size:17px;font-weight:700;">Dashboard</h2>
+            <span id="homeBadge" style="font-size:10px;background:rgba(0,0,0,0.04);padding:3px 10px;border-radius:18px;">⚡️</span>
+        </div>
+        <button class="btn-sm" onclick="window.navigate('users')" style="width:100%;margin-bottom:10px;background:rgba(99,102,241,0.15);border-color:#6366f1;">
+            👥 Find Friends
+        </button>
+        <div class="score-ring-wrap">
+            <div class="score-ring">
+                <svg viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="43" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="5"/>
+                    <circle id="scoreRing" cx="50" cy="50" r="43" fill="none" stroke="#0f172a" stroke-width="5" stroke-linecap="round" stroke-dasharray="270.18" stroke-dashoffset="270.18"/>
+                </svg>
+                <div class="center"><div class="num" id="score">0%</div><div class="label">Strength</div></div>
+            </div>
+        </div>
+        <div class="stat-row">
+            <div class="stat-card"><div class="stat-icon">🔥</div><div class="stat-value" id="streakCount">0</div><div class="stat-label">Streak</div></div>
+            <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" id="tasksDone">0</div><div class="stat-label">Tasks</div></div>
+            <div class="stat-card"><div class="stat-icon">📖</div><div class="stat-value" id="diaryCount">0</div><div class="stat-label">Diary</div></div>
+            <div class="stat-card"><div class="stat-icon">💬</div><div class="stat-value" id="msgCount">0</div><div class="stat-label">Chats</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:#475569;margin-bottom:6px;">
+            <span>Today</span><span id="taskProgress" style="color:#94a3b8;">0/0</span>
+        </div>
+        <div id="tasks"></div>
+        <div class="calendar-wrap">
+            <div class="cal-header"><strong>📅 Calendar</strong><span id="monthLabel" style="font-size:11px;color:#94a3b8;">—</span></div>
+            <div class="cal-grid" id="calendar"></div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+            <button class="btn-sm" onclick="window.resetDay()">↺ Reset</button>
+            <button class="btn-sm" onclick="window.navigate('select')">✧ Auras</button>
+        </div>
+    </div>
+</div>

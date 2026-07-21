@@ -1,0 +1,14 @@
+<div class="page" id="page-diary">
+    <div class="container">
+        <h2 style="font-size:19px;font-weight:700;margin-bottom:10px;">📖 Diary</h2>
+        <textarea id="diaryInput" rows="3" placeholder="Dear diary..."></textarea>
+        <div style="display:flex;gap:6px;margin-top:6px;">
+            <input type="text" id="diaryMood" placeholder="Mood" style="flex:1;">
+            <button class="btn-sm btn-primary" onclick="window.saveDiary()" style="width:auto;">💾</button>
+        </div>
+        <input type="search" id="diarySearch" placeholder="🔍 Search..." oninput="window.renderDiary()" style="margin-top:8px;">
+        <div id="diaryEntries" style="max-height:320px;overflow-y:auto;margin-top:8px;">
+            <p style="color:#94a3b8;text-align:center;">No entries yet.</p>
+        </div>
+    </div>
+</div>
