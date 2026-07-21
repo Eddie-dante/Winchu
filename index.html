@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Winchu · Nexus</title>
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
@@ -86,6 +85,8 @@
             color: #475569; width: auto;
         }
         .btn-danger { color: #ef4444 !important; }
+        .btn-success { color: #22c55e !important; }
+        .btn-warning { color: #eab308 !important; }
 
         .landing-content { text-align: center; }
         .landing-icon { font-size: 72px; margin-bottom: 14px; display: block; }
@@ -507,7 +508,10 @@
             border-radius: 12px;
             margin-bottom: 6px;
             border: 1px solid rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: all 0.2s;
         }
+        .user-card:hover { background: rgba(255,255,255,0.8); }
         .user-card .user-avatar {
             width: 40px;
             height: 40px;
@@ -546,6 +550,18 @@
         }
         .user-card .status-dot.online { background: #4ade80; }
         .user-card .status-dot.offline { background: #94a3b8; }
+        .friend-request-btn {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+        }
+        .friend-request-btn.add { background: #3b82f6; color: white; }
+        .friend-request-btn.pending { background: #eab308; color: white; }
+        .friend-request-btn.accept { background: #22c55e; color: white; }
+        .friend-request-btn.reject { background: #ef4444; color: white; }
+        .friend-request-btn.friend { background: #22c55e; color: white; }
     </style>
 </head>
 <body>
@@ -608,7 +624,7 @@
                 <span id="homeBadge" style="font-size:10px;background:rgba(0,0,0,0.04);padding:3px 10px;border-radius:18px;">⚡</span>
             </div>
             <button class="btn-sm" onclick="window.navigate('users')" style="width:100%;margin-bottom:10px;background:rgba(99,102,241,0.15);border-color:#6366f1;">
-                👥 View All Users
+                👥 Find Friends
             </button>
             <div class="score-ring-wrap">
                 <div class="score-ring">
@@ -643,10 +659,16 @@
     <!-- Users Page -->
     <div class="page" id="page-users">
         <div class="container">
-            <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">👥 All Users</h2>
+            <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">👥 Find Friends</h2>
             <button class="btn-sm" onclick="window.navigate('home')" style="margin-bottom:10px;">← Back to Dashboard</button>
             <div id="usersList">
                 <p style="color:#94a3b8;text-align:center;padding:20px;">Loading users...</p>
+            </div>
+            <div style="margin-top:10px;border-top:1px solid rgba(0,0,0,0.06);padding-top:10px;">
+                <h3 style="font-size:14px;font-weight:600;margin-bottom:8px;">📩 Friend Requests</h3>
+                <div id="friendRequests">
+                    <p style="color:#94a3b8;text-align:center;padding:10px;">No pending requests</p>
+                </div>
             </div>
         </div>
     </div>
@@ -691,8 +713,15 @@
                 You: <strong id="myUsername">—</strong>
                 <button class="btn-sm" onclick="window.changeUsername()" style="margin-left:6px;font-size:10px;">✏️</button>
             </div>
+            <!-- Friends List -->
+            <div id="friendsList" style="margin-bottom:8px;max-height:80px;overflow-y:auto;background:rgba(0,0,0,0.03);border-radius:10px;padding:6px;">
+                <div style="font-size:10px;color:#94a3b8;padding:2px 6px;">👥 Your Friends</div>
+                <div id="friendsListContainer" style="display:flex;flex-wrap:wrap;gap:4px;padding:4px;">
+                    <span style="font-size:11px;color:#94a3b8;">No friends yet. Add some!</span>
+                </div>
+            </div>
             <div class="chat-messages" id="chatMessages">
-                <p style="color:#94a3b8;text-align:center;">Loading...</p>
+                <p style="color:#94a3b8;text-align:center;padding:16px;">No messages yet.</p>
             </div>
             <div style="display:flex;gap:6px;">
                 <input type="text" id="chatInput" placeholder="Message..." onkeypress="if(event.key==='Enter')window.sendMessage()" style="flex:1;">
@@ -798,7 +827,6 @@
         measurementId: "G-GGNFGS1MEL"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
@@ -851,7 +879,6 @@
         'https://images.unsplash.com/photo-1736580602088-73d0f3ad8add?w=1920&q=80'
     ];
 
-    // ==================== DEFAULT WALLPAPER ====================
     const DEFAULT_WALLPAPER = 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1920&q=80';
 
     // ==================== MAIN APP STATE ====================
@@ -866,40 +893,28 @@
         likedPosts: [],
         username: '',
         bio: 'Building my energy. One aura at a time. ⚡',
-        avatar: null
+        avatar: null,
+        friends: [],
+        friendRequests: [],
+        sentRequests: [],
+        currentChatWith: null
     };
     let chatMessages = [];
-    let selectedFile = null;
     let selectedFileData = null;
     let selectedAvatarData = null;
-    const AUTH_KEY = 'winchu_auth_v3';
+    const AUTH_KEY = 'winchu_auth_v4';
     let currentUser = null;
     let messagesListener = null;
     let postsListener = null;
     let usersListener = null;
+    let friendRequestsListener = null;
+    let friendsListener = null;
 
     // ==================== FIREBASE HELPERS ====================
-    function getRef(path) {
-        return database.ref(path);
-    }
-
-    async function pushData(path, data) {
-        const ref = getRef(path);
-        const newRef = ref.push();
-        await newRef.set(data);
-        return newRef.key;
-    }
-
-    async function setData(path, data) {
-        const ref = getRef(path);
-        await ref.set(data);
-    }
-
-    async function getData(path) {
-        const ref = getRef(path);
-        const snapshot = await ref.once('value');
-        return snapshot.val();
-    }
+    function getRef(path) { return database.ref(path); }
+    function pushData(path, data) { const ref = getRef(path); const newRef = ref.push(); newRef.set(data); return newRef.key; }
+    function setData(path, data) { const ref = getRef(path); ref.set(data); }
+    function getData(path) { const ref = getRef(path); return ref.once('value').then(s => s.val()); }
 
     // ==================== AUTH ====================
     function loadAuth() {
@@ -938,61 +953,255 @@
         if (o) o.remove();
         s.setAttribute('data-bg', '');
         document.head.appendChild(s);
-        // Save to Firebase
-        if (S.username) {
-            setData(`users/${S.username}/wallpaper`, url);
-        }
+        if (S.username) setData(`users/${S.username}/wallpaper`, url);
     }
 
     function getTasks() {
         let tasks = [];
-        S.selectedAuras.forEach(key => {
-            if (AURAS[key]) tasks = tasks.concat(AURAS[key].tasks);
-        });
+        S.selectedAuras.forEach(key => { if (AURAS[key]) tasks = tasks.concat(AURAS[key].tasks); });
         return [...new Set(tasks)].slice(0, 8);
     }
 
     function calcScore() {
-        const tasks = getTasks(),
-            total = tasks.length,
-            done = S.completedTasks.filter(i => i < total).length;
+        const tasks = getTasks(), total = tasks.length, done = S.completedTasks.filter(i => i < total).length;
         return { pct: total > 0 ? Math.round((done / total) * 100) : 0, done, total };
     }
 
     function calcStreak() {
-        let s = 0;
-        const n = new Date();
+        let s = 0; const n = new Date();
         for (let i = 0; i < 365; i++) {
-            const d = new Date(n);
-            d.setDate(d.getDate() - i);
-            if (S.streakData[d.toDateString()]) s++;
-            else break;
+            const d = new Date(n); d.setDate(d.getDate() - i);
+            if (S.streakData[d.toDateString()]) s++; else break;
         }
         return s;
     }
 
     // ==================== AVATAR FUNCTIONS ====================
     function getAvatarHTML(username, size) {
-        // Check if we have avatar in Firebase users
-        const color = ['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8','#F7B787','#FF8A80','#B388FF','#82B1FF','#B9F6CA','#FFE57F','#FF80AB','#EA80FC','#8C9EFF'][username.length % 16];
+        const colors = ['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8','#F7B787','#FF8A80','#B388FF','#82B1FF','#B9F6CA','#FFE57F','#FF80AB','#EA80FC','#8C9EFF'];
+        const color = colors[username.length % colors.length];
         return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:${size*0.4}px;">${username.charAt(0).toUpperCase()}</div>`;
     }
 
     function handleAvatarSelect(event) {
         const file = event.target.files[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = function(e) {
             selectedAvatarData = e.target.result;
             S.avatar = selectedAvatarData;
-            if (S.username) {
-                setData(`users/${S.username}/avatar`, selectedAvatarData);
-            }
+            if (S.username) setData(`users/${S.username}/avatar`, selectedAvatarData);
             renderProfile();
             toast('✅ Avatar updated!');
         };
         reader.readAsDataURL(file);
+    }
+
+    // ==================== FRIEND SYSTEM ====================
+    function sendFriendRequest(username) {
+        if (!S.username || username === S.username) return;
+        const requestRef = getRef(`friend_requests/${username}/${S.username}`);
+        requestRef.set({
+            from: S.username,
+            status: 'pending',
+            timestamp: new Date().toISOString()
+        });
+        // Also add to sent requests
+        const sentRef = getRef(`friend_requests_sent/${S.username}/${username}`);
+        sentRef.set({
+            to: username,
+            status: 'pending',
+            timestamp: new Date().toISOString()
+        });
+        toast('Friend request sent! 📨');
+        renderUsers();
+    }
+
+    function acceptFriendRequest(fromUser) {
+        if (!S.username) return;
+        // Add to friends list for both users
+        const friendRef1 = getRef(`friends/${S.username}/${fromUser}`);
+        friendRef1.set({ username: fromUser, added: new Date().toISOString() });
+        const friendRef2 = getRef(`friends/${fromUser}/${S.username}`);
+        friendRef2.set({ username: S.username, added: new Date().toISOString() });
+
+        // Remove from friend requests
+        const requestRef = getRef(`friend_requests/${S.username}/${fromUser}`);
+        requestRef.remove();
+        const sentRef = getRef(`friend_requests_sent/${fromUser}/${S.username}`);
+        sentRef.remove();
+
+        toast(`You and ${fromUser} are now friends! 🎉`);
+        loadFriendRequests();
+        renderUsers();
+        renderFriendsList();
+    }
+
+    function rejectFriendRequest(fromUser) {
+        if (!S.username) return;
+        const requestRef = getRef(`friend_requests/${S.username}/${fromUser}`);
+        requestRef.remove();
+        const sentRef = getRef(`friend_requests_sent/${fromUser}/${S.username}`);
+        sentRef.remove();
+        toast('Friend request rejected');
+        loadFriendRequests();
+        renderUsers();
+    }
+
+    function loadFriendRequests() {
+        if (!S.username) return;
+        const requestsRef = getRef(`friend_requests/${S.username}`);
+        requestsRef.on('value', function(snapshot) {
+            const data = snapshot.val() || {};
+            S.friendRequests = Object.keys(data).map(key => ({
+                from: key,
+                status: data[key].status,
+                timestamp: data[key].timestamp
+            }));
+            renderFriendRequests();
+        });
+    }
+
+    function renderFriendRequests() {
+        const container = document.getElementById('friendRequests');
+        if (!container) return;
+        if (S.friendRequests.length === 0) {
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:10px;">No pending requests</p>';
+            return;
+        }
+        container.innerHTML = S.friendRequests.map(req => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,0.5);border-radius:10px;margin-bottom:4px;border:1px solid rgba(0,0,0,0.05);">
+                <span><strong>${req.from}</strong> sent you a friend request</span>
+                <div style="display:flex;gap:4px;">
+                    <button class="friend-request-btn accept" onclick="window.acceptFriendRequest('${req.from}')">✅ Accept</button>
+                    <button class="friend-request-btn reject" onclick="window.rejectFriendRequest('${req.from}')">❌ Reject</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function loadFriendsList() {
+        if (!S.username) return;
+        const friendsRef = getRef(`friends/${S.username}`);
+        friendsRef.on('value', function(snapshot) {
+            const data = snapshot.val() || {};
+            S.friends = Object.keys(data);
+            renderFriendsList();
+        });
+    }
+
+    function renderFriendsList() {
+        const container = document.getElementById('friendsListContainer');
+        if (!container) return;
+        if (S.friends.length === 0) {
+            container.innerHTML = '<span style="font-size:11px;color:#94a3b8;">No friends yet. Add some!</span>';
+            return;
+        }
+        // Get online status
+        const usersRef = getRef('users');
+        usersRef.once('value', function(snapshot) {
+            const users = snapshot.val() || {};
+            const now = Date.now();
+            container.innerHTML = S.friends.map(f => {
+                const userData = users[f] || {};
+                const isOnline = userData.last_seen && (now - new Date(userData.last_seen).getTime() < 60000);
+                return `<span onclick="window.startChat('${f}')" style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:12px;cursor:pointer;background:${isOnline ? 'rgba(74,222,128,0.2)' : 'rgba(0,0,0,0.04)'};border:1px solid ${isOnline ? '#4ade80' : 'transparent'};font-size:11px;">
+                    ${isOnline ? '🟢' : '⚪'} ${f}
+                </span>`;
+            }).join('');
+        });
+    }
+
+    function startChat(username) {
+        S.currentChatWith = username;
+        navigate('chat');
+        toast(`💬 Chatting with ${username}`);
+        loadChatMessages(username);
+    }
+
+    // ==================== CHAT FUNCTIONS ====================
+    function loadChatMessages(username) {
+        if (!S.username) return;
+        if (messagesListener) messagesListener.off();
+        const chatId = [S.username, username].sort().join('_');
+        const chatRef = getRef(`chats/${chatId}`);
+        messagesListener = chatRef.orderByKey().limitToLast(50);
+        messagesListener.on('child_added', function(snapshot) {
+            const msg = snapshot.val();
+            msg.id = snapshot.key;
+            // Check if message already exists
+            if (!chatMessages.find(m => m.id === msg.id)) {
+                chatMessages.push(msg);
+                if (chatMessages.length > 50) chatMessages.shift();
+                renderChatMessages();
+            }
+        });
+    }
+
+    function sendMessage() {
+        if (!S.username) { toast('Please log in'); return; }
+        if (!S.currentChatWith) { toast('Select a friend to chat with'); return; }
+        const input = document.getElementById('chatInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const chatId = [S.username, S.currentChatWith].sort().join('_');
+        const message = {
+            from: S.username,
+            to: S.currentChatWith,
+            text: text,
+            time: new Date().toISOString()
+        };
+        const chatRef = getRef(`chats/${chatId}`);
+        chatRef.push(message);
+        input.value = '';
+        // Update last seen
+        if (S.username) setData(`users/${S.username}/last_seen`, new Date().toISOString());
+    }
+
+    function renderChatMessages() {
+        const container = document.getElementById('chatMessages');
+        if (!container) return;
+        if (chatMessages.length === 0) {
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:16px;">No messages yet. Say hi! 👋</p>';
+            return;
+        }
+        container.innerHTML = chatMessages.map(m => {
+            const me = m.from === S.username;
+            const time = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            return `<div style="display:flex;justify-content:${me ? 'flex-end' : 'flex-start'};margin:3px 0;">
+                <div style="max-width:82%;">
+                    <div class="chat-bubble ${me ? 'chat-sent' : 'chat-received'}">
+                        <div style="font-size:9px;font-weight:600;opacity:0.7;">${me ? 'You' : m.from} · ${time}</div>
+                        <p style="margin:2px 0 0;">${m.text}</p>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function renderChat() {
+        document.getElementById('myUsername').textContent = S.username || '—';
+        document.getElementById('onlineCount').textContent = S.friends.length;
+        renderFriendsList();
+        if (S.currentChatWith) {
+            loadChatMessages(S.currentChatWith);
+        } else {
+            chatMessages = [];
+            renderChatMessages();
+        }
+    }
+
+    function changeUsername() {
+        const newName = prompt('Enter new username:', S.username);
+        if (newName && newName.trim()) {
+            S.username = newName.trim();
+            saveAuth();
+            document.getElementById('myUsername').textContent = S.username;
+            toast('Username updated');
+            if (S.username) setData(`users/${S.username}/username`, S.username);
+        }
     }
 
     // ==================== USERS LIST ====================
@@ -1003,34 +1212,58 @@
         const usersRef = getRef('users');
         usersRef.once('value', function(snapshot) {
             const users = snapshot.val() || {};
-            const usernames = Object.keys(users);
+            const usernames = Object.keys(users).filter(u => u !== S.username);
 
             if (usernames.length === 0) {
-                container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">No users yet.</p>';
+                container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">No other users yet.</p>';
                 return;
             }
 
-            container.innerHTML = usernames.map(u => {
-                const isMe = u === S.username;
-                const userData = users[u] || {};
-                const isOnline = userData.last_seen && (Date.now() - new Date(userData.last_seen).getTime() < 60000);
-                const postCount = S.socialPosts ? S.socialPosts.filter(p => p.author === u).length : 0;
-                const avatarHTML = getAvatarHTML(u, 40);
+            // Check friend requests status
+            const requestsRef = getRef(`friend_requests/${S.username}`);
+            requestsRef.once('value', function(reqSnapshot) {
+                const requests = reqSnapshot.val() || {};
+                const sentRef = getRef(`friend_requests_sent/${S.username}`);
+                sentRef.once('value', function(sentSnapshot) {
+                    const sent = sentSnapshot.val() || {};
+                    const friends = S.friends || [];
 
-                return `
-                    <div class="user-card">
-                        <div class="user-avatar">${avatarHTML}</div>
-                        <div class="user-info">
-                            <div class="name">
-                                ${isMe ? '⭐ ' : ''}${u}
-                                <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span>
-                                ${isOnline ? '🟢 Online' : '⚪ Offline'}
+                    container.innerHTML = usernames.map(u => {
+                        const userData = users[u] || {};
+                        const isOnline = userData.last_seen && (Date.now() - new Date(userData.last_seen).getTime() < 60000);
+                        const isFriend = friends.includes(u);
+                        const requestPending = requests[u] && requests[u].status === 'pending';
+                        const requestSent = sent[u] && sent[u].status === 'pending';
+                        const avatarHTML = getAvatarHTML(u, 40);
+
+                        let buttonHtml = '';
+                        if (isFriend) {
+                            buttonHtml = `<span class="friend-request-btn friend">✅ Friend</span>`;
+                        } else if (requestPending) {
+                            buttonHtml = `<span class="friend-request-btn pending">⏳ Pending</span>`;
+                        } else if (requestSent) {
+                            buttonHtml = `<span class="friend-request-btn pending">⏳ Sent</span>`;
+                        } else {
+                            buttonHtml = `<button class="friend-request-btn add" onclick="window.sendFriendRequest('${u}')">➕ Add Friend</button>`;
+                        }
+
+                        return `
+                            <div class="user-card">
+                                <div class="user-avatar">${avatarHTML}</div>
+                                <div class="user-info">
+                                    <div class="name">
+                                        ${u}
+                                        <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span>
+                                        ${isOnline ? '🟢 Online' : '⚪ Offline'}
+                                    </div>
+                                    <div class="bio">${userData.bio || 'No bio yet'}</div>
+                                </div>
+                                <div>${buttonHtml}</div>
                             </div>
-                            <div class="bio">${userData.bio || 'No bio yet'} • ${postCount} posts</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+                        `;
+                    }).join('');
+                });
+            });
         });
     }
 
@@ -1085,9 +1318,7 @@
 
     function confirmSelection() {
         if (S.selectedAuras.length === 0) { toast('Select at least one aura'); return; }
-        if (S.username) {
-            setData(`users/${S.username}/selected_auras`, S.selectedAuras);
-        }
+        if (S.username) setData(`users/${S.username}/selected_auras`, S.selectedAuras);
         navigate('social');
         toast('Auras activated! ✨');
     }
@@ -1097,9 +1328,7 @@
         const idx = S.completedTasks.indexOf(index);
         if (idx > -1) S.completedTasks.splice(idx, 1);
         else S.completedTasks.push(index);
-        const tasks = getTasks(),
-            total = tasks.length,
-            done = S.completedTasks.filter(x => x < total).length;
+        const tasks = getTasks(), total = tasks.length, done = S.completedTasks.filter(x => x < total).length;
         const today = new Date().toDateString();
         if (done === total && total > 0) S.streakData[today] = true;
         else delete S.streakData[today];
@@ -1115,12 +1344,9 @@
 
     function renderHome() {
         if (S.selectedAuras.length === 0) { navigate('select'); return; }
-        const p = AURAS[S.selectedAuras[0]],
-            tasks = getTasks(),
-            { pct, done, total } = calcScore();
+        const p = AURAS[S.selectedAuras[0]], tasks = getTasks(), { pct, done, total } = calcScore();
         const streak = calcStreak();
-        const circ = 2 * Math.PI * 43,
-            offset = circ - (pct / 100) * circ;
+        const circ = 2 * Math.PI * 43, offset = circ - (pct / 100) * circ;
         document.getElementById('homeTitle').textContent = S.selectedAuras.map(k => AURAS[k].emoji + ' ' + AURAS[k].name).join(' + ');
         document.getElementById('homeBadge').textContent = '⚡ ' + S.selectedAuras.map(k => AURAS[k].emoji).join('');
         document.getElementById('score').textContent = pct + '%';
@@ -1140,11 +1366,8 @@
     }
 
     function renderCalendar() {
-        const n = new Date(),
-            y = n.getFullYear(),
-            m = n.getMonth();
-        const dim = new Date(y, m + 1, 0).getDate(),
-            fd = new Date(y, m, 1).getDay();
+        const n = new Date(), y = n.getFullYear(), m = n.getMonth();
+        const dim = new Date(y, m + 1, 0).getDate(), fd = new Date(y, m, 1).getDay();
         document.getElementById('monthLabel').textContent = n.toLocaleDateString('en', { month: 'long', year: 'numeric' });
         const cal = document.getElementById('calendar');
         cal.innerHTML = '';
@@ -1179,7 +1402,7 @@
         const content = document.getElementById('diaryInput').value.trim();
         const mood = document.getElementById('diaryMood').value.trim() || '—';
         if (!content) { toast('Write something'); return; }
-        const entry = { content: content, mood: mood, date: new Date().toISOString() };
+        const entry = { content, mood, date: new Date().toISOString() };
         S.diary.unshift(entry);
         if (S.username) {
             const diaryRef = getRef(`diary/${S.username}`);
@@ -1198,9 +1421,9 @@
             container.innerHTML = '<p style="color:#94a3b8;text-align:center;">No entries yet.</p>';
             return;
         }
-        container.innerHTML = S.diary.map((x, i) => {
-            return `<div class="entry-card"><div style="display:flex;justify-content:space-between;margin-bottom:3px;"><small style="color:#94a3b8;">${new Date(x.date).toLocaleDateString()}</small><span style="font-size:10px;background:rgba(0,0,0,0.04);padding:2px 7px;border-radius:9px;">${x.mood}</span></div><p style="font-size:12px;white-space:pre-wrap;">${x.content}</p></div>`;
-        }).join('');
+        container.innerHTML = S.diary.map(x =>
+            `<div class="entry-card"><div style="display:flex;justify-content:space-between;margin-bottom:3px;"><small style="color:#94a3b8;">${new Date(x.date).toLocaleDateString()}</small><span style="font-size:10px;background:rgba(0,0,0,0.04);padding:2px 7px;border-radius:9px;">${x.mood}</span></div><p style="font-size:12px;white-space:pre-wrap;">${x.content}</p></div>`
+        ).join('');
     }
 
     // ==================== ROUTINE FUNCTIONS ====================
@@ -1208,7 +1431,7 @@
         const title = document.getElementById('routineTitle').value.trim();
         const content = document.getElementById('routineInput').value.trim();
         if (!title || !content) { toast('Add title & description'); return; }
-        const routine = { title: title, content: content, date: new Date().toISOString() };
+        const routine = { title, content, date: new Date().toISOString() };
         S.routines.unshift(routine);
         if (S.username) {
             const routineRef = getRef(`routines/${S.username}`);
@@ -1232,101 +1455,14 @@
         ).join('');
     }
 
-    // ==================== CHAT FUNCTIONS ====================
-    function setupMessagesListener() {
-        if (messagesListener) {
-            messagesListener.off();
-        }
-        const messagesRef = getRef('messages');
-        messagesListener = messagesRef.orderByKey().limitToLast(50);
-        messagesListener.on('child_added', function(snapshot) {
-            const msg = snapshot.val();
-            msg.id = snapshot.key;
-            chatMessages.push(msg);
-            if (chatMessages.length > 50) chatMessages.shift();
-            renderChatMessages();
-        });
-    }
-
-    function sendMessage() {
-        if (!S.username) { toast('Please log in'); return; }
-        const input = document.getElementById('chatInput');
-        const text = input.value.trim();
-        if (!text) return;
-
-        const message = {
-            username: S.username,
-            text: text,
-            time: new Date().toISOString()
-        };
-        const messagesRef = getRef('messages');
-        messagesRef.push(message);
-        input.value = '';
-        // Update last seen
-        if (S.username) {
-            setData(`users/${S.username}/last_seen`, new Date().toISOString());
-        }
-    }
-
-    function renderChat() {
-        document.getElementById('myUsername').textContent = S.username || '—';
-        // Show online count
-        const usersRef = getRef('users');
-        usersRef.once('value', function(snapshot) {
-            const users = snapshot.val() || {};
-            const now = Date.now();
-            let online = 0;
-            Object.keys(users).forEach(u => {
-                if (users[u].last_seen && (now - new Date(users[u].last_seen).getTime() < 60000)) {
-                    online++;
-                }
-            });
-            document.getElementById('onlineCount').textContent = online;
-        });
-        setupMessagesListener();
-    }
-
-    function renderChatMessages() {
-        const container = document.getElementById('chatMessages');
-        if (!container) return;
-        if (chatMessages.length === 0) {
-            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:16px;">No messages yet.</p>';
-            return;
-        }
-        container.innerHTML = chatMessages.map(m => {
-            const me = m.username === S.username;
-            const time = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            return `<div style="display:flex;justify-content:${me ? 'flex-end' : 'flex-start'};margin:3px 0;"><div style="max-width:82%;"><div class="chat-bubble ${me ? 'chat-sent' : 'chat-received'}"><div style="font-size:10px;font-weight:600;opacity:0.7;">${m.username} · ${time}</div><p style="margin:2px 0 0;">${m.text}</p></div></div></div>`;
-        }).join('');
-        container.scrollTop = container.scrollHeight;
-    }
-
-    function changeUsername() {
-        const newName = prompt('Enter new username:', S.username);
-        if (newName && newName.trim()) {
-            S.username = newName.trim();
-            saveAuth();
-            document.getElementById('myUsername').textContent = S.username;
-            toast('Username updated');
-            // Update in Firebase
-            if (S.username) {
-                setData(`users/${S.username}/username`, S.username);
-                setData(`users/${S.username}/last_seen`, new Date().toISOString());
-            }
-        }
-    }
-
     // ==================== SOCIAL FUNCTIONS ====================
     function setupPostsListener() {
-        if (postsListener) {
-            postsListener.off();
-        }
+        if (postsListener) postsListener.off();
         const postsRef = getRef('posts');
         postsListener = postsRef.orderByKey().limitToLast(50);
         postsListener.on('child_added', function(snapshot) {
             const post = snapshot.val();
             post.id = snapshot.key;
-            // Check if post already exists
             if (!S.socialPosts.find(p => p.id === post.id)) {
                 S.socialPosts.unshift(post);
                 if (S.socialPosts.length > 50) S.socialPosts.pop();
@@ -1353,7 +1489,6 @@
         const input = document.getElementById('postInput');
         const text = input.value.trim();
         if (!text && !selectedFileData) { toast('Write something or add media'); return; }
-
         const avatar = S.selectedAuras.length > 0 ? S.selectedAuras.map(k => AURAS[k].emoji).join('') : '😊';
         const post = {
             author: S.username || 'You',
@@ -1366,7 +1501,6 @@
         const postsRef = getRef('posts');
         postsRef.push(post);
         input.value = '';
-        selectedFile = null;
         selectedFileData = null;
         document.getElementById('filePreview').style.display = 'none';
         document.getElementById('filePreview').innerHTML = '';
@@ -1374,18 +1508,13 @@
     }
 
     function likePost(id) {
-        if (!id) return;
         const post = S.socialPosts.find(p => p.id === id);
         if (!post) return;
         const likes = post.likes || [];
         const idx = likes.indexOf(S.username);
-        if (idx > -1) {
-            likes.splice(idx, 1);
-        } else {
-            likes.push(S.username);
-        }
+        if (idx > -1) likes.splice(idx, 1);
+        else likes.push(S.username);
         post.likes = likes;
-        // Update in Firebase
         const postRef = getRef(`posts/${id}/likes`);
         postRef.set(likes);
         renderSocial();
@@ -1425,8 +1554,7 @@
         feed.innerHTML = S.socialPosts.map(p => {
             const liked = (p.likes || []).includes(S.username);
             const timeAgo = timeSince(new Date(p.time));
-            const avatarDisplay = p.avatar || '😊';
-            return `<div class="ig-post"><div class="ig-post-header"><div class="ig-post-avatar">${avatarDisplay}</div><span class="ig-post-user">${p.author}</span><span class="ig-post-time">${timeAgo}</span>${p.author === S.username ? `<button class="btn-sm btn-danger" onclick="deletePost('${p.id}')" style="font-size:11px;padding:2px 8px;">🗑️</button>` : ''}</div>${p.image ? `<img src="${p.image}" class="post-image" />` : ''}<div style="padding:0 12px 4px;"><p style="font-size:13px;margin:4px 0;">${p.text}</p></div><div class="ig-post-actions"><button class="ig-post-action ${liked ? 'liked' : ''}" onclick="likePost('${p.id}')">${liked ? '❤️' : '🤍'}</button><span style="font-size:13px;font-weight:600;color:#94a3b8;">${(p.likes || []).length} likes</span></div></div>`;
+            return `<div class="ig-post"><div class="ig-post-header"><div class="ig-post-avatar">${p.avatar || '😊'}</div><span class="ig-post-user">${p.author}</span><span class="ig-post-time">${timeAgo}</span>${p.author === S.username ? `<button class="btn-sm btn-danger" onclick="deletePost('${p.id}')" style="font-size:11px;padding:2px 8px;">🗑️</button>` : ''}</div>${p.image ? `<img src="${p.image}" class="post-image" />` : ''}<div style="padding:0 12px 4px;"><p style="font-size:13px;margin:4px 0;">${p.text}</p></div><div class="ig-post-actions"><button class="ig-post-action ${liked ? 'liked' : ''}" onclick="likePost('${p.id}')">${liked ? '❤️' : '🤍'}</button><span style="font-size:13px;font-weight:600;color:#94a3b8;">${(p.likes || []).length} likes</span></div></div>`;
         }).join('');
     }
 
@@ -1447,8 +1575,8 @@
         document.getElementById('profileName').textContent = S.username || '—';
         document.getElementById('profileUsername').textContent = '@' + (S.username || '—');
         document.getElementById('profilePosts').textContent = S.socialPosts.filter(p => p.author === S.username).length;
-        document.getElementById('profileFollowers').textContent = Math.floor(Math.random() * 100) + 10;
-        document.getElementById('profileFollowing').textContent = Math.floor(Math.random() * 50) + 5;
+        document.getElementById('profileFollowers').textContent = S.friends.length;
+        document.getElementById('profileFollowing').textContent = S.friends.length;
         document.getElementById('profileBio').textContent = S.bio || 'Building my energy. One aura at a time. ⚡';
 
         const grid = document.getElementById('profilePostsGrid');
@@ -1466,9 +1594,7 @@
         const newBio = prompt('Edit your bio:', S.bio || '');
         if (newBio !== null) {
             S.bio = newBio.trim() || 'Building my energy. One aura at a time. ⚡';
-            if (S.username) {
-                setData(`users/${S.username}/bio`, S.bio);
-            }
+            if (S.username) setData(`users/${S.username}/bio`, S.bio);
             renderProfile();
             toast('✅ Bio updated');
         }
@@ -1505,10 +1631,7 @@
         const usersRef = getRef('users');
         usersRef.once('value', function(snapshot) {
             const users = snapshot.val() || {};
-            if (users[user]) {
-                toast('Username already exists');
-                return;
-            }
+            if (users[user]) { toast('Username already exists'); return; }
             users[user] = {
                 name: name,
                 password: pass,
@@ -1530,6 +1653,8 @@
             S.likedPosts = [];
             S.bio = 'Building my energy. One aura at a time. ⚡';
             S.wallpaper = DEFAULT_WALLPAPER;
+            S.friends = [];
+            S.friendRequests = [];
             saveAuth();
             setBg(DEFAULT_WALLPAPER);
             toast('Account created! Welcome ' + name);
@@ -1555,10 +1680,11 @@
             S.selectedAuras = users[user].selected_auras || [];
             saveAuth();
             setBg(S.wallpaper);
-            // Update last seen
             setData(`users/${S.username}/last_seen`, new Date().toISOString());
-            // Load user data
             loadUserData();
+            loadFriendsList();
+            loadFriendRequests();
+            setupPostsListener();
             toast('Welcome back, ' + users[user].name);
             navigate('social');
         });
@@ -1566,22 +1692,16 @@
 
     function loadUserData() {
         if (!S.username) return;
-        // Load diary
         const diaryRef = getRef(`diary/${S.username}`);
         diaryRef.once('value', function(snapshot) {
             const data = snapshot.val();
-            if (data) {
-                S.diary = Object.values(data).reverse();
-            }
+            if (data) S.diary = Object.values(data).reverse();
             renderDiary();
         });
-        // Load routines
         const routineRef = getRef(`routines/${S.username}`);
         routineRef.once('value', function(snapshot) {
             const data = snapshot.val();
-            if (data) {
-                S.routines = Object.values(data).reverse();
-            }
+            if (data) S.routines = Object.values(data).reverse();
             renderRoutines();
         });
     }
@@ -1593,36 +1713,33 @@
         document.getElementById('wpFab').style.display = 'none';
         if (messagesListener) messagesListener.off();
         if (postsListener) postsListener.off();
+        if (friendRequestsListener) friendRequestsListener.off();
+        if (friendsListener) friendsListener.off();
         toast('Logged out');
         navigate('landing');
     }
 
     // ==================== INIT ====================
     function init() {
-        console.log('🚀 Winchu starting with Firebase Realtime!');
+        console.log('🚀 Winchu starting with Firebase Realtime + Friend System!');
         const loggedIn = loadAuth();
         if (loggedIn) {
             document.getElementById('wpFab').style.display = 'flex';
             setBg(S.wallpaper);
             document.getElementById('myUsername').textContent = S.username;
-            // Load user data
             loadUserData();
-            // Setup listeners
-            setupMessagesListener();
+            loadFriendsList();
+            loadFriendRequests();
             setupPostsListener();
-            // Update last seen every 30 seconds
             setInterval(function() {
-                if (S.username) {
-                    setData(`users/${S.username}/last_seen`, new Date().toISOString());
-                }
+                if (S.username) setData(`users/${S.username}/last_seen`, new Date().toISOString());
             }, 30000);
             navigate('social');
         } else {
             document.getElementById('wpFab').style.display = 'none';
             navigate('landing');
         }
-        console.log('⚡ Winchu · Nexus with Firebase Realtime ✅');
-        console.log('🔥 Database URL: https://nexus-wegem-default-rtdb.firebaseio.com/');
+        console.log('⚡ Winchu · Nexus with Firebase Realtime + Friends ✅');
     }
 
     // ==================== EXPOSE TO WINDOW ====================
@@ -1649,6 +1766,11 @@
     window.toast = toast;
     window.renderDiary = renderDiary;
     window.renderUsers = renderUsers;
+    window.sendFriendRequest = sendFriendRequest;
+    window.acceptFriendRequest = acceptFriendRequest;
+    window.rejectFriendRequest = rejectFriendRequest;
+    window.startChat = startChat;
+    window.renderFriendsList = renderFriendsList;
 
     // ==================== START ====================
     init();
