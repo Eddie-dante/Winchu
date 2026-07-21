@@ -1,3 +1,4 @@
+@"
 // ==================== MAIN APP STATE ====================
 const S = {
     selectedAuras: [],
@@ -32,7 +33,12 @@ function toast(msg) {
     const t = document.createElement('div');
     t.className = 'toast';
     t.textContent = msg;
-    document.getElementById('toastContainer').appendChild(t);
+    const container = document.getElementById('toastContainer');
+    if (container) {
+        container.appendChild(t);
+    } else {
+        document.body.appendChild(t);
+    }
     setTimeout(() => t.remove(), 2200);
 }
 window.toast = toast;
@@ -64,18 +70,25 @@ function navigate(page) {
     });
 
     const nav = document.getElementById('bottomNav');
-    const hideNav = ['landing', 'login', 'signup', 'select'];
-    nav.style.display = hideNav.includes(page) ? 'none' : 'flex';
+    if (nav) {
+        const hideNav = ['landing', 'login', 'signup', 'select'];
+        nav.style.display = hideNav.includes(page) ? 'none' : 'flex';
+    }
 
-    if (page === 'select' && window.renderAuraGrid) window.renderAuraGrid();
-    if (page === 'home' && window.renderHome) window.renderHome();
-    if (page === 'users' && window.renderUsers) window.renderUsers();
-    if (page === 'diary' && window.renderDiary) window.renderDiary();
-    if (page === 'routine' && window.renderRoutines) window.renderRoutines();
-    if (page === 'chat' && window.renderChat) window.renderChat();
-    if (page === 'social' && window.renderSocial) window.renderSocial();
-    if (page === 'profile' && window.renderProfile) window.renderProfile();
-    if (page === 'wallpapers' && window.renderWallpapers) window.renderWallpapers();
+    // Call render functions if they exist
+    try {
+        if (page === 'select' && typeof renderAuraGrid === 'function') renderAuraGrid();
+        if (page === 'home' && typeof renderHome === 'function') renderHome();
+        if (page === 'users' && typeof renderUsers === 'function') renderUsers();
+        if (page === 'diary' && typeof renderDiary === 'function') renderDiary();
+        if (page === 'routine' && typeof renderRoutines === 'function') renderRoutines();
+        if (page === 'chat' && typeof renderChat === 'function') renderChat();
+        if (page === 'social' && typeof renderSocial === 'function') renderSocial();
+        if (page === 'profile' && typeof renderProfile === 'function') renderProfile();
+        if (page === 'wallpapers' && typeof renderWallpapers === 'function') renderWallpapers();
+    } catch (e) {
+        console.warn('Render function not ready yet:', e.message);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 window.navigate = navigate;
@@ -83,26 +96,40 @@ window.navigate = navigate;
 // ==================== INIT ====================
 function init() {
     console.log('🚀 Winchu starting with Firebase Realtime!');
-    const loggedIn = loadAuth();
+    const loggedIn = typeof loadAuth === 'function' ? loadAuth() : false;
+    
     if (loggedIn) {
-        document.getElementById('wpFab').style.display = 'flex';
+        const fab = document.getElementById('wpFab');
+        if (fab) fab.style.display = 'flex';
+        
         setBg(S.wallpaper);
-        document.getElementById('myUsername').textContent = S.username;
-        loadUserData();
-        if (window.setupMessagesListener) window.setupMessagesListener();
-        if (window.setupPostsListener) window.setupPostsListener();
+        
+        const usernameEl = document.getElementById('myUsername');
+        if (usernameEl) usernameEl.textContent = S.username;
+        
+        if (typeof loadUserData === 'function') loadUserData();
+        if (typeof setupMessagesListener === 'function') setupMessagesListener();
+        if (typeof setupPostsListener === 'function') setupPostsListener();
+        
         setInterval(function() {
             if (S.username) {
                 setData(`users/${S.username}/last_seen`, new Date().toISOString());
             }
         }, 30000);
+        
         navigate('social');
     } else {
-        document.getElementById('wpFab').style.display = 'none';
+        const fab = document.getElementById('wpFab');
+        if (fab) fab.style.display = 'none';
         navigate('landing');
     }
     console.log('⚡ Winchu · Nexus with Firebase Realtime ✅');
 }
 
 // Start when DOM is ready
-document.addEventListener('DOMContentLoaded', init);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
+"@ | Out-File -FilePath js/app.js -Encoding utf8

@@ -1,3 +1,4 @@
+@"
 // ==================== PROFILE LOGIC ====================
 function handleAvatarSelect(event) {
     const file = event.target.files[0];
@@ -45,11 +46,11 @@ function renderProfile() {
     if (!grid) return;
     const userPosts = window.S.socialPosts.filter(p => p.author === window.S.username);
     if (userPosts.length === 0) {
-        grid.innerHTML = '<p style="color:#94a3b8;text-align:center;grid-column:1/-1;padding:16px 0;">No posts yet.</p>';
+        grid.innerHTML = '<p style=\"color:#94a3b8;text-align:center;grid-column:1/-1;padding:16px 0;\">No posts yet.</p>';
         return;
     }
     grid.innerHTML = userPosts.map(p =>
-        `<div style="aspect-ratio:1;background-image:url('${p.image || UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)]}');background-size:cover;background-position:center;border-radius:4px;cursor:pointer;" onclick="window.toast('${p.text.substring(0, 30)}...')"></div>`
+        `<div style=\"aspect-ratio:1;background-image:url('${p.image || UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)]}');background-size:cover;background-position:center;border-radius:4px;cursor:pointer;\" onclick=\"window.toast('${p.text.substring(0, 30)}...')\"></div>`
     ).join('');
 }
 window.renderProfile = renderProfile;
@@ -66,3 +67,4 @@ function editProfile() {
     }
 }
 window.editProfile = editProfile;
+"@ | Out-File -FilePath js/profile.js -Encoding utf8
