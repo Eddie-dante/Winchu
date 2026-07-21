@@ -125,6 +125,7 @@
             width: auto;
         }
         .btn-danger { color: #ef4444 !important; }
+        .btn-success { color: #22c55e !important; }
 
         /* ===== LANDING ===== */
         .landing-content { text-align: center; }
@@ -303,6 +304,51 @@
         .chat-sent { background: rgba(15, 23, 42, 0.85); color: #fff; margin-left: auto; }
         .chat-received { background: rgba(241, 245, 249, 0.7); color: #1e293b; margin-right: auto; backdrop-filter: blur(4px); }
         .chat-messages { max-height: 340px; overflow-y: auto; padding: 6px 0; margin: 8px 0; }
+        .typing-indicator {
+            padding: 8px 13px;
+            color: #94a3b8;
+            font-size: 11px;
+            font-style: italic;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+        .chat-list-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.4);
+            border-radius: 12px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .chat-list-item:hover { background: rgba(255,255,255,0.6); }
+        .chat-list-item .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            background: rgba(226,232,240,0.5);
+            margin-right: 10px;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .chat-list-item .avatar img { width:100%; height:100%; object-fit:cover; }
+        .chat-list-item .info { flex: 1; }
+        .chat-list-item .info .name { font-weight: 600; font-size: 13px; }
+        .chat-list-item .info .last-msg { font-size: 11px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chat-list-item .badge {
+            background: #ef4444;
+            color: #fff;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
 
         /* ===== SOCIAL FEED ===== */
         .ig-story-row {
@@ -408,6 +454,7 @@
         .ig-post-likes { font-size: 13px; font-weight: 600; padding: 0 12px 4px; cursor: pointer; }
         .ig-post-caption { padding: 0 12px 8px; font-size: 13px; line-height: 1.4; }
         .ig-post-caption strong { font-weight: 600; }
+        .ig-post-comments { padding: 0 12px 10px; font-size: 12px; color: #64748b; cursor: pointer; }
 
         /* ===== WALLPAPERS ===== */
         .wp-grid {
@@ -417,7 +464,6 @@
             margin: 10px 0;
         }
         .wp-thumb {
-            aspect-ratio: 9/16;
             border-radius: 10px;
             background-size: cover;
             background-position: center;
@@ -426,6 +472,7 @@
         }
         .wp-thumb.selected { border-color: #0f172a; }
         .wp-thumb.portrait { aspect-ratio: 9/16; }
+        .wp-thumb.landscape { aspect-ratio: 16/9; }
 
         /* ===== PROFILE ===== */
         .profile-header {
@@ -620,6 +667,7 @@
         .user-card .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
         .user-card .status-dot.online { background: #4ade80; }
         .user-card .status-dot.offline { background: #94a3b8; }
+        .user-card .actions { display: flex; gap: 4px; }
 
         /* ===== TIKTOK VIDEOS ===== */
         .tiktok-container {
@@ -663,28 +711,51 @@
         .tiktok-video .overlay .user {
             font-weight: 700;
             font-size: 14px;
-            margin-bottom: 4px;
-        }
-        .tiktok-video .overlay .desc {
-            font-size: 13px;
-            opacity: 0.9;
-        }
-        .tiktok-video .overlay .actions {
             display: flex;
-            gap: 16px;
-            margin-top: 8px;
+            align-items: center;
+            gap: 8px;
         }
-        .tiktok-video .overlay .actions button {
+        .tiktok-video .overlay .user .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             background: rgba(255,255,255,0.2);
+            font-size: 14px;
+        }
+        .tiktok-video .overlay .user .avatar img { width:100%; height:100%; object-fit:cover; }
+        .tiktok-video .overlay .desc { font-size: 13px; opacity: 0.9; margin-top: 4px; }
+        .tiktok-video .overlay .side-actions {
+            position: absolute;
+            right: 12px;
+            bottom: 80px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            align-items: center;
+        }
+        .tiktok-video .overlay .side-actions button {
+            background: rgba(0,0,0,0.4);
             border: none;
             color: #fff;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 12px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            font-size: 20px;
             cursor: pointer;
             backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
         }
-        .tiktok-video .overlay .actions button.liked { color: #ef4444; background: rgba(239,68,68,0.3); }
+        .tiktok-video .overlay .side-actions button span { font-size: 10px; }
+        .tiktok-video .overlay .side-actions button.liked { color: #ef4444; background: rgba(239,68,68,0.3); }
 
         @media (max-width: 480px) {
             .container { padding: 20px 14px; border-radius: 24px; }
@@ -809,10 +880,10 @@
         </div>
     </div>
 
-    <!-- ===== USERS ===== -->
+    <!-- ===== USERS / FRIENDS ===== -->
     <div class="page" id="page-users">
         <div class="container">
-            <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">👥 All Users</h2>
+            <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">👥 Find Friends</h2>
             <button class="btn-sm" onclick="window.navigate('home')" style="margin-bottom:10px;">← Back to Dashboard</button>
             <div id="usersList"><p style="color:#94a3b8;text-align:center;padding:20px;">Loading users...</p></div>
         </div>
@@ -853,14 +924,20 @@
                 <h2 style="font-size:19px;font-weight:700;">💬 Chat</h2>
                 <span style="font-size:11px;color:#4ade80;">● <span id="onlineCount">0</span></span>
             </div>
-            <div style="font-size:11px;color:#64748b;margin-bottom:6px;">
-                You: <strong id="myUsername">—</strong>
-                <button class="btn-sm" onclick="window.changeUsername()" style="margin-left:6px;font-size:10px;">✏️</button>
+            <div id="chatList" style="max-height:400px;overflow-y:auto;margin-bottom:10px;">
+                <p style="color:#94a3b8;text-align:center;padding:20px;">Loading chats...</p>
             </div>
-            <div class="chat-messages" id="chatMessages"><p style="color:#94a3b8;text-align:center;">Loading...</p></div>
-            <div style="display:flex;gap:6px;">
-                <input type="text" id="chatInput" placeholder="Message..." onkeypress="if(event.key==='Enter')window.sendMessage()" style="flex:1;">
-                <button class="btn-sm btn-primary" onclick="window.sendMessage()" style="width:auto;">📤</button>
+            <div id="chatWindow" style="display:none;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <span style="font-weight:600;" id="chatWith">Chat</span>
+                    <button class="btn-sm" onclick="window.closeChat()">✕</button>
+                </div>
+                <div class="chat-messages" id="chatMessages"><p style="color:#94a3b8;text-align:center;">Loading...</p></div>
+                <div id="typingIndicator" class="typing-indicator" style="display:none;">Someone is typing...</div>
+                <div style="display:flex;gap:6px;">
+                    <input type="text" id="chatInput" placeholder="Message..." onkeypress="if(event.key==='Enter')window.sendChatMessage()" style="flex:1;">
+                    <button class="btn-sm btn-primary" onclick="window.sendChatMessage()" style="width:auto;">📤</button>
+                </div>
             </div>
         </div>
     </div>
@@ -921,7 +998,7 @@
                 <div class="profile-username" id="profileUsername">@—</div>
                 <div class="profile-stats">
                     <div class="profile-stat"><div class="num" id="profilePosts">0</div><div class="label">Posts</div></div>
-                    <div class="profile-stat"><div class="num" id="profileFollowers">0</div><div class="label">Followers</div></div>
+                    <div class="profile-stat"><div class="num" id="profileFriends">0</div><div class="label">Friends</div></div>
                     <div class="profile-stat"><div class="num" id="profileFollowing">0</div><div class="label">Following</div></div>
                 </div>
                 <div class="profile-bio" id="profileBio">Building my energy. One aura at a time. ⚡</div>
@@ -947,6 +1024,11 @@
     <div class="page" id="page-wallpapers">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:8px;">🎨 Walls</h2>
+            <div style="display:flex;gap:6px;margin-bottom:8px;">
+                <button class="btn-sm" onclick="window.filterWallpapers('all')" style="flex:1;">All</button>
+                <button class="btn-sm" onclick="window.filterWallpapers('portrait')" style="flex:1;">📱 Portrait</button>
+                <button class="btn-sm" onclick="window.filterWallpapers('landscape')" style="flex:1;">🖥️ Landscape</button>
+            </div>
             <button class="btn-sm" onclick="window.randomWallpaper()" style="width:100%;margin-bottom:8px;">🎲 Random</button>
             <p style="font-size:10px;color:#94a3b8;" id="wpCount">Loading...</p>
             <div class="wp-grid" id="wpGrid"></div>
@@ -976,7 +1058,7 @@
 
     <script>
     // ============================================================
-    // ===== INLINED SCRIPTS =====
+    // ===== COMPLETE APP LOGIC =====
     // ============================================================
 
     // ===== DIALOG =====
@@ -1058,7 +1140,6 @@
     };
 
     // ===== AVATAR FIX =====
-    var originalHandleAvatarSelect = window.handleAvatarSelect;
     window.handleAvatarSelect = function(event) {
         var file = event.target.files[0];
         if (!file) return;
@@ -1066,26 +1147,300 @@
         reader.onload = function(e) {
             var dataUrl = e.target.result;
             window.S.avatar = dataUrl;
-            if (window.S.username) setData('users/' + window.S.username + '/avatar', dataUrl);
+            if (window.S.username) {
+                setData('users/' + window.S.username + '/avatar', dataUrl);
+            }
+            // Update profile avatar immediately
             var avatarContainer = document.getElementById('profileAvatarEmoji');
-            if (avatarContainer) avatarContainer.innerHTML = '<img src="' + dataUrl + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+            if (avatarContainer) {
+                avatarContainer.innerHTML = '<img src="' + dataUrl + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+            }
+            // Update post avatar
+            var postAvatar = document.getElementById('postAvatarEmoji');
+            if (postAvatar) {
+                postAvatar.innerHTML = '<img src="' + dataUrl + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+            }
             window.toast('✅ Avatar updated!');
         };
         reader.readAsDataURL(file);
     };
 
-    // ===== CHAT FIX =====
-    window.sendMessage = function() {
+    // ===== CHAT SYSTEM =====
+    window.currentChat = null;
+    window.chatMessages = [];
+    window.chatListener = null;
+    window.typingTimeout = null;
+
+    function renderChatList() {
+        var container = document.getElementById('chatList');
+        if (!container) return;
+        
+        // Get friends and groups
+        var friends = window.S.friends || [];
+        var groups = window.S.groups || ['Winchu Global'];
+        var allChats = ['Winchu Global', ...friends];
+        
+        if (allChats.length === 0) {
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">No chats yet. Add friends!</p>';
+            return;
+        }
+        
+        var html = '';
+        for (var i = 0; i < allChats.length; i++) {
+            var chat = allChats[i];
+            var isGroup = chat === 'Winchu Global';
+            var icon = isGroup ? '🌐' : '👤';
+            html += '<div class="chat-list-item" onclick="window.openChat(\'' + chat + '\', ' + isGroup + ')">';
+            html += '<div class="avatar">' + icon + '</div>';
+            html += '<div class="info"><div class="name">' + chat + '</div>';
+            html += '<div class="last-msg">' + (isGroup ? 'Group chat' : 'Friend') + '</div></div>';
+            html += '</div>';
+        }
+        container.innerHTML = html;
+    }
+
+    function openChat(chatName, isGroup) {
+        window.currentChat = chatName;
+        document.getElementById('chatWindow').style.display = 'block';
+        document.getElementById('chatList').style.display = 'none';
+        document.getElementById('chatWith').textContent = chatName;
+        
+        // Load messages
+        loadChatMessages(chatName);
+        
+        // Setup listener for this chat
+        setupChatListener(chatName);
+    }
+
+    function closeChat() {
+        window.currentChat = null;
+        document.getElementById('chatWindow').style.display = 'none';
+        document.getElementById('chatList').style.display = 'block';
+        if (window.chatListener) {
+            window.chatListener.off();
+            window.chatListener = null;
+        }
+    }
+
+    function loadChatMessages(chatName) {
+        var container = document.getElementById('chatMessages');
+        container.innerHTML = '<p style="color:#94a3b8;text-align:center;">Loading...</p>';
+        
+        var chatRef = getRef('chats/' + chatName);
+        chatRef.orderByKey().limitToLast(50).once('value', function(snapshot) {
+            var data = snapshot.val();
+            window.chatMessages = [];
+            if (data) {
+                var keys = Object.keys(data);
+                for (var i = 0; i < keys.length; i++) {
+                    var msg = data[keys[i]];
+                    msg.id = keys[i];
+                    window.chatMessages.push(msg);
+                }
+            }
+            renderChatMessages();
+        });
+    }
+
+    function setupChatListener(chatName) {
+        if (window.chatListener) {
+            window.chatListener.off();
+        }
+        var chatRef = getRef('chats/' + chatName);
+        window.chatListener = chatRef.orderByKey().limitToLast(50);
+        window.chatListener.on('child_added', function(snapshot) {
+            var msg = snapshot.val();
+            msg.id = snapshot.key;
+            if (!window.chatMessages.find(function(m) { return m.id === msg.id; })) {
+                window.chatMessages.push(msg);
+                renderChatMessages();
+            }
+        });
+        
+        // Listen for typing
+        var typingRef = getRef('typing/' + chatName);
+        typingRef.on('value', function(snapshot) {
+            var data = snapshot.val();
+            var indicator = document.getElementById('typingIndicator');
+            if (data && data.username && data.username !== window.S.username) {
+                indicator.textContent = data.username + ' is typing...';
+                indicator.style.display = 'block';
+                clearTimeout(window.typingTimeout);
+                window.typingTimeout = setTimeout(function() {
+                    indicator.style.display = 'none';
+                }, 3000);
+            } else {
+                indicator.style.display = 'none';
+            }
+        });
+    }
+
+    function renderChatMessages() {
+        var container = document.getElementById('chatMessages');
+        if (!container) return;
+        if (window.chatMessages.length === 0) {
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:16px;">No messages yet.</p>';
+            return;
+        }
+        var html = '';
+        for (var i = 0; i < window.chatMessages.length; i++) {
+            var m = window.chatMessages[i];
+            var me = m.username === window.S.username;
+            var time = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            html += '<div style="display:flex;justify-content:' + (me ? 'flex-end' : 'flex-start') + ';margin:3px 0;">';
+            html += '<div style="max-width:82%;"><div class="chat-bubble ' + (me ? 'chat-sent' : 'chat-received') + '">';
+            if (!me) html += '<div style="font-size:10px;font-weight:600;opacity:0.7;">' + m.username + ' · ' + time + '</div>';
+            html += '<p style="margin:2px 0 0;">' + m.text + '</p></div></div></div>';
+        }
+        container.innerHTML = html;
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function sendChatMessage() {
+        if (!window.currentChat) { window.toast('No chat selected'); return; }
         if (!window.S.username) { window.toast('Please log in'); return; }
         var input = document.getElementById('chatInput');
         var text = input.value.trim();
         if (!text) { window.toast('Type a message'); return; }
-        var message = { username: window.S.username, text: text, time: new Date().toISOString() };
-        var messagesRef = getRef('messages');
-        messagesRef.push(message).then(function() {
+        
+        var message = {
+            username: window.S.username,
+            text: text,
+            time: new Date().toISOString()
+        };
+        var chatRef = getRef('chats/' + window.currentChat);
+        chatRef.push(message).then(function() {
             input.value = '';
-            if (window.S.username) setData('users/' + window.S.username + '/last_seen', new Date().toISOString());
-        }).catch(function(err) { console.error('Send error:', err); window.toast('Failed to send'); });
+        }).catch(function(err) {
+            console.error('Send error:', err);
+            window.toast('Failed to send');
+        });
+        
+        // Send typing indicator
+        var typingRef = getRef('typing/' + window.currentChat);
+        typingRef.set({ username: window.S.username });
+        setTimeout(function() {
+            typingRef.remove();
+        }, 2000);
+    }
+
+    // ===== FRIEND SYSTEM =====
+    window.S.friends = [];
+    window.S.friendRequests = [];
+
+    function sendFriendRequest(username) {
+        if (!window.S.username) { window.toast('Please log in'); return; }
+        if (username === window.S.username) { window.toast('Cannot add yourself'); return; }
+        if (window.S.friends.indexOf(username) > -1) { window.toast('Already friends'); return; }
+        
+        var requestsRef = getRef('friendRequests/' + username);
+        requestsRef.once('value', function(snapshot) {
+            var requests = snapshot.val() || [];
+            if (requests.indexOf(window.S.username) > -1) {
+                window.toast('Request already sent');
+                return;
+            }
+            requests.push(window.S.username);
+            requestsRef.set(requests);
+            window.toast('Friend request sent to ' + username);
+        });
+    }
+
+    function acceptFriendRequest(username) {
+        if (!window.S.username) return;
+        // Add to friends list
+        if (window.S.friends.indexOf(username) === -1) {
+            window.S.friends.push(username);
+        }
+        // Remove from requests
+        var requestsRef = getRef('friendRequests/' + window.S.username);
+        requestsRef.once('value', function(snapshot) {
+            var requests = snapshot.val() || [];
+            var idx = requests.indexOf(username);
+            if (idx > -1) {
+                requests.splice(idx, 1);
+                requestsRef.set(requests);
+            }
+        });
+        // Save friends
+        setData('users/' + window.S.username + '/friends', window.S.friends);
+        renderUsers();
+        renderChatList();
+        window.toast('Friend added!');
+    }
+
+    function loadFriends() {
+        if (!window.S.username) return;
+        var friendsRef = getRef('users/' + window.S.username + '/friends');
+        friendsRef.once('value', function(snapshot) {
+            var data = snapshot.val();
+            if (data) {
+                window.S.friends = data;
+            }
+            renderChatList();
+        });
+        
+        // Check friend requests
+        var requestsRef = getRef('friendRequests/' + window.S.username);
+        requestsRef.on('value', function(snapshot) {
+            var data = snapshot.val();
+            window.S.friendRequests = data || [];
+            if (window.S.friendRequests.length > 0) {
+                window.toast('You have ' + window.S.friendRequests.length + ' friend request(s)!');
+            }
+        });
+    }
+
+    // ===== USERS LIST WITH FRIEND REQUESTS =====
+    var originalRenderUsers = window.renderUsers;
+    window.renderUsers = function() {
+        var container = document.getElementById('usersList');
+        if (!container) return;
+
+        var usersRef = getRef('users');
+        usersRef.once('value', function(snapshot) {
+            var users = snapshot.val() || {};
+            var usernames = Object.keys(users);
+
+            if (usernames.length === 0) {
+                container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">No users yet.</p>';
+                return;
+            }
+
+            var html = '';
+            for (var i = 0; i < usernames.length; i++) {
+                var u = usernames[i];
+                var isMe = u === window.S.username;
+                var userData = users[u] || {};
+                var isOnline = userData.last_seen && (Date.now() - new Date(userData.last_seen).getTime() < 60000);
+                var isFriend = window.S.friends && window.S.friends.indexOf(u) > -1;
+                var hasRequest = window.S.friendRequests && window.S.friendRequests.indexOf(u) > -1;
+                var color = ['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8','#F7B787','#FF8A80','#B388FF','#82B1FF','#B9F6CA','#FFE57F','#FF80AB','#EA80FC','#8C9EFF'][u.length % 16];
+                var avatarHTML = '<div style="width:40px;height:40px;border-radius:50%;background:' + color + ';display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:16px;">' + u.charAt(0).toUpperCase() + '</div>';
+
+                if (userData.avatar) {
+                    avatarHTML = '<img src="' + userData.avatar + '" style="width:40px;height:40px;border-radius:50%;object-fit:cover;" />';
+                }
+
+                html += '<div class="user-card">';
+                html += '<div class="user-avatar">' + avatarHTML + '</div>';
+                html += '<div class="user-info">';
+                html += '<div class="name">' + (isMe ? '⭐ ' : '') + u + ' <span class="status-dot ' + (isOnline ? 'online' : 'offline') + '"></span></div>';
+                html += '<div class="bio">' + (userData.bio || 'No bio yet') + '</div></div>';
+                html += '<div class="actions">';
+                if (!isMe) {
+                    if (isFriend) {
+                        html += '<button class="btn-sm btn-success" onclick="window.toast(\'Already friends\')">✓ Friend</button>';
+                    } else if (hasRequest) {
+                        html += '<button class="btn-sm btn-primary" onclick="window.acceptFriendRequest(\'' + u + '\')">Accept</button>';
+                    } else {
+                        html += '<button class="btn-sm" onclick="window.sendFriendRequest(\'' + u + '\')">➕ Add</button>';
+                    }
+                }
+                html += '</div></div>';
+            }
+            container.innerHTML = html;
+        });
     };
 
     // ===== AURA SELECTION =====
@@ -1127,7 +1482,7 @@
     }
     window.confirmSelection = confirmSelection;
 
-    // ===== LIKES FIX =====
+    // ===== LIKES, COMMENTS, DOWNLOAD =====
     function likePost(id) {
         if (!id) return;
         var post = window.S.socialPosts.find(function(p) { return p.id === id; });
@@ -1143,7 +1498,154 @@
     }
     window.likePost = likePost;
 
-    // ===== WALLPAPERS (Portrait) =====
+    function commentOnPost(id) {
+        showDialog({
+            emoji: '💬',
+            title: 'Add Comment',
+            subtitle: 'Write your comment',
+            placeholder: 'Type your comment...',
+            confirmText: 'Post'
+        }).then(function(result) {
+            if (result && result.trim()) {
+                var post = window.S.socialPosts.find(function(p) { return p.id === id; });
+                if (!post) return;
+                var comments = post.comments || [];
+                comments.push({ username: window.S.username, text: result.trim(), time: new Date().toISOString() });
+                post.comments = comments;
+                var postRef = getRef('posts/' + id + '/comments');
+                postRef.set(comments);
+                renderSocial();
+                window.toast('Comment added!');
+            }
+        });
+    }
+    window.commentOnPost = commentOnPost;
+
+    function downloadMedia(url, filename) {
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'winchu-media.jpg';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.toast('Downloading...');
+    }
+    window.downloadMedia = downloadMedia;
+
+    // ===== SOCIAL FEED RENDER WITH COMMENTS & DOWNLOAD =====
+    var originalRenderSocial = window.renderSocial;
+    window.renderSocial = function() {
+        var feed = document.getElementById('socialFeed');
+        if (!feed) return;
+        if (window.S.socialPosts.length === 0) {
+            feed.innerHTML = '<div style="text-align:center;padding:40px 0;color:#94a3b8;"><div style="font-size:48px;margin-bottom:12px;">📸</div><p>No posts yet. Share something!</p></div>';
+            return;
+        }
+        var html = '';
+        for (var i = 0; i < window.S.socialPosts.length; i++) {
+            var p = window.S.socialPosts[i];
+            var liked = (p.likes || []).indexOf(window.S.username) > -1;
+            var timeAgo = timeSince(new Date(p.time));
+            var avatarDisplay = p.avatar || '😊';
+            var commentCount = (p.comments || []).length;
+            var canDelete = p.author === window.S.username;
+            
+            html += '<div class="ig-post"><div class="ig-post-header"><div class="ig-post-avatar">' + avatarDisplay + '</div>';
+            html += '<span class="ig-post-user">' + p.author + '</span>';
+            html += '<span class="ig-post-time">' + timeAgo + '</span>';
+            if (canDelete) {
+                html += '<button class="btn-sm btn-danger" onclick="window.deletePost(\'' + p.id + '\')" style="font-size:11px;padding:2px 8px;">🗑️</button>';
+            }
+            html += '</div>';
+            if (p.image) {
+                html += '<img src="' + p.image + '" class="post-image" />';
+            }
+            html += '<div style="padding:0 12px 4px;"><p style="font-size:13px;margin:4px 0;">' + p.text + '</p></div>';
+            html += '<div class="ig-post-actions">';
+            html += '<button class="ig-post-action ' + (liked ? 'liked' : '') + '" onclick="likePost(\'' + p.id + '\')">' + (liked ? '❤️' : '🤍') + '</button>';
+            html += '<span style="font-size:13px;font-weight:600;color:#94a3b8;" onclick="likePost(\'' + p.id + '\')">' + (p.likes ? p.likes.length : 0) + '</span>';
+            html += '<button class="ig-post-action" onclick="commentOnPost(\'' + p.id + '\')">💬</button>';
+            html += '<span style="font-size:13px;font-weight:600;color:#94a3b8;">' + commentCount + '</span>';
+            if (p.image) {
+                html += '<button class="ig-post-action" onclick="downloadMedia(\'' + p.image + '\', \'winchu-post.jpg\')">⬇️</button>';
+            }
+            html += '</div>';
+            if (commentCount > 0) {
+                html += '<div class="ig-post-comments" onclick="commentOnPost(\'' + p.id + '\')">View ' + commentCount + ' comments</div>';
+            }
+            html += '</div>';
+        }
+        feed.innerHTML = html;
+    };
+
+    function timeSince(date) {
+        var now = new Date();
+        var diff = Math.floor((now - date) / 1000);
+        if (diff < 60) return diff + 's';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h';
+        if (diff < 604800) return Math.floor(diff / 86400) + 'd';
+        return date.toLocaleDateString();
+    }
+
+    // ===== DELETE ONLY OWN ENTRIES =====
+    window.deleteDiaryEntry = function(index) {
+        if (index < 0 || index >= window.S.diary.length) return;
+        showDialog({
+            emoji: '🗑️',
+            title: 'Delete Entry',
+            subtitle: 'Are you sure you want to delete this diary entry?',
+            confirmText: 'Delete',
+            danger: true
+        }).then(function(result) {
+            if (result !== null) {
+                var entry = window.S.diary[index];
+                window.S.diary.splice(index, 1);
+                if (window.S.username) {
+                    // Find and remove from Firebase
+                    var diaryRef = getRef('diary/' + window.S.username);
+                    diaryRef.once('value', function(snapshot) {
+                        var data = snapshot.val();
+                        if (data) {
+                            var keys = Object.keys(data);
+                            for (var i = 0; i < keys.length; i++) {
+                                if (data[keys[i]].date === entry.date && data[keys[i]].content === entry.content) {
+                                    getRef('diary/' + window.S.username + '/' + keys[i]).remove();
+                                    break;
+                                }
+                            }
+                        }
+                    });
+                }
+                renderDiary();
+                window.toast('Entry deleted');
+            }
+        });
+    };
+
+    // Override renderDiary with delete button
+    var originalRenderDiary = window.renderDiary;
+    window.renderDiary = function() {
+        var container = document.getElementById('diaryEntries');
+        if (!container) return;
+        if (window.S.diary.length === 0) {
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;">No entries yet.</p>';
+            return;
+        }
+        var html = '';
+        for (var i = 0; i < window.S.diary.length; i++) {
+            var x = window.S.diary[i];
+            var dateStr = new Date(x.date).toLocaleDateString();
+            html += '<div class="entry-card"><div style="display:flex;justify-content:space-between;margin-bottom:3px;">';
+            html += '<small style="color:#94a3b8;">' + dateStr + '</small>';
+            html += '<span style="font-size:10px;background:rgba(0,0,0,0.04);padding:2px 7px;border-radius:9px;">' + x.mood + '</span>';
+            html += '<button class="btn-sm btn-danger" onclick="window.deleteDiaryEntry(' + i + ')" style="font-size:10px;padding:2px 6px;">🗑️</button>';
+            html += '</div><p style="font-size:12px;white-space:pre-wrap;">' + x.content + '</p></div>';
+        }
+        container.innerHTML = html;
+    };
+
+    // ===== WALLPAPERS WITH PORTRAIT AND LANDSCAPE =====
     var PORTRAIT_WALLPAPERS = [
         'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1080&q=80',
         'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1080&q=80',
@@ -1154,21 +1656,51 @@
         'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=1080&q=80',
         'https://images.unsplash.com/photo-1470071459606-3b5ec3a7fe05?w=1080&q=80',
         'https://images.unsplash.com/photo-1440589473619-3cde28941638?w=1080&q=80',
-        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1080&q=80',
-        'https://images.unsplash.com/photo-1528825871115-3581a5387919?w=1080&q=80',
-        'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1080&q=80',
-        'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=1080&q=80',
-        'https://images.unsplash.com/photo-1597696929736-6d13bed8e6a8?w=1080&q=80',
-        'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=1080&q=80',
-        'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1080&q=80',
-        'https://images.unsplash.com/photo-1647811867884-b14ab4f81b36?w=1080&q=80',
-        'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=1080&q=80',
-        'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?w=1080&q=80',
-        'https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1080&q=80'
+        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1080&q=80'
     ];
 
-    function randomWallpaper() { setWallpaper(PORTRAIT_WALLPAPERS[Math.floor(Math.random() * PORTRAIT_WALLPAPERS.length)]); }
+    var LANDSCAPE_WALLPAPERS = [
+        'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1920&q=80',
+        'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1920&q=80',
+        'https://images.unsplash.com/photo-1470071459606-3b5ec3a7fe05?w=1920&q=80',
+        'https://images.unsplash.com/photo-1440589473619-3cde28941638?w=1920&q=80',
+        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80',
+        'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1920&q=80',
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80',
+        'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=80'
+    ];
+
+    var ALL_WALLPAPERS = [];
+    window.currentWallpaperFilter = 'all';
+
+    function initWallpapers() {
+        ALL_WALLPAPERS = [];
+        for (var i = 0; i < PORTRAIT_WALLPAPERS.length; i++) {
+            ALL_WALLPAPERS.push({ url: PORTRAIT_WALLPAPERS[i], type: 'portrait' });
+        }
+        for (var j = 0; j < LANDSCAPE_WALLPAPERS.length; j++) {
+            ALL_WALLPAPERS.push({ url: LANDSCAPE_WALLPAPERS[j], type: 'landscape' });
+        }
+        renderWallpapers();
+    }
+
+    function filterWallpapers(type) {
+        window.currentWallpaperFilter = type;
+        renderWallpapers();
+    }
+    window.filterWallpapers = filterWallpapers;
+
+    function randomWallpaper() {
+        var filtered = getFilteredWallpapers();
+        if (filtered.length === 0) { window.toast('No wallpapers in this category'); return; }
+        setWallpaper(filtered[Math.floor(Math.random() * filtered.length)].url);
+    }
     window.randomWallpaper = randomWallpaper;
+
+    function getFilteredWallpapers() {
+        if (window.currentWallpaperFilter === 'all') return ALL_WALLPAPERS;
+        return ALL_WALLPAPERS.filter(function(w) { return w.type === window.currentWallpaperFilter; });
+    }
 
     function setWallpaper(url) {
         window.S.wallpaper = url;
@@ -1180,15 +1712,16 @@
 
     function renderWallpapers() {
         var countEl = document.getElementById('wpCount');
-        if (countEl) countEl.textContent = PORTRAIT_WALLPAPERS.length + ' portrait wallpapers';
+        var filtered = getFilteredWallpapers();
+        if (countEl) countEl.textContent = filtered.length + ' wallpapers';
         var grid = document.getElementById('wpGrid');
         if (!grid) return;
         var html = '';
-        for (var i = 0; i < PORTRAIT_WALLPAPERS.length; i++) {
-            var url = PORTRAIT_WALLPAPERS[i];
-            var selected = window.S.wallpaper === url;
-            var cls = 'wp-thumb portrait' + (selected ? ' selected' : '');
-            html += '<div class="' + cls + '" style="background-image:url(' + url + ')" onclick="setWallpaper(\'' + url + '\')"></div>';
+        for (var i = 0; i < filtered.length; i++) {
+            var item = filtered[i];
+            var selected = window.S.wallpaper === item.url;
+            var cls = 'wp-thumb ' + item.type + (selected ? ' selected' : '');
+            html += '<div class="' + cls + '" style="background-image:url(' + item.url + ')" onclick="setWallpaper(\'' + item.url + '\')"></div>';
         }
         grid.innerHTML = html;
     }
@@ -1208,16 +1741,22 @@
         for (var i = 0; i < window.videoData.length; i++) {
             var v = window.videoData[i];
             var isLiked = v.likes && v.likes.indexOf(window.S.username) > -1;
+            var likeCount = v.likes ? v.likes.length : 0;
+            var commentCount = v.comments ? v.comments.length : 0;
+            
             html += '<div class="tiktok-video">';
             if (v.type === 'video') {
                 html += '<video src="' + v.url + '" loop muted playsinline></video>';
             } else {
                 html += '<img src="' + v.url + '" alt="Video thumbnail" />';
             }
-            html += '<div class="overlay"><div class="user">@' + v.author + '</div>';
+            html += '<div class="overlay">';
+            html += '<div class="user"><div class="avatar">' + (v.avatar || '😊') + '</div> @' + v.author + '</div>';
             html += '<div class="desc">' + (v.text || '') + '</div>';
-            html += '<div class="actions">';
-            html += '<button class="' + (isLiked ? 'liked' : '') + '" onclick="likeVideo(\'' + v.id + '\')">' + (isLiked ? '❤️' : '🤍') + ' ' + (v.likes ? v.likes.length : 0) + '</button>';
+            html += '<div class="side-actions">';
+            html += '<button class="' + (isLiked ? 'liked' : '') + '" onclick="likeVideo(\'' + v.id + '\')">❤️<span>' + likeCount + '</span></button>';
+            html += '<button onclick="commentVideo(\'' + v.id + '\')">💬<span>' + commentCount + '</span></button>';
+            html += '<button onclick="downloadMedia(\'' + v.url + '\', \'winchu-video.mp4\')">⬇️<span>Save</span></button>';
             html += '</div></div></div>';
         }
         container.innerHTML = html;
@@ -1225,15 +1764,17 @@
         // Auto-play videos on scroll
         var videos = container.querySelectorAll('video');
         var observer = new IntersectionObserver(function(entries) {
-            entries.forEach(function(entry) {
-                if (entry.isIntersecting) {
-                    entry.target.play().catch(function() {});
+            for (var j = 0; j < entries.length; j++) {
+                if (entries[j].isIntersecting) {
+                    entries[j].target.play().catch(function() {});
                 } else {
-                    entry.target.pause();
+                    entries[j].target.pause();
                 }
-            });
+            }
         }, { threshold: 0.5 });
-        videos.forEach(function(v) { observer.observe(v); });
+        for (var k = 0; k < videos.length; k++) {
+            observer.observe(videos[k]);
+        }
     }
     window.renderVideos = renderVideos;
 
@@ -1250,7 +1791,28 @@
     }
     window.likeVideo = likeVideo;
 
-    // ===== LOAD VIDEOS FROM FIREBASE =====
+    function commentVideo(id) {
+        showDialog({
+            emoji: '💬',
+            title: 'Add Comment',
+            subtitle: 'Write your comment on this video',
+            placeholder: 'Type your comment...',
+            confirmText: 'Post'
+        }).then(function(result) {
+            if (result && result.trim()) {
+                var video = window.videoData.find(function(v) { return v.id === id; });
+                if (!video) return;
+                var comments = video.comments || [];
+                comments.push({ username: window.S.username, text: result.trim(), time: new Date().toISOString() });
+                video.comments = comments;
+                if (window.S.username) setData('videos/' + id + '/comments', comments);
+                renderVideos();
+                window.toast('Comment added!');
+            }
+        });
+    }
+    window.commentVideo = commentVideo;
+
     function loadVideos() {
         var videosRef = getRef('videos');
         videosRef.orderByKey().limitToLast(50).on('child_added', function(snapshot) {
@@ -1265,7 +1827,7 @@
     }
     window.loadVideos = loadVideos;
 
-    // ===== OVERRIDE CREATE POST TO SUPPORT VIDEOS =====
+    // ===== OVERRIDE CREATE POST FOR VIDEOS =====
     var originalCreatePost = window.createPost;
     window.createPost = function() {
         var input = document.getElementById('postInput');
@@ -1274,15 +1836,17 @@
         
         var avatar = window.S.selectedAuras.length > 0 ? window.S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊';
         var isVideo = window.selectedFile && window.selectedFile.type && window.selectedFile.type.startsWith('video/');
+        var avatarUrl = window.S.avatar || avatar;
         
         var post = {
             author: window.S.username || 'You',
-            avatar: avatar,
+            avatar: avatarUrl,
             text: text || '',
             image: window.selectedFileData || null,
             type: isVideo ? 'video' : 'image',
             time: new Date().toISOString(),
-            likes: []
+            likes: [],
+            comments: []
         };
         
         var postsRef = getRef('posts');
@@ -1292,11 +1856,13 @@
         if (isVideo && window.selectedFileData) {
             var videoPost = {
                 author: window.S.username || 'You',
+                avatar: avatarUrl,
                 text: text || '',
                 url: window.selectedFileData,
                 type: 'video',
                 time: new Date().toISOString(),
-                likes: []
+                likes: [],
+                comments: []
             };
             var videosRef = getRef('videos');
             videosRef.push(videoPost);
@@ -1310,26 +1876,52 @@
         window.toast('📝 Posted!');
     };
 
-    // ===== OVERRIDE RENDER PROFILE FOR AVATAR =====
+    // ===== PROFILE WITH FRIENDS COUNT =====
     var originalRenderProfile = window.renderProfile;
     window.renderProfile = function() {
         if (typeof originalRenderProfile === 'function') originalRenderProfile();
+        
+        // Update friends count
+        var friendsEl = document.getElementById('profileFriends');
+        if (friendsEl) {
+            friendsEl.textContent = window.S.friends ? window.S.friends.length : 0;
+        }
+        
+        // Show avatar
         if (window.S.avatar) {
             var avatarContainer = document.getElementById('profileAvatarEmoji');
             if (avatarContainer) {
                 avatarContainer.innerHTML = '<img src="' + window.S.avatar + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
             }
+            var postAvatar = document.getElementById('postAvatarEmoji');
+            if (postAvatar) {
+                postAvatar.innerHTML = '<img src="' + window.S.avatar + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+            }
         }
     };
 
     // ===== INIT =====
-    setTimeout(function() {
+    function initApp() {
         if (window.S.username) {
             loadVideos();
+            loadFriends();
+            initWallpapers();
+            renderChatList();
         }
-    }, 500);
+        console.log('🎬 Winchu · Nexus with all features!');
+    }
 
-    console.log('🎬 Winchu · Nexus with Videos & Portrait Wallpapers!');
+    // Start after auth loads
+    setTimeout(initApp, 500);
+
+    // Expose functions
+    window.closeChat = closeChat;
+    window.openChat = openChat;
+    window.sendChatMessage = sendChatMessage;
+    window.sendFriendRequest = sendFriendRequest;
+    window.acceptFriendRequest = acceptFriendRequest;
+    window.loadFriends = loadFriends;
+    window.deleteDiaryEntry = window.deleteDiaryEntry;
     </script>
 </body>
 </html>
