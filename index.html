@@ -771,7 +771,7 @@
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:8px;">🎨 Walls</h2>
             <button class="btn-sm" onclick="window.randomWallpaper()" style="width:100%;margin-bottom:8px;">🎲 Random</button>
-            <p style="font-size:10px;color:#94a3b8;" id="wpCount">50+ wallpapers</p>
+            <p style="font-size:10px;color:#94a3b8;" id="wpCount">Loading wallpapers...</p>
             <div class="wp-grid" id="wpGrid"></div>
         </div>
     </div>
@@ -817,8 +817,24 @@
         'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=1920&q=80',
         'https://images.unsplash.com/photo-1470071459606-3b5ec3a7fe05?w=1920&q=80',
         'https://images.unsplash.com/photo-1440589473619-3cde28941638?w=1920&q=80',
-        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80'
+        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80',
+        'https://images.unsplash.com/photo-1528825871115-3581a5387919?w=1920&q=80',
+        'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1920&q=80',
+        'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=1920&q=80',
+        'https://images.unsplash.com/photo-1597696929736-6d13bed8e6a8?w=1920&q=80',
+        'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=1920&q=80',
+        'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1920&q=80',
+        'https://images.unsplash.com/photo-1647811867884-b14ab4f81b36?w=1920&q=80',
+        'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=1920&q=80',
+        'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?w=1920&q=80',
+        'https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1920&q=80',
+        'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=1920&q=80',
+        'https://images.unsplash.com/photo-1575377501614-f1d565d84756?w=1920&q=80',
+        'https://images.unsplash.com/photo-1453928582365-b6ad33cbcf64?w=1920&q=80',
+        'https://images.unsplash.com/photo-1736580602088-73d0f3ad8add?w=1920&q=80'
     ];
+
+    console.log(`✅ Total wallpapers: ${UNSPLASH.length}`);
 
     // ==================== DEFAULT WALLPAPER ====================
     const DEFAULT_WALLPAPER = 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1920&q=80';
@@ -830,6 +846,8 @@
     console.log('🔗 Winchu connected to JSONBin:', JSONBIN_BIN_ID);
 
     // ==================== CLOUD FUNCTIONS ====================
+    let CLOUD_DATA = { messages: [], users: {}, posts: [], diaries: [], routines: [], profiles: {} };
+
     async function cloudGet() {
         try {
             const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
@@ -843,6 +861,7 @@
                 console.log('✅ JSONBin data loaded');
                 return data;
             }
+            console.warn('⚠️ JSONBin get failed:', response.status);
             return null;
         } catch (e) {
             console.error('❌ JSONBin error:', e.message);
@@ -864,6 +883,7 @@
                 console.log('✅ JSONBin data saved');
                 return true;
             }
+            console.warn('⚠️ JSONBin put failed:', response.status);
             return false;
         } catch (e) {
             console.error('❌ JSONBin save error:', e.message);
@@ -885,43 +905,62 @@
         } catch (e) {}
     }
 
-    // ==================== MAIN APP ====================
-    let CLOUD_DATA = { messages: [], users: {}, posts: [], diaries: [], routines: [], profiles: {} };
-    let S = { selectedAuras: [], completedTasks: [], streakData: {}, wallpaper: DEFAULT_WALLPAPER, diary: [], routines: [], socialPosts: [], likedPosts: [], username: '', bio: 'Building my energy. One aura at a time. ⚡', avatar: null };
-    let chatMessages = [];
-    let poll = null;
-    let selectedFile = null;
-    let selectedFileData = null;
-    let selectedAvatarFile = null;
-    let selectedAvatarData = null;
-    const AUTH_KEY = 'winchu_auth_v2';
-
-    // ==================== CORE FUNCTIONS ====================
     async function loadAllData() {
         try {
             const cloudData = await cloudGet();
-            if (cloudData) {
+            if (cloudData && Object.keys(cloudData).length > 0) {
                 CLOUD_DATA = cloudData;
                 saveLocalData(cloudData);
+                console.log('📦 Using cloud data');
                 return CLOUD_DATA;
             }
         } catch (e) {
             console.error('Cloud load error:', e);
         }
         const localData = loadLocalData();
-        if (localData) {
+        if (localData && Object.keys(localData).length > 0) {
             CLOUD_DATA = localData;
+            console.log('📦 Using local data (cloud unavailable)');
             return CLOUD_DATA;
         }
+        console.log('📦 Using empty data (first run)');
+        // Initialize empty data structure
+        CLOUD_DATA = { messages: [], users: {}, posts: [], diaries: [], routines: [], profiles: {} };
+        saveLocalData(CLOUD_DATA);
         return CLOUD_DATA;
     }
 
     async function saveAllData() {
         if (!CLOUD_DATA) return;
         saveLocalData(CLOUD_DATA);
-        await cloudPut(CLOUD_DATA);
-        console.log('✅ Data saved to cloud');
+        const saved = await cloudPut(CLOUD_DATA);
+        if (saved) {
+            console.log('✅ Data synced to cloud');
+        } else {
+            console.log('📦 Data saved locally only (cloud failed)');
+        }
     }
+
+    // ==================== MAIN APP STATE ====================
+    let S = {
+        selectedAuras: [],
+        completedTasks: [],
+        streakData: {},
+        wallpaper: DEFAULT_WALLPAPER,
+        diary: [],
+        routines: [],
+        socialPosts: [],
+        likedPosts: [],
+        username: '',
+        bio: 'Building my energy. One aura at a time. ⚡',
+        avatar: null
+    };
+    let chatMessages = [];
+    let poll = null;
+    let selectedFile = null;
+    let selectedFileData = null;
+    let selectedAvatarData = null;
+    const AUTH_KEY = 'winchu_auth_v3';
 
     // ==================== AUTH ====================
     function loadAuth() {
@@ -942,7 +981,7 @@
                     return true;
                 }
             }
-        } catch (e) {}
+        } catch (e) { console.error('Load auth error:', e); }
         document.getElementById('wpFab').style.display = 'none';
         return false;
     }
@@ -1041,7 +1080,7 @@
 
         const users = CLOUD_DATA.users || {};
         const usernames = Object.keys(users);
-        
+
         if (usernames.length === 0) {
             container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">No users yet.</p>';
             return;
@@ -1056,7 +1095,7 @@
                     if (now - time < 300000) {
                         onlineUsers.add(msg.username);
                     }
-                } catch(e) {}
+                } catch (e) {}
             });
         }
         if (S.username) onlineUsers.add(S.username);
@@ -1067,7 +1106,7 @@
             const isMe = u === S.username;
             const postCount = S.socialPosts ? S.socialPosts.filter(p => p.author === u).length : 0;
             const avatarHTML = getAvatarHTML(u, 40);
-            
+
             return `
                 <div class="user-card">
                     <div class="user-avatar">${avatarHTML}</div>
@@ -1104,8 +1143,10 @@
         if (page === 'users') renderUsers();
         if (page === 'diary') renderDiary();
         if (page === 'routine') renderRoutines();
-        if (page === 'chat') { renderChat(); startPoll(); } else stopPoll();
-        if (page === 'social') { renderSocial(); renderStories(); }
+        if (page === 'chat') { renderChat();
+            startPoll(); } else stopPoll();
+        if (page === 'social') { renderSocial();
+            renderStories(); }
         if (page === 'profile') renderProfile();
         if (page === 'wallpapers') renderWallpapers();
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1305,7 +1346,8 @@
     }
 
     function stopPoll() {
-        if (poll) { clearInterval(poll); poll = null; }
+        if (poll) { clearInterval(poll);
+            poll = null; }
     }
 
     async function updateChat() {
@@ -1314,7 +1356,6 @@
             chatMessages = CLOUD_DATA.messages;
             renderChatMessages();
         }
-        // Update online count
         const now = Date.now();
         const online = new Set();
         if (CLOUD_DATA.messages) {
@@ -1324,12 +1365,11 @@
                     if (now - time < 300000) {
                         online.add(msg.username);
                     }
-                } catch(e) {}
+                } catch (e) {}
             });
         }
         if (S.username) online.add(S.username);
         document.getElementById('onlineCount').textContent = online.size;
-        // Also update users list if on users page
         if (document.getElementById('page-users').classList.contains('active')) {
             renderUsers();
         }
@@ -1472,13 +1512,13 @@
         const input = document.getElementById('postInput');
         const text = input.value.trim();
         if (!text && !selectedFileData) { toast('Write something or add media'); return; }
-        
+
         const avatar = S.avatar || (S.selectedAuras.length > 0 ? S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊');
 
         try {
             await loadAllData();
             if (!CLOUD_DATA.posts) CLOUD_DATA.posts = [];
-            
+
             const post = {
                 id: 'post_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
                 author: S.username || 'You',
@@ -1489,7 +1529,7 @@
                 image: selectedFileData || null,
                 mediaType: selectedFile ? (selectedFile.type.startsWith('video/') ? 'video' : 'image') : 'image'
             };
-            
+
             CLOUD_DATA.posts.unshift(post);
             if (CLOUD_DATA.posts.length > 200) CLOUD_DATA.posts = CLOUD_DATA.posts.slice(0, 200);
             await saveAllData();
@@ -1567,8 +1607,8 @@
             } else if (p.image && (p.image.indexOf('data:') === 0)) {
                 mediaHtml = '<img src="' + p.image + '" class="post-image" alt="Post image" />';
             }
-            const avatarDisplay = p.avatar && p.avatar.startsWith('data:') ? 
-                '<img src="' + p.avatar + '" style="width:36px;height:36px;border-radius:50%;object-fit:cover;" />' : 
+            const avatarDisplay = p.avatar && p.avatar.startsWith('data:') ?
+                '<img src="' + p.avatar + '" style="width:36px;height:36px;border-radius:50%;object-fit:cover;" />' :
                 p.avatar || '😊';
             return '<div class="ig-post"><div class="ig-post-header"><div class="ig-post-avatar" style="overflow:hidden;">' + avatarDisplay + '</div><span class="ig-post-user">' + p.author + '</span><span class="ig-post-time">' + timeAgo + '</span>' + (p.author === S.username ? '<button class="btn-sm btn-danger" onclick="window.deletePost(\'' + p.id + '\')" style="font-size:11px;padding:2px 8px;">🗑️</button>' : '') + '</div>' + mediaHtml + '<div style="padding:0 12px 4px;"><p style="font-size:13px;margin:4px 0;">' + p.text + '</p></div><div class="ig-post-actions"><button class="ig-post-action ' + (liked ? 'liked' : '') + '" onclick="window.likePost(\'' + p.id + '\')">' + (liked ? '❤️' : '🤍') + '</button><span style="font-size:13px;font-weight:600;color:#94a3b8;">' + p.likes.length + ' ' + (p.likes.length === 1 ? 'like' : 'likes') + '</span></div></div>';
         }).join('');
@@ -1577,8 +1617,7 @@
     // ==================== PROFILE FUNCTIONS ====================
     function renderProfile() {
         const avatarEmoji = S.avatar ? '🖼️' : (S.selectedAuras.length > 0 ? S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊');
-        
-        // Update avatar
+
         const avatarContainer = document.getElementById('profileAvatarContainer');
         if (avatarContainer) {
             if (S.avatar) {
@@ -1587,7 +1626,7 @@
                 avatarContainer.innerHTML = '<div class="inner" id="profileAvatarEmoji">' + avatarEmoji + '</div>';
             }
         }
-        
+
         document.getElementById('profileName').textContent = S.username || '—';
         document.getElementById('profileUsername').textContent = '@' + (S.username || '—');
         document.getElementById('profilePosts').textContent = S.socialPosts.filter(function(p) { return p.author === S.username; }).length;
@@ -1631,8 +1670,13 @@
     }
 
     function renderWallpapers() {
-        document.getElementById('wpCount').textContent = UNSPLASH.length + '+ wallpapers';
-        document.getElementById('wpGrid').innerHTML = UNSPLASH.map(function(url) {
+        const count = document.getElementById('wpCount');
+        const grid = document.getElementById('wpGrid');
+
+        if (count) count.textContent = UNSPLASH.length + ' wallpapers';
+        if (!grid) return;
+
+        grid.innerHTML = UNSPLASH.map(function(url) {
             const selected = S.wallpaper === url;
             return '<div class="wp-thumb' + (selected ? ' selected' : '') + '" style="background-image:url(\'' + url + '\')" onclick="window.setWallpaper(\'' + url + '\')"></div>';
         }).join('');
@@ -1645,11 +1689,11 @@
         const pass = document.getElementById('signupPass').value.trim();
         if (!name || !user || !pass) { toast('Please fill all fields'); return; }
         if (pass.length < 4) { toast('Password must be at least 4 characters'); return; }
-        
+
         await loadAllData();
         if (!CLOUD_DATA.users) CLOUD_DATA.users = {};
         if (CLOUD_DATA.users[user]) { toast('Username already exists'); return; }
-        
+
         CLOUD_DATA.users[user] = { password: pass, name: name, created: new Date().toISOString() };
         if (!CLOUD_DATA.profiles) CLOUD_DATA.profiles = {};
         CLOUD_DATA.profiles[user] = {
@@ -1660,7 +1704,7 @@
             created: new Date().toISOString()
         };
         await saveAllData();
-        
+
         S.username = user;
         S.selectedAuras = [];
         S.completedTasks = [];
@@ -1681,13 +1725,13 @@
         const user = document.getElementById('loginUser').value.trim();
         const pass = document.getElementById('loginPass').value.trim();
         if (!user || !pass) { toast('Enter username and password'); return; }
-        
+
         await loadAllData();
         if (!CLOUD_DATA.users || !CLOUD_DATA.users[user] || CLOUD_DATA.users[user].password !== pass) {
             toast('Invalid credentials');
             return;
         }
-        
+
         S.username = user;
         if (CLOUD_DATA.profiles && CLOUD_DATA.profiles[user]) {
             const profile = CLOUD_DATA.profiles[user];
@@ -1714,7 +1758,8 @@
     async function init() {
         console.log('🚀 Winchu starting...');
         await loadAllData();
-        
+
+        // Load data into state
         if (CLOUD_DATA.messages) chatMessages = CLOUD_DATA.messages;
         if (CLOUD_DATA.posts) S.socialPosts = CLOUD_DATA.posts;
         if (CLOUD_DATA.diaries) S.diary = CLOUD_DATA.diaries;
@@ -1729,12 +1774,18 @@
             document.getElementById('wpFab').style.display = 'none';
             navigate('landing');
         }
-        
+
+        // Start polling for updates
         setInterval(function() {
             if (S.username) updateChat();
         }, 5000);
-        
+
         console.log('⚡ Winchu · Nexus with JSONBin ✅');
+        console.log('📊 Data loaded:', {
+            messages: CLOUD_DATA.messages ? CLOUD_DATA.messages.length : 0,
+            users: Object.keys(CLOUD_DATA.users || {}).length,
+            posts: CLOUD_DATA.posts ? CLOUD_DATA.posts.length : 0
+        });
     }
 
     // ==================== EXPOSE TO WINDOW ====================
