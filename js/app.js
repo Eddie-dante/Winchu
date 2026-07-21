@@ -1,4 +1,3 @@
-@"
 // ==================== MAIN APP STATE ====================
 const S = {
     selectedAuras: [],
@@ -47,32 +46,34 @@ window.toast = toast;
 function setBg(url) {
     S.wallpaper = url;
     const s = document.createElement('style');
-    s.textContent = `body::before{background-image:url('${url}')!important}`;
+    s.textContent = 'body::before{background-image:url(' + url + ')!important}';
     const o = document.querySelector('style[data-bg]');
     if (o) o.remove();
     s.setAttribute('data-bg', '');
     document.head.appendChild(s);
     if (S.username) {
-        setData(`users/${S.username}/wallpaper`, url);
+        setData('users/' + S.username + '/wallpaper', url);
     }
 }
 window.setBg = setBg;
 
 // ==================== NAVIGATION ====================
 function navigate(page) {
-    document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
-    const target = document.getElementById('page-' + page);
+    document.querySelectorAll('.page').forEach(function(x) {
+        x.classList.remove('active');
+    });
+    var target = document.getElementById('page-' + page);
     if (target) target.classList.add('active');
 
-    document.querySelectorAll('.nav-btn').forEach(b => {
+    document.querySelectorAll('.nav-btn').forEach(function(b) {
         b.classList.remove('active');
         if (b.dataset.page === page) b.classList.add('active');
     });
 
-    const nav = document.getElementById('bottomNav');
+    var nav = document.getElementById('bottomNav');
     if (nav) {
-        const hideNav = ['landing', 'login', 'signup', 'select'];
-        nav.style.display = hideNav.includes(page) ? 'none' : 'flex';
+        var hideNav = ['landing', 'login', 'signup', 'select'];
+        nav.style.display = hideNav.indexOf(page) > -1 ? 'none' : 'flex';
     }
 
     // Call render functions if they exist
@@ -96,15 +97,15 @@ window.navigate = navigate;
 // ==================== INIT ====================
 function init() {
     console.log('🚀 Winchu starting with Firebase Realtime!');
-    const loggedIn = typeof loadAuth === 'function' ? loadAuth() : false;
+    var loggedIn = typeof loadAuth === 'function' ? loadAuth() : false;
     
     if (loggedIn) {
-        const fab = document.getElementById('wpFab');
+        var fab = document.getElementById('wpFab');
         if (fab) fab.style.display = 'flex';
         
         setBg(S.wallpaper);
         
-        const usernameEl = document.getElementById('myUsername');
+        var usernameEl = document.getElementById('myUsername');
         if (usernameEl) usernameEl.textContent = S.username;
         
         if (typeof loadUserData === 'function') loadUserData();
@@ -113,13 +114,13 @@ function init() {
         
         setInterval(function() {
             if (S.username) {
-                setData(`users/${S.username}/last_seen`, new Date().toISOString());
+                setData('users/' + S.username + '/last_seen', new Date().toISOString());
             }
         }, 30000);
         
         navigate('social');
     } else {
-        const fab = document.getElementById('wpFab');
+        var fab = document.getElementById('wpFab');
         if (fab) fab.style.display = 'none';
         navigate('landing');
     }
@@ -132,4 +133,3 @@ if (document.readyState === 'loading') {
 } else {
     init();
 }
-"@ | Out-File -FilePath js/app.js -Encoding utf8

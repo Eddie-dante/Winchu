@@ -1,145 +1,30 @@
-// ==================== DASHBOARD LOGIC ====================
-function getTasks() {
-    let tasks = [];
-    window.S.selectedAuras.forEach(key => {
-        if (AURAS[key]) tasks = tasks.concat(AURAS[key].tasks);
-    });
-    return [...new Set(tasks)].slice(0, 8);
+// ==================== WALLPAPER LOGIC ====================
+function randomWallpaper() {
+    setWallpaper(UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)]);
 }
-window.getTasks = getTasks;
+window.randomWallpaper = randomWallpaper;
 
-function calcScore() {
-    const tasks = getTasks(),
-        total = tasks.length,
-        done = window.S.completedTasks.filter(i => i < total).length;
-    return { pct: total > 0 ? Math.round((done / total) * 100) : 0, done, total };
+function setWallpaper(url) {
+    window.S.wallpaper = url;
+    window.setBg(url);
+    renderWallpapers();
+    window.toast('✅ Applied');
 }
-window.calcScore = calcScore;
+window.setWallpaper = setWallpaper;
 
-function calcStreak() {
-    let s = 0;
-    const n = new Date();
-    for (let i = 0; i < 365; i++) {
-        const d = new Date(n);
-        d.setDate(d.getDate() - i);
-        if (window.S.streakData[d.toDateString()]) s++;
-        else break;
+function renderWallpapers() {
+    var countEl = document.getElementById('wpCount');
+    if (countEl) countEl.textContent = UNSPLASH.length + '+ wallpapers';
+
+    var grid = document.getElementById('wpGrid');
+    if (!grid) return;
+    var html = '';
+    for (var i = 0; i < UNSPLASH.length; i++) {
+        var url = UNSPLASH[i];
+        var selected = window.S.wallpaper === url;
+        var cls = 'wp-thumb' + (selected ? ' selected' : '');
+        html += '<div class="' + cls + '" style="background-image:url(' + url + ')" onclick="setWallpaper(\'' + url + '\')"></div>';
     }
-    return s;
+    grid.innerHTML = html;
 }
-window.calcStreak = calcStreak;
-
-function toggleTask(index) {
-    const idx = window.S.completedTasks.indexOf(index);
-    if (idx > -1) window.S.completedTasks.splice(idx, 1);
-    else window.S.completedTasks.push(index);
-    const tasks = getTasks(),
-        total = tasks.length,
-        done = window.S.completedTasks.filter(x => x < total).length;
-    const today = new Date().toDateString();
-    if (done === total && total > 0) window.S.streakData[today] = true;
-    else delete window.S.streakData[today];
-    renderHome();
-}
-window.toggleTask = toggleTask;
-
-function resetDay() {
-    if (!confirm('Reset tasks?')) return;
-    window.S.completedTasks = [];
-    delete window.S.streakData[new Date().toDateString()];
-    renderHome();
-}
-window.resetDay = resetDay;
-
-function renderHome() {
-    if (window.S.selectedAuras.length === 0) {
-        window.navigate('select');
-        return;
-    }
-    const p = AURAS[window.S.selectedAuras[0]],
-        tasks = getTasks(),
-        { pct, done, total } = calcScore();
-    const streak = calcStreak();
-    const circ = 2 * Math.PI * 43,
-        offset = circ - (pct / 100) * circ;
-
-    const titleEl = document.getElementById('homeTitle');
-    if (titleEl) titleEl.textContent = window.S.selectedAuras.map(k => AURAS[k].emoji + ' ' + AURAS[k].name).join(' + ');
-
-    const badgeEl = document.getElementById('homeBadge');
-    if (badgeEl) badgeEl.textContent = '⚡ ' + window.S.selectedAuras.map(k => AURAS[k].emoji).join('');
-
-    const scoreEl = document.getElementById('score');
-    if (scoreEl) scoreEl.textContent = pct + '%';
-
-    const progressEl = document.getElementById('taskProgress');
-    if (progressEl) progressEl.textContent = done + '/' + total;
-
-    const streakEl = document.getElementById('streakCount');
-    if (streakEl) streakEl.textContent = streak;
-
-    const tasksDoneEl = document.getElementById('tasksDone');
-    if (tasksDoneEl) tasksDoneEl.textContent = window.S.completedTasks.length;
-
-    const diaryCountEl = document.getElementById('diaryCount');
-    if (diaryCountEl) diaryCountEl.textContent = window.S.diary.length;
-
-    const msgCountEl = document.getElementById('msgCount');
-    if (msgCountEl) msgCountEl.textContent = window.chatMessages.length;
-
-    const ring = document.getElementById('scoreRing');
-    if (ring) {
-        ring.style.strokeDashoffset = offset;
-        ring.style.stroke = p.accent;
-    }
-
-    const tasksContainer = document.getElementById('tasks');
-    if (tasksContainer) {
-        tasksContainer.innerHTML = tasks.map((t, i) => {
-            const c = window.S.completedTasks.includes(i);
-            return `<div class="task-item${c ? ' done' : ''}" onclick="toggleTask(${i})"><div class="check-box">${c ? '✓' : ''}</div><span class="task-text">${t}</span></div>`;
-        }).join('');
-    }
-    renderCalendar();
-}
-window.renderHome = renderHome;
-
-function renderCalendar() {
-    const n = new Date(),
-        y = n.getFullYear(),
-        m = n.getMonth();
-    const dim = new Date(y, m + 1, 0).getDate(),
-        fd = new Date(y, m, 1).getDay();
-
-    const monthLabel = document.getElementById('monthLabel');
-    if (monthLabel) monthLabel.textContent = n.toLocaleDateString('en', { month: 'long', year: 'numeric' });
-
-    const cal = document.getElementById('calendar');
-    if (!cal) return;
-    cal.innerHTML = '';
-    ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].forEach(d => {
-        const div = document.createElement('div');
-        div.className = 'cal-day weekday';
-        div.textContent = d;
-        cal.appendChild(div);
-    });
-    for (let i = 0; i < fd; i++) {
-        const div = document.createElement('div');
-        div.className = 'cal-day';
-        div.style.background = 'transparent';
-        cal.appendChild(div);
-    }
-    for (let d = 1; d <= dim; d++) {
-        const ds = new Date(y, m, d).toDateString();
-        const div = document.createElement('div');
-        div.className = 'cal-day';
-        div.textContent = d;
-        if (window.S.streakData[ds]) {
-            div.classList.add('active');
-            if (window.S.selectedAuras.length) div.style.background = AURAS[window.S.selectedAuras[0]].accent;
-        }
-        if (d === n.getDate() && m === n.getMonth() && y === n.getFullYear()) div.classList.add('today');
-        cal.appendChild(div);
-    }
-}
-window.renderCalendar = renderCalendar;
+window.renderWallpapers = renderWallpapers;
