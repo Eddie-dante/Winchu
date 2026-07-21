@@ -1,4 +1,4 @@
-// ==================== WALLPAPER LOGIC ====================
+// Wallpaper Logic
 function randomWallpaper() {
     setWallpaper(UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)]);
 }
@@ -8,14 +8,13 @@ function setWallpaper(url) {
     window.S.wallpaper = url;
     window.setBg(url);
     renderWallpapers();
-    window.toast('✅ Applied');
+    window.toast('Applied');
 }
 window.setWallpaper = setWallpaper;
 
 function renderWallpapers() {
     var countEl = document.getElementById('wpCount');
     if (countEl) countEl.textContent = UNSPLASH.length + '+ wallpapers';
-
     var grid = document.getElementById('wpGrid');
     if (!grid) return;
     var html = '';

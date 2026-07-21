@@ -1,8 +1,7 @@
-// ==================== PROFILE LOGIC ====================
+// Profile Logic
 function handleAvatarSelect(event) {
     var file = event.target.files[0];
     if (!file) return;
-
     var reader = new FileReader();
     reader.onload = function(e) {
         window.selectedAvatarData = e.target.result;
@@ -11,7 +10,7 @@ function handleAvatarSelect(event) {
             setData('users/' + window.S.username + '/avatar', window.selectedAvatarData);
         }
         renderProfile();
-        window.toast('✅ Avatar updated!');
+        window.toast('Avatar updated!');
     };
     reader.readAsDataURL(file);
 }
@@ -19,31 +18,23 @@ window.handleAvatarSelect = handleAvatarSelect;
 
 function renderProfile() {
     var avatarEmoji = window.S.selectedAuras.length > 0 ? window.S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊';
-
     var avatarEl = document.getElementById('profileAvatarEmoji');
     if (avatarEl) avatarEl.textContent = avatarEmoji;
-
     var nameEl = document.getElementById('profileName');
     if (nameEl) nameEl.textContent = window.S.username || '—';
-
     var usernameEl = document.getElementById('profileUsername');
     if (usernameEl) usernameEl.textContent = '@' + (window.S.username || '—');
-
     var postsEl = document.getElementById('profilePosts');
     if (postsEl) {
         var userPosts = window.S.socialPosts.filter(function(p) { return p.author === window.S.username; });
         postsEl.textContent = userPosts.length;
     }
-
     var followersEl = document.getElementById('profileFollowers');
     if (followersEl) followersEl.textContent = Math.floor(Math.random() * 100) + 10;
-
     var followingEl = document.getElementById('profileFollowing');
     if (followingEl) followingEl.textContent = Math.floor(Math.random() * 50) + 5;
-
     var bioEl = document.getElementById('profileBio');
-    if (bioEl) bioEl.textContent = window.S.bio || 'Building my energy. One aura at a time. ⚡';
-
+    if (bioEl) bioEl.textContent = window.S.bio || 'Building my energy. One aura at a time.';
     var grid = document.getElementById('profilePostsGrid');
     if (!grid) return;
     var userPosts2 = window.S.socialPosts.filter(function(p) { return p.author === window.S.username; });
@@ -65,12 +56,12 @@ window.renderProfile = renderProfile;
 function editProfile() {
     var newBio = prompt('Edit your bio:', window.S.bio || '');
     if (newBio !== null) {
-        window.S.bio = newBio.trim() || 'Building my energy. One aura at a time. ⚡';
+        window.S.bio = newBio.trim() || 'Building my energy. One aura at a time.';
         if (window.S.username) {
             setData('users/' + window.S.username + '/bio', window.S.bio);
         }
         renderProfile();
-        window.toast('✅ Bio updated');
+        window.toast('Bio updated');
     }
 }
 window.editProfile = editProfile;

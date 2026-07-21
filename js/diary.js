@@ -1,4 +1,4 @@
-// ==================== DIARY LOGIC ====================
+// Diary Logic
 function saveDiary() {
     var content = document.getElementById('diaryInput').value.trim();
     var mood = document.getElementById('diaryMood').value.trim() || '—';
@@ -15,7 +15,7 @@ function saveDiary() {
     document.getElementById('diaryInput').value = '';
     document.getElementById('diaryMood').value = '';
     renderDiary();
-    window.toast('📝 Saved');
+    window.toast('Saved');
 }
 window.saveDiary = saveDiary;
 
