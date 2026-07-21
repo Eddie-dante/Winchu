@@ -63,13 +63,13 @@ const Auth = {
             setData(users/${App.state.username}/last_seen, new Date().toISOString());
             document.getElementById('wpFab').style.display = 'flex';
             
-            // Load user data
-            if (Chat) Chat.loadUserData();
-            if (Diary) Diary.load();
-            if (Routine) Routine.load();
-            if (Social) Social.setupListeners();
-            if (Friends) Friends.loadFriendsList();
-            if (Friends) Friends.loadFriendRequests();
+            // Load data
+            if (window.Chat) Chat.loadUserData();
+            if (window.Diary) Diary.load();
+            if (window.Routine) Routine.load();
+            if (window.Social) Social.setupListeners();
+            if (window.Friends) Friends.loadFriendsList();
+            if (window.Friends) Friends.loadFriendRequests();
 
             App.toast('Welcome back, ' + users[user].name);
             App.navigate('social');

@@ -16,7 +16,7 @@ const Dashboard = {
         document.getElementById('streakCount').textContent = streak;
         document.getElementById('tasksDone').textContent = App.state.completedTasks.length;
         document.getElementById('diaryCount').textContent = App.state.diary.length;
-        document.getElementById('msgCount').textContent = Chat ? Chat.messages.length : 0;
+        document.getElementById('msgCount').textContent = window.Chat ? Chat.messages.length : 0;
 
         const ring = document.getElementById('scoreRing');
         ring.style.strokeDashoffset = offset;

@@ -41,3 +41,4 @@ const Diary = {
 
 window.Diary = Diary;
 window.saveDiary = Diary.save.bind(Diary);
+window.renderDiary = Diary.render.bind(Diary);

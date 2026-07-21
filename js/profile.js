@@ -5,13 +5,13 @@ const Profile = {
         document.getElementById('profileAvatarEmoji').textContent = avatarEmoji;
         document.getElementById('profileName').textContent = App.state.username  '—';
         document.getElementById('profileUsername').textContent = '@' + (App.state.username  '—');
-        document.getElementById('profilePosts').textContent = Social ? Social.posts.filter(p => p.author === App.state.username).length : 0;
+        document.getElementById('profilePosts').textContent = window.Social ? Social.posts.filter(p => p.author === App.state.username).length : 0;
         document.getElementById('profileFollowers').textContent = (App.state.friends  []).length;
         document.getElementById('profileFollowing').textContent = (App.state.friends  []).length;
         document.getElementById('profileBio').textContent = App.state.bio  'Building my energy. One aura at a time. ⚡️';
 
         const grid = document.getElementById('profilePostsGrid');
-        const userPosts = Social ? Social.posts.filter(p => p.author === App.state.username) : [];
+        const userPosts = window.Social ? Social.posts.filter(p => p.author === App.state.username) : [];
         if (userPosts.length === 0) {
             grid.innerHTML = '<p style="color:#94a3b8;text-align:center;grid-column:1/-1;padding:16px 0;">No posts yet.</p>';
             return;

@@ -1,4 +1,4 @@
-// js/firebase.js
+// js/firebase.js - Firebase Config
 const firebaseConfig = {
     apiKey: "AIzaSyBxRC99vpLBRpkhXmUiYVXi0lFaN5ayXj8",
     authDomain: "nexus-wegem.firebaseapp.com",
@@ -13,10 +13,24 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-// ==================== HELPERS ====================
+// Firebase Helpers
 function getRef(path) { return database.ref(path); }
-function pushData(path, data) { const ref = getRef(path); const newRef = ref.push(); newRef.set(data); return newRef.key; }
-function setData(path, data) { const ref = getRef(path); ref.set(data); }
-function getData(path) { const ref = getRef(path); return ref.once('value').then(s => s.val()); }
+
+function setData(path, data) {
+    const ref = getRef(path);
+    ref.set(data);
+}
+
+function pushData(path, data) {
+    const ref = getRef(path);
+    const newRef = ref.push();
+    newRef.set(data);
+    return newRef.key;
+}
+
+function getData(path) {
+    const ref = getRef(path);
+    return ref.once('value').then(s => s.val());
+}
 
 console.log('🔥 Firebase initialized!');
