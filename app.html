@@ -381,7 +381,10 @@
             border: 1px solid rgba(0,0,0,0.05);
             overflow: hidden;
             backdrop-filter: blur(8px);
+            cursor: pointer;
+            transition: transform 0.2s;
         }
+        .ig-post:active { transform: scale(0.98); }
         .ig-post-header {
             display: flex;
             align-items: center;
@@ -435,12 +438,6 @@
         .ig-post-caption { padding: 0 12px 8px; font-size: 13px; line-height: 1.4; }
         .ig-post-caption strong { font-weight: 600; }
         .ig-post-comments { padding: 0 12px 10px; font-size: 12px; color: #64748b; cursor: pointer; }
-        .comment-item {
-            padding: 6px 12px;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-            font-size: 12px;
-        }
-        .comment-item strong { font-weight: 600; }
 
         .wp-grid {
             display: grid;
@@ -597,6 +594,8 @@
             width: 100%;
             border: 1px solid rgba(255, 255, 255, 0.5);
             box-shadow: 0 24px 80px rgba(0,0,0,0.2);
+            max-height: 80vh;
+            overflow-y: auto;
         }
         .dialog-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
         .dialog-subtitle { font-size: 13px; color: #64748b; margin-bottom: 16px; }
@@ -620,6 +619,19 @@
         .dialog-actions .dialog-danger { background: rgba(239, 68, 68, 0.85); color: #fff; }
         .dialog-actions .dialog-danger:hover { background: rgba(239, 68, 68, 1); }
         .dialog-emoji { font-size: 48px; text-align: center; margin-bottom: 8px; }
+        .dialog-back { 
+            background: none; 
+            border: none; 
+            font-size: 24px; 
+            cursor: pointer; 
+            color: #0f172a;
+            padding: 4px 8px;
+            margin-bottom: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .dialog-back span { font-size: 14px; font-weight: 600; }
 
         .signature { position: fixed; bottom: 75px; right: 16px; font-size: 10px; font-weight: 600; letter-spacing: 1.5px; color: #0f172a; opacity: 0.15; z-index: 100; pointer-events: none; }
         .wp-fab { position: fixed; bottom: 75px; left: 16px; z-index: 999; background: rgba(15,23,42,0.85); width: 34px; height: 34px; border-radius: 50%; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; border: none; color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
@@ -627,6 +639,7 @@
         .file-input-wrapper { position: relative; overflow: hidden; display: inline-block; }
         .file-input-wrapper input[type=file] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
         .post-image { width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin: 4px 0; }
+        .post-video { width: 100%; max-height: 300px; border-radius: 8px; margin: 4px 0; }
 
         .user-card {
             display: flex;
@@ -754,6 +767,60 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
 
+        /* ===== POST DETAIL VIEW ===== */
+        .post-detail-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(12px);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .post-detail-overlay.active { display: flex; animation: fadeIn 0.3s ease; }
+        .post-detail-content {
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(32px);
+            border-radius: 24px;
+            max-width: 480px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .post-detail-back {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        .post-detail-back:hover { opacity: 0.7; }
+        .post-detail-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin: 8px 0;
+        }
+        .post-detail-comment {
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            font-size: 13px;
+        }
+        .post-detail-comment strong { font-weight: 600; }
+        .post-detail-comment .time { font-size: 10px; color: #94a3b8; margin-left: 8px; }
+
         @media (max-width: 480px) {
             .container { padding: 20px 14px; border-radius: 24px; }
             .landing-title { font-size: 30px; }
@@ -768,6 +835,7 @@
             .profile-stats { gap: 16px; }
             .dialog { padding: 20px 16px; }
             .tiktok-container { margin: 0 -14px; padding: 0 14px; }
+            .post-detail-content { padding: 16px; }
         }
     </style>
 </head>
@@ -776,9 +844,10 @@
     <button class="wp-fab" id="wpFab" onclick="window.navigate('wallpapers')" style="display:none;">🎨</button>
     <div id="toastContainer"></div>
 
-    <!-- DIALOG -->
+    <!-- ===== DIALOG ===== -->
     <div class="dialog-overlay" id="dialogOverlay">
         <div class="dialog" id="dialog">
+            <button class="dialog-back" id="dialogBack" style="display:none;" onclick="window.closeDialog()">← <span>Back</span></button>
             <div class="dialog-emoji" id="dialogEmoji">💬</div>
             <div class="dialog-title" id="dialogTitle">Dialog</div>
             <div class="dialog-subtitle" id="dialogSubtitle">Please enter your input</div>
@@ -790,7 +859,15 @@
         </div>
     </div>
 
-    <!-- LANDING -->
+    <!-- ===== POST DETAIL ===== -->
+    <div class="post-detail-overlay" id="postDetailOverlay">
+        <div class="post-detail-content" id="postDetailContent">
+            <button class="post-detail-back" onclick="window.closePostDetail()">← <span>Back</span></button>
+            <div id="postDetailBody"></div>
+        </div>
+    </div>
+
+    <!-- ===== LANDING ===== -->
     <div class="page active" id="page-landing">
         <div class="container landing-content">
             <span class="landing-icon">⚡</span>
@@ -801,7 +878,7 @@
         </div>
     </div>
 
-    <!-- SIGNUP -->
+    <!-- ===== SIGNUP ===== -->
     <div class="page" id="page-signup">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">✨ Create Account</h2>
@@ -814,7 +891,7 @@
         </div>
     </div>
 
-    <!-- LOGIN -->
+    <!-- ===== LOGIN ===== -->
     <div class="page" id="page-login">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">🔐 Sign In</h2>
@@ -826,7 +903,7 @@
         </div>
     </div>
 
-    <!-- AURA SELECTION -->
+    <!-- ===== AURA SELECTION ===== -->
     <div class="page" id="page-select">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:3px;">Choose Your Auras</h2>
@@ -837,7 +914,7 @@
         </div>
     </div>
 
-    <!-- DASHBOARD -->
+    <!-- ===== DASHBOARD ===== -->
     <div class="page" id="page-home">
         <div class="container">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -875,7 +952,7 @@
         </div>
     </div>
 
-    <!-- USERS -->
+    <!-- ===== USERS ===== -->
     <div class="page" id="page-users">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">👥 Find Friends</h2>
@@ -884,7 +961,7 @@
         </div>
     </div>
 
-    <!-- DIARY -->
+    <!-- ===== DIARY ===== -->
     <div class="page" id="page-diary">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:10px;">📖 Diary</h2>
@@ -899,7 +976,7 @@
         </div>
     </div>
 
-    <!-- ROUTINE -->
+    <!-- ===== ROUTINE ===== -->
     <div class="page" id="page-routine">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:10px;">📋 Routines</h2>
@@ -912,7 +989,7 @@
         </div>
     </div>
 
-    <!-- CHAT -->
+    <!-- ===== CHAT ===== -->
     <div class="page" id="page-chat">
         <div class="container">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
@@ -937,7 +1014,7 @@
         </div>
     </div>
 
-    <!-- SOCIAL FEED -->
+    <!-- ===== SOCIAL FEED ===== -->
     <div class="page" id="page-social">
         <div class="container" style="padding: 16px 14px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
@@ -969,7 +1046,7 @@
         </div>
     </div>
 
-    <!-- TIKTOK VIDEOS -->
+    <!-- ===== TIKTOK VIDEOS ===== -->
     <div class="page" id="page-videos">
         <div class="container" style="padding: 16px 14px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -979,12 +1056,12 @@
             <div class="tiktok-upload-btn" onclick="document.getElementById('videoUploadInput').click()">📹</div>
             <input type="file" id="videoUploadInput" accept="video/*" style="display:none;" onchange="window.handleVideoUpload(event)" />
             <div class="tiktok-container" id="videoFeed">
-                <p style="color:#94a3b8;text-align:center;padding:40px 0;">No videos yet. Tap the + to upload!</p>
+                <p style="color:#94a3b8;text-align:center;padding:40px 0;">No videos yet. Tap the 📹 to upload!</p>
             </div>
         </div>
     </div>
 
-    <!-- PROFILE -->
+    <!-- ===== PROFILE ===== -->
     <div class="page" id="page-profile">
         <div class="container">
             <div class="profile-header">
@@ -1016,7 +1093,7 @@
         </div>
     </div>
 
-    <!-- WALLPAPERS -->
+    <!-- ===== WALLPAPERS ===== -->
     <div class="page" id="page-wallpapers">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:8px;">🎨 Walls</h2>
@@ -1031,7 +1108,7 @@
         </div>
     </div>
 
-    <!-- BOTTOM NAV -->
+    <!-- ===== BOTTOM NAV ===== -->
     <nav class="bottom-nav" id="bottomNav" style="display:none;">
         <button class="nav-btn active" data-page="social" onclick="window.navigate('social')"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
         <button class="nav-btn" data-page="videos" onclick="window.navigate('videos')"><span class="nav-icon">🎬</span><span class="nav-label">Videos</span></button>
@@ -1041,7 +1118,7 @@
         <button class="nav-btn" data-page="profile" onclick="window.navigate('profile')"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></button>
     </nav>
 
-    <!-- SCRIPTS -->
+    <!-- ===== SCRIPTS ===== -->
     <script src="js/firebase.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/app.js"></script>
@@ -1054,13 +1131,52 @@
 
     <script>
     // ============================================================
-    // ===== COMPLETE APP LOGIC - RESET VERSION =====
+    // ===== COMPLETE APP LOGIC - FINAL VERSION =====
     // ============================================================
+
+    // ===== SAVE USER STATE =====
+    function saveUserState() {
+        try {
+            var state = {
+                username: window.S.username,
+                bio: window.S.bio,
+                wallpaper: window.S.wallpaper,
+                selectedAuras: window.S.selectedAuras,
+                avatar: window.S.avatar,
+                friends: window.S.friends,
+                completedTasks: window.S.completedTasks,
+                streakData: window.S.streakData
+            };
+            localStorage.setItem('winchu_user_state', JSON.stringify(state));
+        } catch(e) {}
+    }
+
+    function loadUserState() {
+        try {
+            var raw = localStorage.getItem('winchu_user_state');
+            if (raw) {
+                var state = JSON.parse(raw);
+                if (state.username) {
+                    window.S.username = state.username;
+                    window.S.bio = state.bio || 'Building my energy. One aura at a time. ⚡';
+                    window.S.wallpaper = state.wallpaper || DEFAULT_WALLPAPER;
+                    window.S.selectedAuras = state.selectedAuras || [];
+                    window.S.avatar = state.avatar || null;
+                    window.S.friends = state.friends || [];
+                    window.S.completedTasks = state.completedTasks || [];
+                    window.S.streakData = state.streakData || {};
+                    return true;
+                }
+            }
+        } catch(e) {}
+        return false;
+    }
 
     // ===== DIALOG =====
     function showDialog(options) {
         return new Promise(function(resolve) {
             var overlay = document.getElementById('dialogOverlay');
+            var backBtn = document.getElementById('dialogBack');
             var emoji = document.getElementById('dialogEmoji');
             var title = document.getElementById('dialogTitle');
             var subtitle = document.getElementById('dialogSubtitle');
@@ -1068,9 +1184,21 @@
             var cancelBtn = document.getElementById('dialogCancel');
             var confirmBtn = document.getElementById('dialogConfirm');
 
+            // Reset dialog
+            backBtn.style.display = 'none';
+            input.style.display = 'block';
+            cancelBtn.style.display = 'block';
+
             emoji.textContent = options.emoji || '💬';
             title.textContent = options.title || 'Dialog';
-            subtitle.textContent = options.subtitle || 'Please enter your input';
+            
+            // Check if subtitle contains HTML (for comments view)
+            if (options.htmlSubtitle) {
+                subtitle.innerHTML = options.htmlSubtitle;
+            } else {
+                subtitle.textContent = options.subtitle || 'Please enter your input';
+            }
+            
             input.value = options.defaultValue || '';
             input.placeholder = options.placeholder || 'Type here...';
             cancelBtn.textContent = options.cancelText || 'Cancel';
@@ -1078,16 +1206,99 @@
             confirmBtn.className = options.danger ? 'dialog-danger' : 'dialog-confirm';
 
             overlay.classList.add('active');
-            input.focus();
-            input.select();
+            if (!options.htmlSubtitle) {
+                input.focus();
+                input.select();
+            }
 
             cancelBtn.onclick = function() { overlay.classList.remove('active'); resolve(null); };
-            confirmBtn.onclick = function() { overlay.classList.remove('active'); resolve(input.value); };
-            input.onkeypress = function(e) { if (e.key === 'Enter') { overlay.classList.remove('active'); resolve(input.value); } };
-            overlay.onclick = function(e) { if (e.target === overlay) { overlay.classList.remove('active'); resolve(null); } };
+            confirmBtn.onclick = function() { 
+                overlay.classList.remove('active'); 
+                if (options.htmlSubtitle) {
+                    resolve('close');
+                } else {
+                    resolve(input.value);
+                }
+            };
+            input.onkeypress = function(e) { 
+                if (e.key === 'Enter' && !options.htmlSubtitle) { 
+                    overlay.classList.remove('active'); 
+                    resolve(input.value); 
+                } 
+            };
+            overlay.onclick = function(e) { 
+                if (e.target === overlay) { 
+                    overlay.classList.remove('active'); 
+                    resolve(null); 
+                } 
+            };
+            // Back button for mobile
+            if (options.showBack) {
+                backBtn.style.display = 'flex';
+                backBtn.onclick = function() { overlay.classList.remove('active'); resolve(null); };
+            }
         });
     }
     window.showDialog = showDialog;
+    window.closeDialog = function() {
+        document.getElementById('dialogOverlay').classList.remove('active');
+    };
+
+    // ===== POST DETAIL VIEW =====
+    window.viewPostDetail = function(postId) {
+        var post = window.S.socialPosts.find(function(p) { return p.id === postId; });
+        if (!post) { window.toast('Post not found'); return; }
+        
+        var overlay = document.getElementById('postDetailOverlay');
+        var body = document.getElementById('postDetailBody');
+        
+        var liked = (post.likes || []).indexOf(window.S.username) > -1;
+        var timeAgo = timeSince(new Date(post.time));
+        var avatarDisplay = post.avatar || '😊';
+        var commentCount = (post.comments || []).length;
+        var canDelete = post.author === window.S.username;
+        
+        var html = '<div class="ig-post-header"><div class="ig-post-avatar">' + avatarDisplay + '</div>';
+        html += '<span class="ig-post-user">' + post.author + '</span>';
+        html += '<span class="ig-post-time">' + timeAgo + '</span>';
+        if (canDelete) {
+            html += '<button class="btn-sm btn-danger" onclick="window.deletePost(\'' + post.id + '\'); window.closePostDetail();" style="font-size:11px;padding:2px 8px;">🗑️</button>';
+        }
+        html += '</div>';
+        if (post.image) {
+            html += '<img src="' + post.image + '" class="post-detail-image" />';
+        }
+        html += '<div style="padding:8px 0;"><p style="font-size:15px;margin:4px 0;">' + post.text + '</p></div>';
+        html += '<div class="ig-post-actions">';
+        html += '<button class="ig-post-action ' + (liked ? 'liked' : '') + '" onclick="window.likePost(\'' + post.id + '\'); window.viewPostDetail(\'' + post.id + '\');">' + (liked ? '❤️' : '🤍') + '</button>';
+        html += '<span style="font-size:13px;font-weight:600;color:#94a3b8;">' + (post.likes ? post.likes.length : 0) + '</span>';
+        html += '<button class="ig-post-action" onclick="window.commentOnPost(\'' + post.id + '\'); setTimeout(function(){ window.viewPostDetail(\'' + post.id + '\'); }, 500);">💬</button>';
+        html += '<span style="font-size:13px;font-weight:600;color:#94a3b8;">' + commentCount + '</span>';
+        if (post.image) {
+            html += '<button class="ig-post-action" onclick="window.downloadMedia(\'' + post.image + '\', \'winchu-post.jpg\')">⬇️</button>';
+        }
+        html += '</div>';
+        
+        // Comments
+        if (post.comments && post.comments.length > 0) {
+            html += '<div style="margin-top:12px;border-top:1px solid rgba(0,0,0,0.05);padding-top:8px;"><strong>Comments</strong></div>';
+            for (var i = 0; i < post.comments.length; i++) {
+                var c = post.comments[i];
+                var time = new Date(c.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                html += '<div class="post-detail-comment"><strong>' + c.username + '</strong> <span class="time">' + time + '</span><br>' + c.text + '</div>';
+            }
+        } else {
+            html += '<div style="margin-top:12px;border-top:1px solid rgba(0,0,0,0.05);padding-top:8px;color:#94a3b8;text-align:center;">No comments yet. Be the first!</div>';
+        }
+        
+        body.innerHTML = html;
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    };
+    window.closePostDetail = function() {
+        document.getElementById('postDetailOverlay').classList.remove('active');
+        document.body.style.overflow = '';
+    };
 
     // ===== AURAS =====
     function renderAuraGrid() {
@@ -1117,12 +1328,14 @@
         if (idx > -1) window.S.selectedAuras.splice(idx, 1);
         else if (window.S.selectedAuras.length < 3) window.S.selectedAuras.push(key);
         renderAuraGrid();
+        saveUserState();
     }
     window.toggleAura = toggleAura;
 
     function confirmSelection() {
         if (window.S.selectedAuras.length === 0) { window.toast('Select at least one aura'); return; }
         if (window.S.username) setData('users/' + window.S.username + '/selected_auras', window.S.selectedAuras);
+        saveUserState();
         window.navigate('social');
         window.toast('Auras activated! ✨');
     }
@@ -1140,6 +1353,7 @@
                 setData('users/' + window.S.username + '/avatar', dataUrl);
             }
             updateAvatarUI(dataUrl);
+            saveUserState();
             window.toast('✅ Avatar updated!');
         };
         reader.readAsDataURL(file);
@@ -1171,13 +1385,13 @@
                 var newUsername = result.trim();
                 window.S.username = newUsername;
                 saveAuth();
+                saveUserState();
                 var el = document.getElementById('myUsername');
                 if (el) el.textContent = newUsername;
                 window.toast('Username updated');
                 if (newUsername) {
                     setData('users/' + newUsername + '/username', newUsername);
                     setData('users/' + newUsername + '/last_seen', new Date().toISOString());
-                    // Update posts with new username
                     updatePostsUsername(oldUsername, newUsername);
                 }
             }
@@ -1198,7 +1412,6 @@
                 }
             }
         });
-        // Update videos too
         var videosRef = getRef('videos');
         videosRef.once('value', function(snapshot) {
             var data = snapshot.val();
@@ -1227,6 +1440,7 @@
             if (result !== null) {
                 window.S.bio = result.trim() || 'Building my energy. One aura at a time. ⚡';
                 if (window.S.username) setData('users/' + window.S.username + '/bio', window.S.bio);
+                saveUserState();
                 renderProfile();
                 window.toast('Bio updated');
             }
@@ -1247,7 +1461,6 @@
             return;
         }
 
-        // Get friends
         var friends = window.S.friends || [];
         var allChats = ['Winchu Global', ...friends];
         
@@ -1328,7 +1541,6 @@
             }
         });
         
-        // Typing indicator
         var typingRef = getRef('typing/' + chatName);
         typingRef.on('value', function(snapshot) {
             var data = snapshot.val();
@@ -1430,6 +1642,7 @@
             }
         });
         setData('users/' + window.S.username + '/friends', window.S.friends);
+        saveUserState();
         renderUsers();
         renderChatList();
         renderProfile();
@@ -1441,7 +1654,8 @@
         var friendsRef = getRef('users/' + window.S.username + '/friends');
         friendsRef.once('value', function(snapshot) {
             var data = snapshot.val();
-            window.S.friends = data || [];
+            if (data) window.S.friends = data;
+            saveUserState();
             renderChatList();
             renderProfile();
         });
@@ -1529,18 +1743,19 @@
             var commentCount = (p.comments || []).length;
             var canDelete = p.author === window.S.username;
             
-            html += '<div class="ig-post"><div class="ig-post-header"><div class="ig-post-avatar">' + avatarDisplay + '</div>';
+            html += '<div class="ig-post" onclick="window.viewPostDetail(\'' + p.id + '\')">';
+            html += '<div class="ig-post-header"><div class="ig-post-avatar">' + avatarDisplay + '</div>';
             html += '<span class="ig-post-user">' + p.author + '</span>';
             html += '<span class="ig-post-time">' + timeAgo + '</span>';
             if (canDelete) {
-                html += '<button class="btn-sm btn-danger" onclick="window.deletePost(\'' + p.id + '\')" style="font-size:11px;padding:2px 8px;">🗑️</button>';
+                html += '<button class="btn-sm btn-danger" onclick="event.stopPropagation(); window.deletePost(\'' + p.id + '\')" style="font-size:11px;padding:2px 8px;">🗑️</button>';
             }
             html += '</div>';
             if (p.image) {
-                html += '<img src="' + p.image + '" class="post-image" />';
+                html += '<img src="' + p.image + '" class="post-image" onclick="event.stopPropagation();" />';
             }
             html += '<div style="padding:0 12px 4px;"><p style="font-size:13px;margin:4px 0;">' + p.text + '</p></div>';
-            html += '<div class="ig-post-actions">';
+            html += '<div class="ig-post-actions" onclick="event.stopPropagation();">';
             html += '<button class="ig-post-action ' + (liked ? 'liked' : '') + '" onclick="window.likePost(\'' + p.id + '\')">' + (liked ? '❤️' : '🤍') + '</button>';
             html += '<span style="font-size:13px;font-weight:600;color:#94a3b8;">' + (p.likes ? p.likes.length : 0) + '</span>';
             html += '<button class="ig-post-action" onclick="window.commentOnPost(\'' + p.id + '\')">💬</button>';
@@ -1550,7 +1765,7 @@
             }
             html += '</div>';
             if (commentCount > 0) {
-                html += '<div class="ig-post-comments" onclick="window.viewComments(\'' + p.id + '\')">View ' + commentCount + ' comments</div>';
+                html += '<div class="ig-post-comments" onclick="event.stopPropagation(); window.viewPostDetail(\'' + p.id + '\')">View ' + commentCount + ' comments</div>';
             }
             html += '</div>';
         }
@@ -1579,6 +1794,8 @@
         post.likes = likes;
         getRef('posts/' + id + '/likes').set(likes);
         renderSocial();
+        renderProfile();
+        saveUserState();
     }
     window.likePost = likePost;
 
@@ -1600,35 +1817,11 @@
                 getRef('posts/' + id + '/comments').set(comments);
                 renderSocial();
                 window.toast('Comment added!');
+                saveUserState();
             }
         });
     }
     window.commentOnPost = commentOnPost;
-
-    function viewComments(id) {
-        var post = window.S.socialPosts.find(function(p) { return p.id === id; });
-        if (!post || !post.comments || post.comments.length === 0) {
-            window.toast('No comments yet');
-            return;
-        }
-        var html = '<div style="padding:10px 0;"><strong>Comments</strong></div>';
-        for (var i = 0; i < post.comments.length; i++) {
-            var c = post.comments[i];
-            var time = new Date(c.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            html += '<div class="comment-item"><strong>' + c.username + '</strong> <span style="color:#94a3b8;font-size:10px;">' + time + '</span><br>' + c.text + '</div>';
-        }
-        showDialog({
-            emoji: '💬',
-            title: 'Comments',
-            subtitle: '',
-            confirmText: 'Close'
-        }).then(function() {});
-        document.getElementById('dialogSubtitle').innerHTML = html;
-        document.getElementById('dialogInput').style.display = 'none';
-        document.getElementById('dialogConfirm').textContent = 'Close';
-        document.getElementById('dialogCancel').style.display = 'none';
-    }
-    window.viewComments = viewComments;
 
     function downloadMedia(url, filename) {
         var a = document.createElement('a');
@@ -1655,6 +1848,7 @@
                 renderSocial();
                 renderProfile();
                 window.toast('Post deleted');
+                saveUserState();
             }
         });
     }
@@ -1682,7 +1876,6 @@
         
         getRef('posts').push(post);
         
-        // If video, also add to videos
         if (isVideo && window.selectedFileData) {
             var videoPost = {
                 author: window.S.username,
@@ -1703,6 +1896,7 @@
         document.getElementById('filePreview').style.display = 'none';
         document.getElementById('filePreview').innerHTML = '';
         window.toast('📝 Posted!');
+        saveUserState();
     }
     window.createPost = createPost;
 
@@ -1745,10 +1939,10 @@
             };
             getRef('videos').push(videoPost);
             window.toast('📹 Video uploaded!');
+            saveUserState();
         };
         reader.readAsDataURL(file);
     };
-    window.handleVideoUpload = window.handleVideoUpload;
 
     // ===== VIDEOS =====
     window.videoData = [];
@@ -1773,7 +1967,11 @@
             var avatarDisplay = v.avatar || '😊';
             
             html += '<div class="tiktok-video">';
-            html += '<video src="' + v.url + '" loop muted playsinline></video>';
+            if (v.url && v.url.startsWith('data:')) {
+                html += '<video src="' + v.url + '" loop muted playsinline></video>';
+            } else {
+                html += '<img src="' + (v.url || 'https://via.placeholder.com/400x700/0f172a/fff?text=Video') + '" alt="Video thumbnail" />';
+            }
             html += '<div class="overlay">';
             html += '<div class="user"><div class="avatar">' + avatarDisplay + '</div> @' + v.author + '</div>';
             html += '<div class="desc">' + (v.text || '') + '</div>';
@@ -1815,6 +2013,7 @@
         video.likes = likes;
         getRef('videos/' + id + '/likes').set(likes);
         renderVideos();
+        saveUserState();
     }
     window.likeVideo = likeVideo;
 
@@ -1836,6 +2035,7 @@
                 getRef('videos/' + id + '/comments').set(comments);
                 renderVideos();
                 window.toast('Comment added!');
+                saveUserState();
             }
         });
     }
@@ -1854,6 +2054,7 @@
                 window.videoData = window.videoData.filter(function(v) { return v.id !== id; });
                 renderVideos();
                 window.toast('Video deleted');
+                saveUserState();
             }
         });
     }
@@ -1934,6 +2135,7 @@
         window.S.wallpaper = url;
         window.setBg(url);
         renderWallpapers();
+        saveUserState();
         window.toast('✅ Applied');
     }
     window.setWallpaper = setWallpaper;
@@ -1984,6 +2186,7 @@
                     });
                 }
                 renderDiary();
+                saveUserState();
                 window.toast('Entry deleted');
             }
         });
@@ -2020,6 +2223,7 @@
         document.getElementById('diaryInput').value = '';
         document.getElementById('diaryMood').value = '';
         renderDiary();
+        saveUserState();
         window.toast('📝 Saved');
     };
 
@@ -2036,25 +2240,21 @@
         var bioEl = document.getElementById('profileBio');
         if (bioEl) bioEl.textContent = window.S.bio || 'Building my energy. One aura at a time. ⚡';
         
-        // Posts count
         var postsEl = document.getElementById('profilePosts');
         if (postsEl) {
             var userPosts = window.S.socialPosts.filter(function(p) { return p.author === window.S.username; });
             postsEl.textContent = userPosts.length;
         }
         
-        // Friends count
         var friendsEl = document.getElementById('profileFriends');
         if (friendsEl) {
             friendsEl.textContent = window.S.friends ? window.S.friends.length : 0;
         }
         
-        // Avatar
         if (window.S.avatar) {
             updateAvatarUI(window.S.avatar);
         }
         
-        // User posts grid
         var grid = document.getElementById('profilePostsGrid');
         if (!grid) return;
         var userPosts2 = window.S.socialPosts.filter(function(p) { return p.author === window.S.username; });
@@ -2066,7 +2266,7 @@
         for (var i = 0; i < userPosts2.length; i++) {
             var p = userPosts2[i];
             var img = p.image || 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=400&q=80';
-            html += '<div style="aspect-ratio:1;background-image:url(' + img + ');background-size:cover;background-position:center;border-radius:4px;cursor:pointer;" onclick="window.toast(\'' + (p.text || '').substring(0, 30) + '...\')"></div>';
+            html += '<div style="aspect-ratio:1;background-image:url(' + img + ');background-size:cover;background-position:center;border-radius:4px;cursor:pointer;" onclick="window.viewPostDetail(\'' + p.id + '\')"></div>';
         }
         grid.innerHTML = html;
     };
@@ -2123,6 +2323,7 @@
             }).join('');
         }
         window.renderCalendar();
+        saveUserState();
     };
 
     window.toggleTask = function(index) {
@@ -2136,6 +2337,7 @@
         if (done === total && total > 0) window.S.streakData[today] = true;
         else delete window.S.streakData[today];
         window.renderHome();
+        saveUserState();
     };
 
     window.renderCalendar = function() {
@@ -2182,6 +2384,7 @@
         window.S.completedTasks = [];
         delete window.S.streakData[new Date().toDateString()];
         window.renderHome();
+        saveUserState();
     };
 
     // ===== NAVIGATION =====
@@ -2201,6 +2404,7 @@
         if (page === 'users') renderUsers();
         if (page === 'diary') renderDiary();
         if (page === 'wallpapers') renderWallpapers();
+        if (page === 'select') renderAuraGrid();
     };
 
     // ===== POSTS LISTENER =====
@@ -2219,6 +2423,7 @@
                 renderSocial();
                 renderProfile();
                 renderStories();
+                saveUserState();
             }
         });
     }
@@ -2238,27 +2443,6 @@
         }).join('');
     }
 
-    // ===== RESET ALL DATA =====
-    function resetAllData() {
-        if (!confirm('⚠️ This will delete ALL data in the app. Are you sure?')) return;
-        var refs = ['posts', 'videos', 'chats', 'diary', 'routines', 'friendRequests', 'typing', 'messages'];
-        for (var i = 0; i < refs.length; i++) {
-            getRef(refs[i]).remove();
-        }
-        window.toast('🗑️ All data reset!');
-        // Reload
-        window.S.socialPosts = [];
-        window.S.diary = [];
-        window.S.routines = [];
-        window.videoData = [];
-        window.chatMessages = [];
-        renderSocial();
-        renderVideos();
-        renderDiary();
-        renderRoutines();
-        renderChatList();
-    }
-
     // ===== ROUTINES =====
     window.saveRoutine = function() {
         if (!window.S.username) { window.toast('Please log in'); return; }
@@ -2271,6 +2455,7 @@
         document.getElementById('routineTitle').value = '';
         document.getElementById('routineInput').value = '';
         renderRoutines();
+        saveUserState();
         window.toast('📋 Saved');
     };
 
@@ -2314,9 +2499,34 @@
         return s;
     };
 
+    // ===== LOGOUT =====
+    var originalLogout = window.logout;
+    window.logout = function() {
+        localStorage.removeItem('winchu_user_state');
+        originalLogout();
+    };
+
     // ===== INIT =====
     function initApp() {
+        // Load saved state
+        var hasState = loadUserState();
+        
         if (window.S && window.S.username) {
+            // Update Firebase with saved data
+            if (window.S.avatar) {
+                setData('users/' + window.S.username + '/avatar', window.S.avatar);
+            }
+            if (window.S.selectedAuras.length > 0) {
+                setData('users/' + window.S.username + '/selected_auras', window.S.selectedAuras);
+            }
+            if (window.S.bio) {
+                setData('users/' + window.S.username + '/bio', window.S.bio);
+            }
+            if (window.S.wallpaper) {
+                setData('users/' + window.S.username + '/wallpaper', window.S.wallpaper);
+                window.setBg(window.S.wallpaper);
+            }
+            
             loadVideos();
             loadFriends();
             initWallpapers();
@@ -2334,12 +2544,36 @@
                     setData('users/' + window.S.username + '/last_seen', new Date().toISOString());
                 }
             }, 30000);
+            
+            // Show FAB
+            var fab = document.getElementById('wpFab');
+            if (fab) fab.style.display = 'flex';
+            
+            console.log('🎬 Winchu · Nexus - Ready!');
+        } else if (hasState && window.S.username) {
+            // We have saved state but need to log in
+            // Try to auto-login
+            var usersRef = getRef('users/' + window.S.username);
+            usersRef.once('value', function(snapshot) {
+                var userData = snapshot.val();
+                if (userData) {
+                    // Auto-login successful
+                    saveAuth();
+                    initApp();
+                } else {
+                    // User doesn't exist anymore
+                    localStorage.removeItem('winchu_user_state');
+                    window.navigate('landing');
+                }
+            });
+        } else {
+            window.navigate('landing');
+            console.log('🎬 Winchu · Nexus - Please log in');
         }
-        console.log('🎬 Winchu · Nexus - Fresh Start!');
     }
 
-    // Override app init
-    setTimeout(initApp, 500);
+    // Start
+    setTimeout(initApp, 300);
 
     // Expose functions
     window.closeChat = closeChat;
@@ -2352,10 +2586,10 @@
     window.renderUsers = renderUsers;
     window.renderStories = renderStories;
     window.setupPostsListener = setupPostsListener;
-    window.resetAllData = resetAllData;
     window.updateAvatarUI = updateAvatarUI;
+    window.saveUserState = saveUserState;
 
-    console.log('🗑️ All data has been reset. Fresh start!');
+    console.log('✅ Winchu · Nexus - All features loaded!');
     </script>
 </body>
 </html>
