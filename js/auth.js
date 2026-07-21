@@ -12,27 +12,35 @@ function loadAuth() {
                 return true;
             }
         }
-    } catch (e) { console.error('Load auth error:', e); }
+    } catch (e) {
+        console.error('Load auth error:', e);
+    }
     return false;
 }
 
 function saveAuth() {
-    localStorage.setItem(AUTH_KEY, JSON.stringify({ username: S.username }));
-    currentUser = { username: S.username };
+    localStorage.setItem(AUTH_KEY, JSON.stringify({ username: window.S.username }));
+    currentUser = { username: window.S.username };
 }
 
 function handleSignup() {
     const name = document.getElementById('signupName').value.trim();
     const user = document.getElementById('signupUser').value.trim();
     const pass = document.getElementById('signupPass').value.trim();
-    if (!name || !user || !pass) { toast('Please fill all fields'); return; }
-    if (pass.length < 4) { toast('Password must be at least 4 characters'); return; }
+    if (!name || !user || !pass) {
+        window.toast('Please fill all fields');
+        return;
+    }
+    if (pass.length < 4) {
+        window.toast('Password must be at least 4 characters');
+        return;
+    }
 
     const usersRef = getRef('users');
     usersRef.once('value', function(snapshot) {
         const users = snapshot.val() || {};
         if (users[user]) {
-            toast('Username already exists');
+            window.toast('Username already exists');
             return;
         }
         users[user] = {
@@ -46,77 +54,87 @@ function handleSignup() {
         };
         usersRef.set(users);
 
-        S.username = user;
-        S.selectedAuras = [];
-        S.completedTasks = [];
-        S.streakData = {};
-        S.diary = [];
-        S.routines = [];
-        S.socialPosts = [];
-        S.likedPosts = [];
-        S.bio = 'Building my energy. One aura at a time. ⚡';
-        S.wallpaper = DEFAULT_WALLPAPER;
+        window.S.username = user;
+        window.S.selectedAuras = [];
+        window.S.completedTasks = [];
+        window.S.streakData = {};
+        window.S.diary = [];
+        window.S.routines = [];
+        window.S.socialPosts = [];
+        window.S.likedPosts = [];
+        window.S.bio = 'Building my energy. One aura at a time. ⚡';
+        window.S.wallpaper = DEFAULT_WALLPAPER;
         saveAuth();
-        setBg(DEFAULT_WALLPAPER);
-        toast('Account created! Welcome ' + name);
-        navigate('select');
+        window.setBg(DEFAULT_WALLPAPER);
+        window.toast('Account created! Welcome ' + name);
+        window.navigate('select');
     });
 }
 
 function handleLogin() {
     const user = document.getElementById('loginUser').value.trim();
     const pass = document.getElementById('loginPass').value.trim();
-    if (!user || !pass) { toast('Enter username and password'); return; }
+    if (!user || !pass) {
+        window.toast('Enter username and password');
+        return;
+    }
 
     const usersRef = getRef('users');
     usersRef.once('value', function(snapshot) {
         const users = snapshot.val() || {};
         if (!users[user] || users[user].password !== pass) {
-            toast('Invalid credentials');
+            window.toast('Invalid credentials');
             return;
         }
-        S.username = user;
-        S.bio = users[user].bio || 'Building my energy. One aura at a time. ⚡';
-        S.wallpaper = users[user].wallpaper || DEFAULT_WALLPAPER;
-        S.selectedAuras = users[user].selected_auras || [];
+        window.S.username = user;
+        window.S.bio = users[user].bio || 'Building my energy. One aura at a time. ⚡';
+        window.S.wallpaper = users[user].wallpaper || DEFAULT_WALLPAPER;
+        window.S.selectedAuras = users[user].selected_auras || [];
         saveAuth();
-        setBg(S.wallpaper);
-        setData(`users/${S.username}/last_seen`, new Date().toISOString());
-        loadUserData();
-        toast('Welcome back, ' + users[user].name);
-        navigate('social');
+        window.setBg(window.S.wallpaper);
+        setData(`users/${window.S.username}/last_seen`, new Date().toISOString());
+        window.loadUserData();
+        window.toast('Welcome back, ' + users[user].name);
+        window.navigate('social');
     });
 }
 
 function logout() {
     if (!confirm('Logout?')) return;
-    S.username = '';
+    window.S.username = '';
     localStorage.removeItem(AUTH_KEY);
     document.getElementById('wpFab').style.display = 'none';
-    if (messagesListener) messagesListener.off();
-    if (postsListener) postsListener.off();
-    toast('Logged out');
-    navigate('landing');
+    if (window.messagesListener) window.messagesListener.off();
+    if (window.postsListener) window.postsListener.off();
+    window.toast('Logged out');
+    window.navigate('landing');
 }
 
 function loadUserData() {
-    if (!S.username) return;
+    if (!window.S.username) return;
     // Load diary
-    const diaryRef = getRef(`diary/${S.username}`);
+    const diaryRef = getRef(`diary/${window.S.username}`);
     diaryRef.once('value', function(snapshot) {
         const data = snapshot.val();
         if (data) {
-            S.diary = Object.values(data).reverse();
+            window.S.diary = Object.values(data).reverse();
         }
-        renderDiary();
+        window.renderDiary();
     });
     // Load routines
-    const routineRef = getRef(`routines/${S.username}`);
+    const routineRef = getRef(`routines/${window.S.username}`);
     routineRef.once('value', function(snapshot) {
         const data = snapshot.val();
         if (data) {
-            S.routines = Object.values(data).reverse();
+            window.S.routines = Object.values(data).reverse();
         }
-        renderRoutines();
+        window.renderRoutines();
     });
 }
+
+// Expose
+window.handleSignup = handleSignup;
+window.handleLogin = handleLogin;
+window.logout = logout;
+window.loadUserData = loadUserData;
+window.loadAuth = loadAuth;

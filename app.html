@@ -4,62 +4,42 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Winchu · Nexus</title>
-    
-    <!-- Firebase -->
+    <link rel="stylesheet" href="css/style.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    
-    <!-- Styles -->
-    <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
     <div class="signature">id³</div>
     <button class="wp-fab" id="wpFab" onclick="window.navigate('wallpapers')" style="display:none;">🎨</button>
     <div id="toastContainer"></div>
 
-    <!-- Pages -->
-    <div id="app-pages">
-        <!-- Each page is loaded dynamically or included -->
+    <!-- Pages Container -->
+    <div id="page-container">
+        <!-- Pages loaded here -->
     </div>
 
-    <!-- Bottom Navigation -->
+    <!-- Bottom Nav -->
     <nav class="bottom-nav" id="bottomNav" style="display:none;">
-        <button class="nav-btn active" data-page="social" onclick="window.navigate('social')">
-            <span class="nav-icon">🏠</span>
-            <span class="nav-label">Home</span>
-        </button>
-        <button class="nav-btn" data-page="home" onclick="window.navigate('home')">
-            <span class="nav-icon">📊</span>
-            <span class="nav-label">Dashboard</span>
-        </button>
-        <button class="nav-btn" data-page="diary" onclick="window.navigate('diary')">
-            <span class="nav-icon">📖</span>
-            <span class="nav-label">Diary</span>
-        </button>
-        <button class="nav-btn" data-page="routine" onclick="window.navigate('routine')">
-            <span class="nav-icon">📋</span>
-            <span class="nav-label">Routine</span>
-        </button>
-        <button class="nav-btn" data-page="chat" onclick="window.navigate('chat')">
-            <span class="nav-icon">💬</span>
-            <span class="nav-label">Chat</span>
-        </button>
-        <button class="nav-btn" data-page="profile" onclick="window.navigate('profile')">
-            <span class="nav-icon">👤</span>
-            <span class="nav-label">Profile</span>
-        </button>
+        <button class="nav-btn active" data-page="social" onclick="window.navigate('social')"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
+        <button class="nav-btn" data-page="home" onclick="window.navigate('home')"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></button>
+        <button class="nav-btn" data-page="diary" onclick="window.navigate('diary')"><span class="nav-icon">📖</span><span class="nav-label">Diary</span></button>
+        <button class="nav-btn" data-page="routine" onclick="window.navigate('routine')"><span class="nav-icon">📋</span><span class="nav-label">Routine</span></button>
+        <button class="nav-btn" data-page="chat" onclick="window.navigate('chat')"><span class="nav-icon">💬</span><span class="nav-label">Chat</span></button>
+        <button class="nav-btn" data-page="profile" onclick="window.navigate('profile')"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></button>
     </nav>
 
     <!-- Scripts -->
     <script src="js/firebase.js"></script>
+    <script src="js/app.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/friends.js"></script>
+    <script src="js/users.js"></script>
+    <script src="js/dashboard.js"></script>
     <script src="js/chat.js"></script>
     <script src="js/social.js"></script>
-    <script src="js/dashboard.js"></script>
     <script src="js/diary.js"></script>
     <script src="js/routine.js"></script>
     <script src="js/profile.js"></script>
     <script src="js/wallpapers.js"></script>
-    <script src="js/app.js"></script>
 </body>
 </html>

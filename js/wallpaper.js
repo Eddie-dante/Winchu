@@ -1,52 +1,145 @@
-// js/wallpapers.js - Wallpaper Logic
-const Wallpapers = {
-    list: [
-            'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80',
-        'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=80',
-        'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=80',
-        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80',
-        'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1920&q=80',
-        'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=1920&q=80',
-        'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=1920&q=80',
-        'https://images.unsplash.com/photo-1470071459606-3b5ec3a7fe05?w=1920&q=80',
-        'https://images.unsplash.com/photo-1440589473619-3cde28941638?w=1920&q=80',
-        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80',
-        'https://images.unsplash.com/photo-1528825871115-3581a5387919?w=1920&q=80',
-        'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1920&q=80',
-        'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=1920&q=80',
-        'https://images.unsplash.com/photo-1597696929736-6d13bed8e6a8?w=1920&q=80',
-        'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=1920&q=80',
-        'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1920&q=80',
-        'https://images.unsplash.com/photo-1647811867884-b14ab4f81b36?w=1920&q=80',
-        'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=1920&q=80',
-        'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?w=1920&q=80',
-        'https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1920&q=80',
-        'https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=1920&q=80',
-        'https://images.unsplash.com/photo-1575377501614-f1d565d84756?w=1920&q=80',
-        'https://images.unsplash.com/photo-1453928582365-b6ad33cbcf64?w=1920&q=80',
-        'https://images.unsplash.com/photo-1736580602088-73d0f3ad8add?w=1920&q=80'
-    ],
+// ==================== DASHBOARD LOGIC ====================
+function getTasks() {
+    let tasks = [];
+    window.S.selectedAuras.forEach(key => {
+        if (AURAS[key]) tasks = tasks.concat(AURAS[key].tasks);
+    });
+    return [...new Set(tasks)].slice(0, 8);
+}
+window.getTasks = getTasks;
 
-    random() {
-        this.set(this.list[Math.floor(Math.random() * this.list.length)]);
-    },
+function calcScore() {
+    const tasks = getTasks(),
+        total = tasks.length,
+        done = window.S.completedTasks.filter(i => i < total).length;
+    return { pct: total > 0 ? Math.round((done / total) * 100) : 0, done, total };
+}
+window.calcScore = calcScore;
 
-    set(url) {
-        App.state.wallpaper = url;
-        App.setBg(url);
-        this.render();
-        App.toast('✅ Applied');
-    },
+function calcStreak() {
+    let s = 0;
+    const n = new Date();
+    for (let i = 0; i < 365; i++) {
+        const d = new Date(n);
+        d.setDate(d.getDate() - i);
+        if (window.S.streakData[d.toDateString()]) s++;
+        else break;
+    }
+    return s;
+}
+window.calcStreak = calcStreak;
 
-    render() {
-        document.getElementById('wpCount').textContent = this.list.length + '+ wallpapers';
-        document.getElementById('wpGrid').innerHTML = this.list.map(url => {
-            const selected = App.state.wallpaper === url;
-            return <div class="wp-thumb${selected ? ' selected' : ''}" style="background-image:url('${url}')" onclick="Wallpapers.set('${url}')"></div>;
+function toggleTask(index) {
+    const idx = window.S.completedTasks.indexOf(index);
+    if (idx > -1) window.S.completedTasks.splice(idx, 1);
+    else window.S.completedTasks.push(index);
+    const tasks = getTasks(),
+        total = tasks.length,
+        done = window.S.completedTasks.filter(x => x < total).length;
+    const today = new Date().toDateString();
+    if (done === total && total > 0) window.S.streakData[today] = true;
+    else delete window.S.streakData[today];
+    renderHome();
+}
+window.toggleTask = toggleTask;
+
+function resetDay() {
+    if (!confirm('Reset tasks?')) return;
+    window.S.completedTasks = [];
+    delete window.S.streakData[new Date().toDateString()];
+    renderHome();
+}
+window.resetDay = resetDay;
+
+function renderHome() {
+    if (window.S.selectedAuras.length === 0) {
+        window.navigate('select');
+        return;
+    }
+    const p = AURAS[window.S.selectedAuras[0]],
+        tasks = getTasks(),
+        { pct, done, total } = calcScore();
+    const streak = calcStreak();
+    const circ = 2 * Math.PI * 43,
+        offset = circ - (pct / 100) * circ;
+
+    const titleEl = document.getElementById('homeTitle');
+    if (titleEl) titleEl.textContent = window.S.selectedAuras.map(k => AURAS[k].emoji + ' ' + AURAS[k].name).join(' + ');
+
+    const badgeEl = document.getElementById('homeBadge');
+    if (badgeEl) badgeEl.textContent = '⚡ ' + window.S.selectedAuras.map(k => AURAS[k].emoji).join('');
+
+    const scoreEl = document.getElementById('score');
+    if (scoreEl) scoreEl.textContent = pct + '%';
+
+    const progressEl = document.getElementById('taskProgress');
+    if (progressEl) progressEl.textContent = done + '/' + total;
+
+    const streakEl = document.getElementById('streakCount');
+    if (streakEl) streakEl.textContent = streak;
+
+    const tasksDoneEl = document.getElementById('tasksDone');
+    if (tasksDoneEl) tasksDoneEl.textContent = window.S.completedTasks.length;
+
+    const diaryCountEl = document.getElementById('diaryCount');
+    if (diaryCountEl) diaryCountEl.textContent = window.S.diary.length;
+
+    const msgCountEl = document.getElementById('msgCount');
+    if (msgCountEl) msgCountEl.textContent = window.chatMessages.length;
+
+    const ring = document.getElementById('scoreRing');
+    if (ring) {
+        ring.style.strokeDashoffset = offset;
+        ring.style.stroke = p.accent;
+    }
+
+    const tasksContainer = document.getElementById('tasks');
+    if (tasksContainer) {
+        tasksContainer.innerHTML = tasks.map((t, i) => {
+            const c = window.S.completedTasks.includes(i);
+            return `<div class="task-item${c ? ' done' : ''}" onclick="toggleTask(${i})"><div class="check-box">${c ? '✓' : ''}</div><span class="task-text">${t}</span></div>`;
         }).join('');
     }
-};
+    renderCalendar();
+}
+window.renderHome = renderHome;
 
-window.Wallpapers = Wallpapers;
-window.randomWallpaper = Wallpapers.random.bind(Wallpapers);
-window.setWallpaper = Wallpapers.set.bind(Wallpapers);
+function renderCalendar() {
+    const n = new Date(),
+        y = n.getFullYear(),
+        m = n.getMonth();
+    const dim = new Date(y, m + 1, 0).getDate(),
+        fd = new Date(y, m, 1).getDay();
+
+    const monthLabel = document.getElementById('monthLabel');
+    if (monthLabel) monthLabel.textContent = n.toLocaleDateString('en', { month: 'long', year: 'numeric' });
+
+    const cal = document.getElementById('calendar');
+    if (!cal) return;
+    cal.innerHTML = '';
+    ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].forEach(d => {
+        const div = document.createElement('div');
+        div.className = 'cal-day weekday';
+        div.textContent = d;
+        cal.appendChild(div);
+    });
+    for (let i = 0; i < fd; i++) {
+        const div = document.createElement('div');
+        div.className = 'cal-day';
+        div.style.background = 'transparent';
+        cal.appendChild(div);
+    }
+    for (let d = 1; d <= dim; d++) {
+        const ds = new Date(y, m, d).toDateString();
+        const div = document.createElement('div');
+        div.className = 'cal-day';
+        div.textContent = d;
+        if (window.S.streakData[ds]) {
+            div.classList.add('active');
+            if (window.S.selectedAuras.length) div.style.background = AURAS[window.S.selectedAuras[0]].accent;
+        }
+        if (d === n.getDate() && m === n.getMonth() && y === n.getFullYear()) div.classList.add('today');
+        cal.appendChild(div);
+    }
+}
+window.renderCalendar = renderCalendar;

@@ -13,6 +13,8 @@ const S = {
     avatar: null
 };
 
+window.S = S;
+
 let chatMessages = [];
 let selectedFile = null;
 let selectedFileData = null;
@@ -20,6 +22,10 @@ let selectedAvatarData = null;
 let messagesListener = null;
 let postsListener = null;
 let usersListener = null;
+
+window.chatMessages = chatMessages;
+window.messagesListener = messagesListener;
+window.postsListener = postsListener;
 
 // ==================== TOAST ====================
 function toast(msg) {
@@ -29,6 +35,7 @@ function toast(msg) {
     document.getElementById('toastContainer').appendChild(t);
     setTimeout(() => t.remove(), 2200);
 }
+window.toast = toast;
 
 // ==================== WALLPAPER ====================
 function setBg(url) {
@@ -43,6 +50,7 @@ function setBg(url) {
         setData(`users/${S.username}/wallpaper`, url);
     }
 }
+window.setBg = setBg;
 
 // ==================== NAVIGATION ====================
 function navigate(page) {
@@ -59,17 +67,18 @@ function navigate(page) {
     const hideNav = ['landing', 'login', 'signup', 'select'];
     nav.style.display = hideNav.includes(page) ? 'none' : 'flex';
 
-    if (page === 'select') renderAuraGrid();
-    if (page === 'home') renderHome();
-    if (page === 'users') renderUsers();
-    if (page === 'diary') renderDiary();
-    if (page === 'routine') renderRoutines();
-    if (page === 'chat') renderChat();
-    if (page === 'social') renderSocial();
-    if (page === 'profile') renderProfile();
-    if (page === 'wallpapers') renderWallpapers();
+    if (page === 'select' && window.renderAuraGrid) window.renderAuraGrid();
+    if (page === 'home' && window.renderHome) window.renderHome();
+    if (page === 'users' && window.renderUsers) window.renderUsers();
+    if (page === 'diary' && window.renderDiary) window.renderDiary();
+    if (page === 'routine' && window.renderRoutines) window.renderRoutines();
+    if (page === 'chat' && window.renderChat) window.renderChat();
+    if (page === 'social' && window.renderSocial) window.renderSocial();
+    if (page === 'profile' && window.renderProfile) window.renderProfile();
+    if (page === 'wallpapers' && window.renderWallpapers) window.renderWallpapers();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+window.navigate = navigate;
 
 // ==================== INIT ====================
 function init() {
@@ -80,8 +89,8 @@ function init() {
         setBg(S.wallpaper);
         document.getElementById('myUsername').textContent = S.username;
         loadUserData();
-        setupMessagesListener();
-        setupPostsListener();
+        if (window.setupMessagesListener) window.setupMessagesListener();
+        if (window.setupPostsListener) window.setupPostsListener();
         setInterval(function() {
             if (S.username) {
                 setData(`users/${S.username}/last_seen`, new Date().toISOString());
@@ -95,14 +104,5 @@ function init() {
     console.log('⚡ Winchu · Nexus with Firebase Realtime ✅');
 }
 
-// ==================== EXPOSE TO WINDOW ====================
-window.navigate = navigate;
-window.toast = toast;
-window.handleSignup = handleSignup;
-window.handleLogin = handleLogin;
-window.logout = logout;
-window.setBg = setBg;
-window.loadUserData = loadUserData;
-
-// Start
-init();
+// Start when DOM is ready
+document.addEventListener('DOMContentLoaded', init);

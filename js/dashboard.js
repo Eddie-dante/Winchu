@@ -1,18 +1,20 @@
 // ==================== DASHBOARD LOGIC ====================
 function getTasks() {
     let tasks = [];
-    S.selectedAuras.forEach(key => {
+    window.S.selectedAuras.forEach(key => {
         if (AURAS[key]) tasks = tasks.concat(AURAS[key].tasks);
     });
     return [...new Set(tasks)].slice(0, 8);
 }
+window.getTasks = getTasks;
 
 function calcScore() {
     const tasks = getTasks(),
         total = tasks.length,
-        done = S.completedTasks.filter(i => i < total).length;
+        done = window.S.completedTasks.filter(i => i < total).length;
     return { pct: total > 0 ? Math.round((done / total) * 100) : 0, done, total };
 }
+window.calcScore = calcScore;
 
 function calcStreak() {
     let s = 0;
@@ -20,80 +22,87 @@ function calcStreak() {
     for (let i = 0; i < 365; i++) {
         const d = new Date(n);
         d.setDate(d.getDate() - i);
-        if (S.streakData[d.toDateString()]) s++;
+        if (window.S.streakData[d.toDateString()]) s++;
         else break;
     }
     return s;
 }
+window.calcStreak = calcStreak;
 
 function toggleTask(index) {
-    const idx = S.completedTasks.indexOf(index);
-    if (idx > -1) S.completedTasks.splice(idx, 1);
-    else S.completedTasks.push(index);
+    const idx = window.S.completedTasks.indexOf(index);
+    if (idx > -1) window.S.completedTasks.splice(idx, 1);
+    else window.S.completedTasks.push(index);
     const tasks = getTasks(),
         total = tasks.length,
-        done = S.completedTasks.filter(x => x < total).length;
+        done = window.S.completedTasks.filter(x => x < total).length;
     const today = new Date().toDateString();
-    if (done === total && total > 0) S.streakData[today] = true;
-    else delete S.streakData[today];
+    if (done === total && total > 0) window.S.streakData[today] = true;
+    else delete window.S.streakData[today];
     renderHome();
 }
+window.toggleTask = toggleTask;
 
 function resetDay() {
     if (!confirm('Reset tasks?')) return;
-    S.completedTasks = [];
-    delete S.streakData[new Date().toDateString()];
+    window.S.completedTasks = [];
+    delete window.S.streakData[new Date().toDateString()];
     renderHome();
 }
+window.resetDay = resetDay;
 
 function renderHome() {
-    if (S.selectedAuras.length === 0) { navigate('select'); return; }
-    const p = AURAS[S.selectedAuras[0]],
+    if (window.S.selectedAuras.length === 0) {
+        window.navigate('select');
+        return;
+    }
+    const p = AURAS[window.S.selectedAuras[0]],
         tasks = getTasks(),
         { pct, done, total } = calcScore();
     const streak = calcStreak();
     const circ = 2 * Math.PI * 43,
         offset = circ - (pct / 100) * circ;
-    
+
     const titleEl = document.getElementById('homeTitle');
-    if (titleEl) titleEl.textContent = S.selectedAuras.map(k => AURAS[k].emoji + ' ' + AURAS[k].name).join(' + ');
-    
+    if (titleEl) titleEl.textContent = window.S.selectedAuras.map(k => AURAS[k].emoji + ' ' + AURAS[k].name).join(' + ');
+
     const badgeEl = document.getElementById('homeBadge');
-    if (badgeEl) badgeEl.textContent = '⚡ ' + S.selectedAuras.map(k => AURAS[k].emoji).join('');
-    
+    if (badgeEl) badgeEl.textContent = '⚡ ' + window.S.selectedAuras.map(k => AURAS[k].emoji).join('');
+
     const scoreEl = document.getElementById('score');
     if (scoreEl) scoreEl.textContent = pct + '%';
-    
+
     const progressEl = document.getElementById('taskProgress');
     if (progressEl) progressEl.textContent = done + '/' + total;
-    
+
     const streakEl = document.getElementById('streakCount');
     if (streakEl) streakEl.textContent = streak;
-    
+
     const tasksDoneEl = document.getElementById('tasksDone');
-    if (tasksDoneEl) tasksDoneEl.textContent = S.completedTasks.length;
-    
+    if (tasksDoneEl) tasksDoneEl.textContent = window.S.completedTasks.length;
+
     const diaryCountEl = document.getElementById('diaryCount');
-    if (diaryCountEl) diaryCountEl.textContent = S.diary.length;
-    
+    if (diaryCountEl) diaryCountEl.textContent = window.S.diary.length;
+
     const msgCountEl = document.getElementById('msgCount');
-    if (msgCountEl) msgCountEl.textContent = chatMessages.length;
-    
+    if (msgCountEl) msgCountEl.textContent = window.chatMessages.length;
+
     const ring = document.getElementById('scoreRing');
     if (ring) {
         ring.style.strokeDashoffset = offset;
         ring.style.stroke = p.accent;
     }
-    
+
     const tasksContainer = document.getElementById('tasks');
     if (tasksContainer) {
         tasksContainer.innerHTML = tasks.map((t, i) => {
-            const c = S.completedTasks.includes(i);
+            const c = window.S.completedTasks.includes(i);
             return `<div class="task-item${c ? ' done' : ''}" onclick="toggleTask(${i})"><div class="check-box">${c ? '✓' : ''}</div><span class="task-text">${t}</span></div>`;
         }).join('');
     }
     renderCalendar();
 }
+window.renderHome = renderHome;
 
 function renderCalendar() {
     const n = new Date(),
@@ -101,10 +110,10 @@ function renderCalendar() {
         m = n.getMonth();
     const dim = new Date(y, m + 1, 0).getDate(),
         fd = new Date(y, m, 1).getDay();
-    
+
     const monthLabel = document.getElementById('monthLabel');
     if (monthLabel) monthLabel.textContent = n.toLocaleDateString('en', { month: 'long', year: 'numeric' });
-    
+
     const cal = document.getElementById('calendar');
     if (!cal) return;
     cal.innerHTML = '';
@@ -125,16 +134,12 @@ function renderCalendar() {
         const div = document.createElement('div');
         div.className = 'cal-day';
         div.textContent = d;
-        if (S.streakData[ds]) {
+        if (window.S.streakData[ds]) {
             div.classList.add('active');
-            if (S.selectedAuras.length) div.style.background = AURAS[S.selectedAuras[0]].accent;
+            if (window.S.selectedAuras.length) div.style.background = AURAS[window.S.selectedAuras[0]].accent;
         }
         if (d === n.getDate() && m === n.getMonth() && y === n.getFullYear()) div.classList.add('today');
         cal.appendChild(div);
     }
 }
-
-// Expose
-window.toggleTask = toggleTask;
-window.resetDay = resetDay;
-window.renderHome = renderHome;
+window.renderCalendar = renderCalendar;
