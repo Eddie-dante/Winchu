@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
@@ -898,11 +898,15 @@
 
     // ==================== CORE FUNCTIONS ====================
     async function loadAllData() {
-        const cloudData = await cloudGet();
-        if (cloudData) {
-            CLOUD_DATA = cloudData;
-            saveLocalData(cloudData);
-            return CLOUD_DATA;
+        try {
+            const cloudData = await cloudGet();
+            if (cloudData) {
+                CLOUD_DATA = cloudData;
+                saveLocalData(cloudData);
+                return CLOUD_DATA;
+            }
+        } catch (e) {
+            console.error('Cloud load error:', e);
         }
         const localData = loadLocalData();
         if (localData) {
@@ -916,6 +920,7 @@
         if (!CLOUD_DATA) return;
         saveLocalData(CLOUD_DATA);
         await cloudPut(CLOUD_DATA);
+        console.log('✅ Data saved to cloud');
     }
 
     // ==================== AUTH ====================
@@ -1006,7 +1011,7 @@
     function getAvatarHTML(username, size) {
         const profile = CLOUD_DATA.profiles && CLOUD_DATA.profiles[username] ? CLOUD_DATA.profiles[username] : {};
         const avatar = profile.avatar;
-        if (avatar) {
+        if (avatar && avatar.startsWith('data:')) {
             return `<img src="${avatar}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;" />`;
         }
         const colors = ['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8','#F7B787','#FF8A80','#B388FF','#82B1FF','#B9F6CA','#FFE57F','#FF80AB','#EA80FC','#8C9EFF'];
@@ -1296,7 +1301,7 @@
         stopPoll();
         poll = setInterval(function() {
             updateChat();
-        }, 2000);
+        }, 3000);
     }
 
     function stopPoll() {
@@ -1309,6 +1314,7 @@
             chatMessages = CLOUD_DATA.messages;
             renderChatMessages();
         }
+        // Update online count
         const now = Date.now();
         const online = new Set();
         if (CLOUD_DATA.messages) {
@@ -1323,6 +1329,10 @@
         }
         if (S.username) online.add(S.username);
         document.getElementById('onlineCount').textContent = online.size;
+        // Also update users list if on users page
+        if (document.getElementById('page-users').classList.contains('active')) {
+            renderUsers();
+        }
     }
 
     async function sendMessage() {
@@ -1331,21 +1341,27 @@
         const text = input.value.trim();
         if (!text) return;
 
-        await loadAllData();
-        if (!CLOUD_DATA.messages) CLOUD_DATA.messages = [];
-        CLOUD_DATA.messages.push({
-            id: 'msg_' + Date.now(),
-            username: S.username,
-            text: text,
-            time: new Date().toISOString()
-        });
-        if (CLOUD_DATA.messages.length > 500) CLOUD_DATA.messages = CLOUD_DATA.messages.slice(-500);
-        await saveAllData();
+        try {
+            await loadAllData();
+            if (!CLOUD_DATA.messages) CLOUD_DATA.messages = [];
+            CLOUD_DATA.messages.push({
+                id: 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                username: S.username,
+                text: text,
+                time: new Date().toISOString()
+            });
+            if (CLOUD_DATA.messages.length > 500) CLOUD_DATA.messages = CLOUD_DATA.messages.slice(-500);
+            await saveAllData();
 
-        chatMessages = CLOUD_DATA.messages;
-        input.value = '';
-        renderChatMessages();
-        updateChat();
+            chatMessages = CLOUD_DATA.messages;
+            input.value = '';
+            renderChatMessages();
+            updateChat();
+            toast('✅ Message sent');
+        } catch (e) {
+            console.error('Send message error:', e);
+            toast('❌ Failed to send message');
+        }
     }
 
     function deleteMessage(id) {
@@ -1389,6 +1405,7 @@
             toast('Username updated');
             renderChat();
             renderSocial();
+            renderUsers();
         }
     }
 
@@ -1457,35 +1474,39 @@
         if (!text && !selectedFileData) { toast('Write something or add media'); return; }
         
         const avatar = S.avatar || (S.selectedAuras.length > 0 ? S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊');
-        const randImg = UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)];
 
-        await loadAllData();
-        if (!CLOUD_DATA.posts) CLOUD_DATA.posts = [];
-        
-        const post = {
-            id: 'post_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-            author: S.username || 'You',
-            avatar: avatar,
-            text: text || '',
-            time: new Date().toISOString(),
-            likes: [],
-            image: selectedFileData || randImg,
-            mediaType: selectedFile ? (selectedFile.type.startsWith('video/') ? 'video' : 'image') : 'image'
-        };
-        
-        CLOUD_DATA.posts.unshift(post);
-        if (CLOUD_DATA.posts.length > 200) CLOUD_DATA.posts = CLOUD_DATA.posts.slice(0, 200);
-        await saveAllData();
+        try {
+            await loadAllData();
+            if (!CLOUD_DATA.posts) CLOUD_DATA.posts = [];
+            
+            const post = {
+                id: 'post_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                author: S.username || 'You',
+                avatar: avatar,
+                text: text || '',
+                time: new Date().toISOString(),
+                likes: [],
+                image: selectedFileData || null,
+                mediaType: selectedFile ? (selectedFile.type.startsWith('video/') ? 'video' : 'image') : 'image'
+            };
+            
+            CLOUD_DATA.posts.unshift(post);
+            if (CLOUD_DATA.posts.length > 200) CLOUD_DATA.posts = CLOUD_DATA.posts.slice(0, 200);
+            await saveAllData();
 
-        S.socialPosts = CLOUD_DATA.posts;
-        input.value = '';
-        selectedFile = null;
-        selectedFileData = null;
-        document.getElementById('filePreview').style.display = 'none';
-        document.getElementById('filePreview').innerHTML = '';
-        renderSocial();
-        renderStories();
-        toast('📝 Posted!');
+            S.socialPosts = CLOUD_DATA.posts;
+            input.value = '';
+            selectedFile = null;
+            selectedFileData = null;
+            document.getElementById('filePreview').style.display = 'none';
+            document.getElementById('filePreview').innerHTML = '';
+            renderSocial();
+            renderStories();
+            toast('📝 Posted!');
+        } catch (e) {
+            console.error('Create post error:', e);
+            toast('❌ Failed to post');
+        }
     }
 
     function likePost(id) {
@@ -1543,7 +1564,7 @@
             let mediaHtml = '';
             if (p.mediaType === 'video' && p.image) {
                 mediaHtml = '<video src="' + p.image + '" class="post-video" controls></video>';
-            } else if (p.image && (p.image.indexOf('data:') === 0 || p.image.indexOf('unsplash') > -1)) {
+            } else if (p.image && (p.image.indexOf('data:') === 0)) {
                 mediaHtml = '<img src="' + p.image + '" class="post-image" alt="Post image" />';
             }
             const avatarDisplay = p.avatar && p.avatar.startsWith('data:') ? 
@@ -1581,7 +1602,7 @@
             return;
         }
         grid.innerHTML = userPosts.map(function(p) {
-            const img = p.image && (p.image.indexOf('data:') === 0 || p.image.indexOf('unsplash') > -1) ? p.image : UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)];
+            const img = p.image && (p.image.indexOf('data:') === 0) ? p.image : UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)];
             return '<div style="aspect-ratio:1;background-image:url(\'' + img + '\');background-size:cover;background-position:center;border-radius:4px;cursor:pointer;" onclick="window.toast(\'' + p.text.substring(0, 30) + '...\')"></div>';
         }).join('');
     }
