@@ -383,6 +383,12 @@
             justify-content: center;
             font-size: 18px;
             flex-shrink: 0;
+            overflow: hidden;
+        }
+        .ig-post-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         .ig-post-user { font-weight: 600; font-size: 13px; }
         .ig-post-time { font-size: 10px; color: #94a3b8; margin-left: auto; }
@@ -450,6 +456,7 @@
             background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
             padding: 3px;
             margin-bottom: 10px;
+            position: relative;
         }
         .profile-avatar-large .inner {
             width: 100%;
@@ -460,6 +467,12 @@
             align-items: center;
             justify-content: center;
             font-size: 36px;
+            overflow: hidden;
+        }
+        .profile-avatar-large .inner img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         .profile-name { font-size: 20px; font-weight: 700; }
         .profile-username { font-size: 13px; color: #64748b; }
@@ -602,24 +615,102 @@
             to { opacity:0; transform:translateX(-50%) translateY(-16px); }
         }
 
-        .modal-overlay {
+        /* ========== CUSTOM DIALOG ========== */
+        .dialog-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 3000;
-            display: flex;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            display: none;
             align-items: center;
             justify-content: center;
+            padding: 20px;
         }
-        .modal {
-            background: rgba(255,255,255,0.85);
-            backdrop-filter: blur(24px);
-            border-radius: 18px;
-            padding: 22px;
-            max-width: 340px;
-            width: 90%;
+        .dialog-overlay.active {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .dialog {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+            border-radius: 24px;
+            padding: 28px 24px;
+            max-width: 400px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 24px 80px rgba(0,0,0,0.2);
+        }
+        .dialog-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .dialog-subtitle {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 16px;
+        }
+        .dialog-input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 12px;
+            font-size: 14px;
+            background: rgba(255,255,255,0.4);
+            outline: none;
+            font-family: var(--font);
+        }
+        .dialog-input:focus {
+            border-color: #0f172a;
+        }
+        .dialog-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .dialog-actions button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .dialog-actions .dialog-cancel {
+            background: rgba(0,0,0,0.05);
+            color: #64748b;
+        }
+        .dialog-actions .dialog-cancel:hover {
+            background: rgba(0,0,0,0.1);
+        }
+        .dialog-actions .dialog-confirm {
+            background: rgba(15, 23, 42, 0.85);
+            color: #fff;
+        }
+        .dialog-actions .dialog-confirm:hover {
+            background: rgba(15, 23, 42, 1);
+        }
+        .dialog-actions .dialog-danger {
+            background: rgba(239, 68, 68, 0.85);
+            color: #fff;
+        }
+        .dialog-actions .dialog-danger:hover {
+            background: rgba(239, 68, 68, 1);
+        }
+        .dialog-emoji {
+            font-size: 48px;
             text-align: center;
+            margin-bottom: 8px;
         }
+
         .auth-toggle { font-size: 12px; color: #64748b; margin-top: 12px; cursor: pointer; text-decoration: underline; }
 
         .file-input-wrapper {
@@ -703,6 +794,7 @@
             .profile-avatar-large { width: 64px; height: 64px; }
             .profile-avatar-large .inner { font-size: 28px; }
             .profile-stats { gap: 16px; }
+            .dialog { padding: 20px 16px; }
         }
     </style>
 </head>
@@ -710,6 +802,20 @@
     <div class="signature">id³</div>
     <button class="wp-fab" id="wpFab" onclick="window.navigate('wallpapers')" style="display:none;">🎨</button>
     <div id="toastContainer"></div>
+
+    <!-- ========== CUSTOM DIALOG ========== -->
+    <div class="dialog-overlay" id="dialogOverlay">
+        <div class="dialog" id="dialog">
+            <div class="dialog-emoji" id="dialogEmoji">💬</div>
+            <div class="dialog-title" id="dialogTitle">Dialog</div>
+            <div class="dialog-subtitle" id="dialogSubtitle">Please enter your input</div>
+            <input type="text" class="dialog-input" id="dialogInput" placeholder="Type here..." />
+            <div class="dialog-actions">
+                <button class="dialog-cancel" id="dialogCancel">Cancel</button>
+                <button class="dialog-confirm" id="dialogConfirm">Confirm</button>
+            </div>
+        </div>
+    </div>
 
     <!-- ==================== LANDING ==================== -->
     <div class="page active" id="page-landing">
@@ -954,9 +1060,185 @@
     <script src="js/routine.js"></script>
     <script src="js/profile.js"></script>
     
-    <!-- Wallpaper logic inlined -->
+    <!-- ==================== INLINED SCRIPTS ==================== -->
     <script>
-    // Aura Selection Logic
+    // ========== CUSTOM DIALOG ==========
+    var dialogResolve = null;
+
+    function showDialog(options) {
+        return new Promise(function(resolve) {
+            var overlay = document.getElementById('dialogOverlay');
+            var dialog = document.getElementById('dialog');
+            var emoji = document.getElementById('dialogEmoji');
+            var title = document.getElementById('dialogTitle');
+            var subtitle = document.getElementById('dialogSubtitle');
+            var input = document.getElementById('dialogInput');
+            var cancelBtn = document.getElementById('dialogCancel');
+            var confirmBtn = document.getElementById('dialogConfirm');
+
+            // Set content
+            emoji.textContent = options.emoji || '💬';
+            title.textContent = options.title || 'Dialog';
+            subtitle.textContent = options.subtitle || 'Please enter your input';
+            input.value = options.defaultValue || '';
+            input.placeholder = options.placeholder || 'Type here...';
+            
+            // Set button text
+            cancelBtn.textContent = options.cancelText || 'Cancel';
+            confirmBtn.textContent = options.confirmText || 'Confirm';
+            
+            // Set confirm button style
+            confirmBtn.className = options.danger ? 'dialog-danger' : 'dialog-confirm';
+
+            // Show overlay
+            overlay.classList.add('active');
+            input.focus();
+            input.select();
+
+            dialogResolve = resolve;
+
+            // Cancel
+            cancelBtn.onclick = function() {
+                overlay.classList.remove('active');
+                resolve(null);
+            };
+
+            // Confirm
+            confirmBtn.onclick = function() {
+                overlay.classList.remove('active');
+                resolve(input.value);
+            };
+
+            // Enter key
+            input.onkeypress = function(e) {
+                if (e.key === 'Enter') {
+                    overlay.classList.remove('active');
+                    resolve(input.value);
+                }
+            };
+
+            // Click outside to close
+            overlay.onclick = function(e) {
+                if (e.target === overlay) {
+                    overlay.classList.remove('active');
+                    resolve(null);
+                }
+            };
+        });
+    }
+    window.showDialog = showDialog;
+
+    // ========== OVERRIDE FUNCTIONS WITH DIALOG ==========
+    
+    // Override changeUsername to use dialog
+    var originalChangeUsername = window.changeUsername;
+    window.changeUsername = function() {
+        showDialog({
+            emoji: '✏️',
+            title: 'Change Username',
+            subtitle: 'Enter your new username',
+            placeholder: 'New username...',
+            defaultValue: window.S.username || '',
+            confirmText: 'Update'
+        }).then(function(result) {
+            if (result && result.trim()) {
+                window.S.username = result.trim();
+                saveAuth();
+                var el = document.getElementById('myUsername');
+                if (el) el.textContent = window.S.username;
+                window.toast('Username updated');
+                if (window.S.username) {
+                    setData('users/' + window.S.username + '/username', window.S.username);
+                    setData('users/' + window.S.username + '/last_seen', new Date().toISOString());
+                }
+            }
+        });
+    };
+
+    // Override editProfile to use dialog
+    var originalEditProfile = window.editProfile;
+    window.editProfile = function() {
+        showDialog({
+            emoji: '📝',
+            title: 'Edit Bio',
+            subtitle: 'Tell us about yourself',
+            placeholder: 'Your bio...',
+            defaultValue: window.S.bio || '',
+            confirmText: 'Save'
+        }).then(function(result) {
+            if (result !== null) {
+                window.S.bio = result.trim() || 'Building my energy. One aura at a time. ⚡';
+                if (window.S.username) {
+                    setData('users/' + window.S.username + '/bio', window.S.bio);
+                }
+                renderProfile();
+                window.toast('Bio updated');
+            }
+        });
+    };
+
+    // ========== AVATAR FIX ==========
+    // Fix handleAvatarSelect to properly display avatar
+    var originalHandleAvatarSelect = window.handleAvatarSelect;
+    window.handleAvatarSelect = function(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var dataUrl = e.target.result;
+            window.S.avatar = dataUrl;
+            
+            // Save to Firebase
+            if (window.S.username) {
+                setData('users/' + window.S.username + '/avatar', dataUrl);
+            }
+            
+            // Update profile avatar
+            var avatarContainer = document.getElementById('profileAvatarEmoji');
+            if (avatarContainer) {
+                avatarContainer.innerHTML = '<img src="' + dataUrl + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+            }
+            
+            window.toast('✅ Avatar updated!');
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // ========== CHAT FIX ==========
+    // Fix sendMessage to work properly
+    var originalSendMessage = window.sendMessage;
+    window.sendMessage = function() {
+        if (!window.S.username) {
+            window.toast('Please log in');
+            return;
+        }
+        var input = document.getElementById('chatInput');
+        var text = input.value.trim();
+        if (!text) {
+            window.toast('Type a message');
+            return;
+        }
+
+        var message = {
+            username: window.S.username,
+            text: text,
+            time: new Date().toISOString()
+        };
+        
+        var messagesRef = getRef('messages');
+        messagesRef.push(message).then(function() {
+            input.value = '';
+            if (window.S.username) {
+                setData('users/' + window.S.username + '/last_seen', new Date().toISOString());
+            }
+        }).catch(function(err) {
+            console.error('Send message error:', err);
+            window.toast('Failed to send message');
+        });
+    };
+
+    // ========== AURA SELECTION ==========
     function renderAuraGrid() {
         var grid = document.getElementById('auraGrid');
         if (!grid) return;
@@ -974,7 +1256,8 @@
             html += '</div>';
         }
         grid.innerHTML = html;
-        document.getElementById('counter').textContent = window.S.selectedAuras.length;
+        var counter = document.getElementById('counter');
+        if (counter) counter.textContent = window.S.selectedAuras.length;
     }
     window.renderAuraGrid = renderAuraGrid;
 
@@ -1002,7 +1285,7 @@
     }
     window.confirmSelection = confirmSelection;
 
-    // Wallpaper Logic (inlined)
+    // ========== WALLPAPER ==========
     function randomWallpaper() {
         setWallpaper(UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)]);
     }
@@ -1031,6 +1314,23 @@
         grid.innerHTML = html;
     }
     window.renderWallpapers = renderWallpapers;
+
+    // ========== RENDER PROFILE AVATAR ==========
+    // Override renderProfile to show avatar image
+    var originalRenderProfile = window.renderProfile;
+    window.renderProfile = function() {
+        if (typeof originalRenderProfile === 'function') {
+            originalRenderProfile();
+        }
+        
+        // Show avatar image if exists
+        if (window.S.avatar) {
+            var avatarContainer = document.getElementById('profileAvatarEmoji');
+            if (avatarContainer) {
+                avatarContainer.innerHTML = '<img src="' + window.S.avatar + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+            }
+        }
+    };
     </script>
 </body>
 </html>
