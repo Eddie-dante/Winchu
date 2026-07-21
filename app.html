@@ -10,7 +10,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
     <style>
-        /* ===== CSS VARIABLES ===== */
         :root {
             --bg: #f1f5f9;
             --text: #0f172a;
@@ -81,7 +80,6 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.08);
         }
 
-        /* ===== BUTTONS ===== */
         button {
             display: inline-flex;
             align-items: center;
@@ -107,7 +105,6 @@
             width:100%;
             box-shadow: 0 4px 16px rgba(15,23,42,0.15);
         }
-        .btn-primary:hover { background: rgba(30, 41, 59, 0.9); }
         .btn-secondary {
             background: transparent;
             border: 1px solid rgba(0,0,0,0.1);
@@ -127,7 +124,6 @@
         .btn-danger { color: #ef4444 !important; }
         .btn-success { color: #22c55e !important; }
 
-        /* ===== LANDING ===== */
         .landing-content { text-align: center; }
         .landing-icon { font-size: 72px; margin-bottom: 14px; display: block; }
         .landing-title {
@@ -141,7 +137,6 @@
         }
         .landing-subtitle { color: #64748b; font-size: 14px; margin-bottom: 36px; }
 
-        /* ===== AURAS ===== */
         .counter-chip {
             display: inline-flex;
             align-items: center;
@@ -178,7 +173,6 @@
         .aura-btn .check-mark { margin-left: auto; opacity: 0; font-size: 13px; }
         .aura-btn.selected .check-mark { opacity: 1; }
 
-        /* ===== STATS ===== */
         .stat-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -197,7 +191,6 @@
         .stat-card .stat-value { font-size: 20px; font-weight: 700; }
         .stat-card .stat-label { font-size: 9px; color: #94a3b8; text-transform: uppercase; }
 
-        /* ===== SCORE RING ===== */
         .score-ring-wrap { display: flex; justify-content: center; margin: 14px 0; }
         .score-ring { position: relative; width: 100px; height: 100px; }
         .score-ring svg { transform: rotate(-90deg); width: 100px; height: 100px; }
@@ -211,7 +204,6 @@
         .score-ring .center .num { font-size: 28px; font-weight: 700; }
         .score-ring .center .label { font-size: 8px; color: #94a3b8; text-transform: uppercase; }
 
-        /* ===== TASKS ===== */
         .task-item {
             display: flex;
             align-items: center;
@@ -243,7 +235,6 @@
         .task-text { font-size: 12px; flex: 1; }
         .task-item.done .task-text { text-decoration: line-through; color: #94a3b8; }
 
-        /* ===== CALENDAR ===== */
         .calendar-wrap {
             padding: 14px;
             background: rgba(255,255,255,0.3);
@@ -267,7 +258,6 @@
         .cal-day.active { color: #fff; font-weight: 600; }
         .cal-day.today { border: 2px solid #0f172a; background: rgba(255,255,255,0.3); color: #0f172a; font-weight: 600; }
 
-        /* ===== ENTRIES ===== */
         .entry-card {
             background: rgba(255,255,255,0.4);
             border: 1px solid rgba(0,0,0,0.04);
@@ -277,7 +267,6 @@
             backdrop-filter: blur(4px);
         }
 
-        /* ===== FORMS ===== */
         textarea, input[type="text"], input[type="search"], input[type="password"] {
             width: 100%;
             padding: 10px 13px;
@@ -291,7 +280,6 @@
         }
         textarea:focus, input:focus { border-color: #0f172a; }
 
-        /* ===== CHAT ===== */
         .chat-bubble {
             padding: 9px 13px;
             border-radius: 15px;
@@ -342,15 +330,7 @@
         .chat-list-item .info { flex: 1; }
         .chat-list-item .info .name { font-weight: 600; font-size: 13px; }
         .chat-list-item .info .last-msg { font-size: 11px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .chat-list-item .badge {
-            background: #ef4444;
-            color: #fff;
-            font-size: 10px;
-            padding: 2px 8px;
-            border-radius: 10px;
-        }
 
-        /* ===== SOCIAL FEED ===== */
         .ig-story-row {
             display: flex;
             gap: 14px;
@@ -439,11 +419,11 @@
             display: flex;
             align-items: center;
             padding: 8px 12px 4px;
-            gap: 16px;
+            gap: 12px;
         }
         .ig-post-action {
             cursor: pointer;
-            font-size: 22px;
+            font-size: 20px;
             transition: transform 0.2s;
             background: none;
             border: none;
@@ -455,8 +435,13 @@
         .ig-post-caption { padding: 0 12px 8px; font-size: 13px; line-height: 1.4; }
         .ig-post-caption strong { font-weight: 600; }
         .ig-post-comments { padding: 0 12px 10px; font-size: 12px; color: #64748b; cursor: pointer; }
+        .comment-item {
+            padding: 6px 12px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            font-size: 12px;
+        }
+        .comment-item strong { font-weight: 600; }
 
-        /* ===== WALLPAPERS ===== */
         .wp-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -474,7 +459,6 @@
         .wp-thumb.portrait { aspect-ratio: 9/16; }
         .wp-thumb.landscape { aspect-ratio: 16/9; }
 
-        /* ===== PROFILE ===== */
         .profile-header {
             display: flex;
             flex-direction: column;
@@ -506,7 +490,7 @@
         .profile-avatar-large .inner img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
         .profile-name { font-size: 20px; font-weight: 700; }
         .profile-username { font-size: 13px; color: #64748b; }
-        .profile-stats { display: flex; gap: 32px; margin: 12px 0 8px; }
+        .profile-stats { display: flex; gap: 24px; margin: 12px 0 8px; }
         .profile-stat { text-align: center; }
         .profile-stat .num { font-size: 18px; font-weight: 700; }
         .profile-stat .label { font-size: 11px; color: #94a3b8; }
@@ -522,7 +506,6 @@
         }
         .profile-edit-btn:hover { background: rgba(0,0,0,0.05); }
 
-        /* ===== BOTTOM NAV ===== */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -572,7 +555,6 @@
         @media (min-width: 420px) { .nav-btn .nav-icon { font-size: 19px; } .nav-btn .nav-label { font-size: 9px; } }
         @media (max-width: 360px) { .nav-btn .nav-icon { font-size: 16px; } .nav-btn .nav-label { font-size: 7px; } }
 
-        /* ===== TOAST ===== */
         .toast {
             position: fixed;
             top: 16px;
@@ -592,7 +574,6 @@
         @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(-16px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
         @keyframes toastOut { from { opacity:1; } to { opacity:0; transform:translateX(-50%) translateY(-16px); } }
 
-        /* ===== DIALOG ===== */
         .dialog-overlay {
             position: fixed;
             inset: 0;
@@ -640,14 +621,12 @@
         .dialog-actions .dialog-danger:hover { background: rgba(239, 68, 68, 1); }
         .dialog-emoji { font-size: 48px; text-align: center; margin-bottom: 8px; }
 
-        /* ===== MISC ===== */
         .signature { position: fixed; bottom: 75px; right: 16px; font-size: 10px; font-weight: 600; letter-spacing: 1.5px; color: #0f172a; opacity: 0.15; z-index: 100; pointer-events: none; }
         .wp-fab { position: fixed; bottom: 75px; left: 16px; z-index: 999; background: rgba(15,23,42,0.85); width: 34px; height: 34px; border-radius: 50%; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; border: none; color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
         .auth-toggle { font-size: 12px; color: #64748b; margin-top: 12px; cursor: pointer; text-decoration: underline; }
         .file-input-wrapper { position: relative; overflow: hidden; display: inline-block; }
         .file-input-wrapper input[type=file] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
         .post-image { width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin: 4px 0; }
-        .post-video { width: 100%; max-height: 300px; border-radius: 8px; margin: 4px 0; }
 
         .user-card {
             display: flex;
@@ -669,7 +648,6 @@
         .user-card .status-dot.offline { background: #94a3b8; }
         .user-card .actions { display: flex; gap: 4px; }
 
-        /* ===== TIKTOK VIDEOS ===== */
         .tiktok-container {
             max-height: 70vh;
             overflow-y: scroll;
@@ -756,6 +734,25 @@
         }
         .tiktok-video .overlay .side-actions button span { font-size: 10px; }
         .tiktok-video .overlay .side-actions button.liked { color: #ef4444; background: rgba(239,68,68,0.3); }
+        .tiktok-upload-btn {
+            position: sticky;
+            top: 10px;
+            z-index: 10;
+            background: rgba(15,23,42,0.9);
+            color: #fff;
+            padding: 12px;
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            font-size: 28px;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.3);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
 
         @media (max-width: 480px) {
             .container { padding: 20px 14px; border-radius: 24px; }
@@ -779,7 +776,7 @@
     <button class="wp-fab" id="wpFab" onclick="window.navigate('wallpapers')" style="display:none;">🎨</button>
     <div id="toastContainer"></div>
 
-    <!-- ===== DIALOG ===== -->
+    <!-- DIALOG -->
     <div class="dialog-overlay" id="dialogOverlay">
         <div class="dialog" id="dialog">
             <div class="dialog-emoji" id="dialogEmoji">💬</div>
@@ -793,7 +790,7 @@
         </div>
     </div>
 
-    <!-- ===== LANDING ===== -->
+    <!-- LANDING -->
     <div class="page active" id="page-landing">
         <div class="container landing-content">
             <span class="landing-icon">⚡</span>
@@ -804,7 +801,7 @@
         </div>
     </div>
 
-    <!-- ===== SIGNUP ===== -->
+    <!-- SIGNUP -->
     <div class="page" id="page-signup">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">✨ Create Account</h2>
@@ -817,7 +814,7 @@
         </div>
     </div>
 
-    <!-- ===== LOGIN ===== -->
+    <!-- LOGIN -->
     <div class="page" id="page-login">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">🔐 Sign In</h2>
@@ -829,7 +826,7 @@
         </div>
     </div>
 
-    <!-- ===== AURA SELECTION ===== -->
+    <!-- AURA SELECTION -->
     <div class="page" id="page-select">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:3px;">Choose Your Auras</h2>
@@ -840,16 +837,14 @@
         </div>
     </div>
 
-    <!-- ===== DASHBOARD ===== -->
+    <!-- DASHBOARD -->
     <div class="page" id="page-home">
         <div class="container">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                 <h2 id="homeTitle" style="font-size:17px;font-weight:700;">Dashboard</h2>
                 <span id="homeBadge" style="font-size:10px;background:rgba(0,0,0,0.06);padding:3px 10px;border-radius:18px;">⚡</span>
             </div>
-            <button class="btn-sm" onclick="window.navigate('users')" style="width:100%;margin-bottom:10px;background:rgba(99,102,241,0.15);border-color:#6366f1;">
-                👥 View All Users
-            </button>
+            <button class="btn-sm" onclick="window.navigate('users')" style="width:100%;margin-bottom:10px;background:rgba(99,102,241,0.15);border-color:#6366f1;">👥 Find Friends</button>
             <div class="score-ring-wrap">
                 <div class="score-ring">
                     <svg viewBox="0 0 100 100">
@@ -880,16 +875,16 @@
         </div>
     </div>
 
-    <!-- ===== USERS / FRIENDS ===== -->
+    <!-- USERS -->
     <div class="page" id="page-users">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">👥 Find Friends</h2>
-            <button class="btn-sm" onclick="window.navigate('home')" style="margin-bottom:10px;">← Back to Dashboard</button>
+            <button class="btn-sm" onclick="window.navigate('home')" style="margin-bottom:10px;">← Back</button>
             <div id="usersList"><p style="color:#94a3b8;text-align:center;padding:20px;">Loading users...</p></div>
         </div>
     </div>
 
-    <!-- ===== DIARY ===== -->
+    <!-- DIARY -->
     <div class="page" id="page-diary">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:10px;">📖 Diary</h2>
@@ -904,7 +899,7 @@
         </div>
     </div>
 
-    <!-- ===== ROUTINE ===== -->
+    <!-- ROUTINE -->
     <div class="page" id="page-routine">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:10px;">📋 Routines</h2>
@@ -917,7 +912,7 @@
         </div>
     </div>
 
-    <!-- ===== CHAT ===== -->
+    <!-- CHAT -->
     <div class="page" id="page-chat">
         <div class="container">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
@@ -942,7 +937,7 @@
         </div>
     </div>
 
-    <!-- ===== SOCIAL FEED ===== -->
+    <!-- SOCIAL FEED -->
     <div class="page" id="page-social">
         <div class="container" style="padding: 16px 14px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
@@ -974,20 +969,22 @@
         </div>
     </div>
 
-    <!-- ===== TIKTOK VIDEOS ===== -->
+    <!-- TIKTOK VIDEOS -->
     <div class="page" id="page-videos">
         <div class="container" style="padding: 16px 14px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                 <h2 style="font-size:20px;font-weight:700;">🎬 Videos</h2>
                 <button class="btn-sm" onclick="window.navigate('social')">← Back</button>
             </div>
+            <div class="tiktok-upload-btn" onclick="document.getElementById('videoUploadInput').click()">📹</div>
+            <input type="file" id="videoUploadInput" accept="video/*" style="display:none;" onchange="window.handleVideoUpload(event)" />
             <div class="tiktok-container" id="videoFeed">
-                <p style="color:#94a3b8;text-align:center;padding:40px 0;">No videos yet. Upload one!</p>
+                <p style="color:#94a3b8;text-align:center;padding:40px 0;">No videos yet. Tap the + to upload!</p>
             </div>
         </div>
     </div>
 
-    <!-- ===== PROFILE ===== -->
+    <!-- PROFILE -->
     <div class="page" id="page-profile">
         <div class="container">
             <div class="profile-header">
@@ -999,7 +996,6 @@
                 <div class="profile-stats">
                     <div class="profile-stat"><div class="num" id="profilePosts">0</div><div class="label">Posts</div></div>
                     <div class="profile-stat"><div class="num" id="profileFriends">0</div><div class="label">Friends</div></div>
-                    <div class="profile-stat"><div class="num" id="profileFollowing">0</div><div class="label">Following</div></div>
                 </div>
                 <div class="profile-bio" id="profileBio">Building my energy. One aura at a time. ⚡</div>
                 <div style="display:flex;gap:8px;margin:6px 0;flex-wrap:wrap;justify-content:center;">
@@ -1020,7 +1016,7 @@
         </div>
     </div>
 
-    <!-- ===== WALLPAPERS ===== -->
+    <!-- WALLPAPERS -->
     <div class="page" id="page-wallpapers">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:8px;">🎨 Walls</h2>
@@ -1035,7 +1031,7 @@
         </div>
     </div>
 
-    <!-- ===== BOTTOM NAV ===== -->
+    <!-- BOTTOM NAV -->
     <nav class="bottom-nav" id="bottomNav" style="display:none;">
         <button class="nav-btn active" data-page="social" onclick="window.navigate('social')"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
         <button class="nav-btn" data-page="videos" onclick="window.navigate('videos')"><span class="nav-icon">🎬</span><span class="nav-label">Videos</span></button>
@@ -1045,7 +1041,7 @@
         <button class="nav-btn" data-page="profile" onclick="window.navigate('profile')"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></button>
     </nav>
 
-    <!-- ===== SCRIPTS ===== -->
+    <!-- SCRIPTS -->
     <script src="js/firebase.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/app.js"></script>
@@ -1058,11 +1054,10 @@
 
     <script>
     // ============================================================
-    // ===== COMPLETE APP LOGIC =====
+    // ===== COMPLETE APP LOGIC - RESET VERSION =====
     // ============================================================
 
     // ===== DIALOG =====
-    var dialogResolve = null;
     function showDialog(options) {
         return new Promise(function(resolve) {
             var overlay = document.getElementById('dialogOverlay');
@@ -1085,7 +1080,6 @@
             overlay.classList.add('active');
             input.focus();
             input.select();
-            dialogResolve = resolve;
 
             cancelBtn.onclick = function() { overlay.classList.remove('active'); resolve(null); };
             confirmBtn.onclick = function() { overlay.classList.remove('active'); resolve(input.value); };
@@ -1095,8 +1089,74 @@
     }
     window.showDialog = showDialog;
 
-    // ===== OVERRIDE FUNCTIONS =====
-    var originalChangeUsername = window.changeUsername;
+    // ===== AURAS =====
+    function renderAuraGrid() {
+        var grid = document.getElementById('auraGrid');
+        if (!grid) return;
+        var html = '';
+        var keys = Object.keys(AURAS);
+        for (var i = 0; i < keys.length; i++) {
+            var key = keys[i];
+            var aura = AURAS[key];
+            var sel = window.S.selectedAuras.indexOf(key) > -1;
+            var cls = 'aura-btn' + (sel ? ' selected' : '');
+            html += '<div class="' + cls + '" onclick="window.toggleAura(\'' + key + '\')">';
+            html += '<span class="emoji">' + aura.emoji + '</span>';
+            html += '<div class="info"><h3>' + aura.name + '</h3><p>' + aura.desc + '</p></div>';
+            html += '<span class="check-mark">✓</span>';
+            html += '</div>';
+        }
+        grid.innerHTML = html;
+        var counter = document.getElementById('counter');
+        if (counter) counter.textContent = window.S.selectedAuras.length;
+    }
+    window.renderAuraGrid = renderAuraGrid;
+
+    function toggleAura(key) {
+        var idx = window.S.selectedAuras.indexOf(key);
+        if (idx > -1) window.S.selectedAuras.splice(idx, 1);
+        else if (window.S.selectedAuras.length < 3) window.S.selectedAuras.push(key);
+        renderAuraGrid();
+    }
+    window.toggleAura = toggleAura;
+
+    function confirmSelection() {
+        if (window.S.selectedAuras.length === 0) { window.toast('Select at least one aura'); return; }
+        if (window.S.username) setData('users/' + window.S.username + '/selected_auras', window.S.selectedAuras);
+        window.navigate('social');
+        window.toast('Auras activated! ✨');
+    }
+    window.confirmSelection = confirmSelection;
+
+    // ===== AVATAR =====
+    window.handleAvatarSelect = function(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var dataUrl = e.target.result;
+            window.S.avatar = dataUrl;
+            if (window.S.username) {
+                setData('users/' + window.S.username + '/avatar', dataUrl);
+            }
+            updateAvatarUI(dataUrl);
+            window.toast('✅ Avatar updated!');
+        };
+        reader.readAsDataURL(file);
+    };
+
+    function updateAvatarUI(dataUrl) {
+        var avatarContainer = document.getElementById('profileAvatarEmoji');
+        if (avatarContainer) {
+            avatarContainer.innerHTML = '<img src="' + dataUrl + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+        }
+        var postAvatar = document.getElementById('postAvatarEmoji');
+        if (postAvatar) {
+            postAvatar.innerHTML = '<img src="' + dataUrl + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+        }
+    }
+
+    // ===== USERNAME UPDATE =====
     window.changeUsername = function() {
         showDialog({
             emoji: '✏️',
@@ -1107,20 +1167,54 @@
             confirmText: 'Update'
         }).then(function(result) {
             if (result && result.trim()) {
-                window.S.username = result.trim();
+                var oldUsername = window.S.username;
+                var newUsername = result.trim();
+                window.S.username = newUsername;
                 saveAuth();
                 var el = document.getElementById('myUsername');
-                if (el) el.textContent = window.S.username;
+                if (el) el.textContent = newUsername;
                 window.toast('Username updated');
-                if (window.S.username) {
-                    setData('users/' + window.S.username + '/username', window.S.username);
-                    setData('users/' + window.S.username + '/last_seen', new Date().toISOString());
+                if (newUsername) {
+                    setData('users/' + newUsername + '/username', newUsername);
+                    setData('users/' + newUsername + '/last_seen', new Date().toISOString());
+                    // Update posts with new username
+                    updatePostsUsername(oldUsername, newUsername);
                 }
             }
         });
     };
 
-    var originalEditProfile = window.editProfile;
+    function updatePostsUsername(oldName, newName) {
+        var postsRef = getRef('posts');
+        postsRef.once('value', function(snapshot) {
+            var data = snapshot.val();
+            if (data) {
+                var keys = Object.keys(data);
+                for (var i = 0; i < keys.length; i++) {
+                    var post = data[keys[i]];
+                    if (post.author === oldName) {
+                        getRef('posts/' + keys[i] + '/author').set(newName);
+                    }
+                }
+            }
+        });
+        // Update videos too
+        var videosRef = getRef('videos');
+        videosRef.once('value', function(snapshot) {
+            var data = snapshot.val();
+            if (data) {
+                var keys = Object.keys(data);
+                for (var i = 0; i < keys.length; i++) {
+                    var video = data[keys[i]];
+                    if (video.author === oldName) {
+                        getRef('videos/' + keys[i] + '/author').set(newName);
+                    }
+                }
+            }
+        });
+    }
+
+    // ===== EDIT PROFILE =====
     window.editProfile = function() {
         showDialog({
             emoji: '📝',
@@ -1139,45 +1233,22 @@
         });
     };
 
-    // ===== AVATAR FIX =====
-    window.handleAvatarSelect = function(event) {
-        var file = event.target.files[0];
-        if (!file) return;
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            var dataUrl = e.target.result;
-            window.S.avatar = dataUrl;
-            if (window.S.username) {
-                setData('users/' + window.S.username + '/avatar', dataUrl);
-            }
-            // Update profile avatar immediately
-            var avatarContainer = document.getElementById('profileAvatarEmoji');
-            if (avatarContainer) {
-                avatarContainer.innerHTML = '<img src="' + dataUrl + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
-            }
-            // Update post avatar
-            var postAvatar = document.getElementById('postAvatarEmoji');
-            if (postAvatar) {
-                postAvatar.innerHTML = '<img src="' + dataUrl + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
-            }
-            window.toast('✅ Avatar updated!');
-        };
-        reader.readAsDataURL(file);
-    };
-
     // ===== CHAT SYSTEM =====
     window.currentChat = null;
     window.chatMessages = [];
     window.chatListener = null;
-    window.typingTimeout = null;
 
     function renderChatList() {
         var container = document.getElementById('chatList');
         if (!container) return;
         
-        // Get friends and groups
+        if (!window.S.username) {
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">Please log in</p>';
+            return;
+        }
+
+        // Get friends
         var friends = window.S.friends || [];
-        var groups = window.S.groups || ['Winchu Global'];
         var allChats = ['Winchu Global', ...friends];
         
         if (allChats.length === 0) {
@@ -1197,18 +1268,18 @@
             html += '</div>';
         }
         container.innerHTML = html;
+        document.getElementById('chatWindow').style.display = 'none';
+        document.getElementById('chatList').style.display = 'block';
     }
 
     function openChat(chatName, isGroup) {
+        if (!window.S.username) { window.toast('Please log in'); return; }
         window.currentChat = chatName;
         document.getElementById('chatWindow').style.display = 'block';
         document.getElementById('chatList').style.display = 'none';
         document.getElementById('chatWith').textContent = chatName;
         
-        // Load messages
         loadChatMessages(chatName);
-        
-        // Setup listener for this chat
         setupChatListener(chatName);
     }
 
@@ -1257,7 +1328,7 @@
             }
         });
         
-        // Listen for typing
+        // Typing indicator
         var typingRef = getRef('typing/' + chatName);
         typingRef.on('value', function(snapshot) {
             var data = snapshot.val();
@@ -1316,7 +1387,6 @@
             window.toast('Failed to send');
         });
         
-        // Send typing indicator
         var typingRef = getRef('typing/' + window.currentChat);
         typingRef.set({ username: window.S.username });
         setTimeout(function() {
@@ -1326,7 +1396,6 @@
 
     // ===== FRIEND SYSTEM =====
     window.S.friends = [];
-    window.S.friendRequests = [];
 
     function sendFriendRequest(username) {
         if (!window.S.username) { window.toast('Please log in'); return; }
@@ -1348,11 +1417,9 @@
 
     function acceptFriendRequest(username) {
         if (!window.S.username) return;
-        // Add to friends list
         if (window.S.friends.indexOf(username) === -1) {
             window.S.friends.push(username);
         }
-        // Remove from requests
         var requestsRef = getRef('friendRequests/' + window.S.username);
         requestsRef.once('value', function(snapshot) {
             var requests = snapshot.val() || [];
@@ -1362,10 +1429,10 @@
                 requestsRef.set(requests);
             }
         });
-        // Save friends
         setData('users/' + window.S.username + '/friends', window.S.friends);
         renderUsers();
         renderChatList();
+        renderProfile();
         window.toast('Friend added!');
     }
 
@@ -1374,28 +1441,29 @@
         var friendsRef = getRef('users/' + window.S.username + '/friends');
         friendsRef.once('value', function(snapshot) {
             var data = snapshot.val();
-            if (data) {
-                window.S.friends = data;
-            }
+            window.S.friends = data || [];
             renderChatList();
+            renderProfile();
         });
         
-        // Check friend requests
         var requestsRef = getRef('friendRequests/' + window.S.username);
         requestsRef.on('value', function(snapshot) {
             var data = snapshot.val();
-            window.S.friendRequests = data || [];
-            if (window.S.friendRequests.length > 0) {
-                window.toast('You have ' + window.S.friendRequests.length + ' friend request(s)!');
+            if (data && data.length > 0) {
+                window.toast('You have ' + data.length + ' friend request(s)!');
             }
         });
     }
 
-    // ===== USERS LIST WITH FRIEND REQUESTS =====
-    var originalRenderUsers = window.renderUsers;
+    // ===== USERS LIST =====
     window.renderUsers = function() {
         var container = document.getElementById('usersList');
         if (!container) return;
+
+        if (!window.S.username) {
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">Please log in</p>';
+            return;
+        }
 
         var usersRef = getRef('users');
         usersRef.once('value', function(snapshot) {
@@ -1414,7 +1482,6 @@
                 var userData = users[u] || {};
                 var isOnline = userData.last_seen && (Date.now() - new Date(userData.last_seen).getTime() < 60000);
                 var isFriend = window.S.friends && window.S.friends.indexOf(u) > -1;
-                var hasRequest = window.S.friendRequests && window.S.friendRequests.indexOf(u) > -1;
                 var color = ['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8','#F7B787','#FF8A80','#B388FF','#82B1FF','#B9F6CA','#FFE57F','#FF80AB','#EA80FC','#8C9EFF'][u.length % 16];
                 var avatarHTML = '<div style="width:40px;height:40px;border-radius:50%;background:' + color + ';display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:16px;">' + u.charAt(0).toUpperCase() + '</div>';
 
@@ -1431,8 +1498,6 @@
                 if (!isMe) {
                     if (isFriend) {
                         html += '<button class="btn-sm btn-success" onclick="window.toast(\'Already friends\')">✓ Friend</button>';
-                    } else if (hasRequest) {
-                        html += '<button class="btn-sm btn-primary" onclick="window.acceptFriendRequest(\'' + u + '\')">Accept</button>';
                     } else {
                         html += '<button class="btn-sm" onclick="window.sendFriendRequest(\'' + u + '\')">➕ Add</button>';
                     }
@@ -1443,100 +1508,14 @@
         });
     };
 
-    // ===== AURA SELECTION =====
-    function renderAuraGrid() {
-        var grid = document.getElementById('auraGrid');
-        if (!grid) return;
-        var html = '';
-        var keys = Object.keys(AURAS);
-        for (var i = 0; i < keys.length; i++) {
-            var key = keys[i];
-            var aura = AURAS[key];
-            var sel = window.S.selectedAuras.indexOf(key) > -1;
-            var cls = 'aura-btn' + (sel ? ' selected' : '');
-            html += '<div class="' + cls + '" onclick="window.toggleAura(\'' + key + '\')">';
-            html += '<span class="emoji">' + aura.emoji + '</span>';
-            html += '<div class="info"><h3>' + aura.name + '</h3><p>' + aura.desc + '</p></div>';
-            html += '<span class="check-mark">✓</span>';
-            html += '</div>';
-        }
-        grid.innerHTML = html;
-        var counter = document.getElementById('counter');
-        if (counter) counter.textContent = window.S.selectedAuras.length;
-    }
-    window.renderAuraGrid = renderAuraGrid;
-
-    function toggleAura(key) {
-        var idx = window.S.selectedAuras.indexOf(key);
-        if (idx > -1) window.S.selectedAuras.splice(idx, 1);
-        else if (window.S.selectedAuras.length < 3) window.S.selectedAuras.push(key);
-        renderAuraGrid();
-    }
-    window.toggleAura = toggleAura;
-
-    function confirmSelection() {
-        if (window.S.selectedAuras.length === 0) { window.toast('Select at least one aura'); return; }
-        if (window.S.username) setData('users/' + window.S.username + '/selected_auras', window.S.selectedAuras);
-        window.navigate('social');
-        window.toast('Auras activated! ✨');
-    }
-    window.confirmSelection = confirmSelection;
-
-    // ===== LIKES, COMMENTS, DOWNLOAD =====
-    function likePost(id) {
-        if (!id) return;
-        var post = window.S.socialPosts.find(function(p) { return p.id === id; });
-        if (!post) return;
-        var likes = post.likes || [];
-        var idx = likes.indexOf(window.S.username);
-        if (idx > -1) likes.splice(idx, 1);
-        else likes.push(window.S.username);
-        post.likes = likes;
-        var postRef = getRef('posts/' + id + '/likes');
-        postRef.set(likes);
-        renderSocial();
-    }
-    window.likePost = likePost;
-
-    function commentOnPost(id) {
-        showDialog({
-            emoji: '💬',
-            title: 'Add Comment',
-            subtitle: 'Write your comment',
-            placeholder: 'Type your comment...',
-            confirmText: 'Post'
-        }).then(function(result) {
-            if (result && result.trim()) {
-                var post = window.S.socialPosts.find(function(p) { return p.id === id; });
-                if (!post) return;
-                var comments = post.comments || [];
-                comments.push({ username: window.S.username, text: result.trim(), time: new Date().toISOString() });
-                post.comments = comments;
-                var postRef = getRef('posts/' + id + '/comments');
-                postRef.set(comments);
-                renderSocial();
-                window.toast('Comment added!');
-            }
-        });
-    }
-    window.commentOnPost = commentOnPost;
-
-    function downloadMedia(url, filename) {
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = filename || 'winchu-media.jpg';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.toast('Downloading...');
-    }
-    window.downloadMedia = downloadMedia;
-
-    // ===== SOCIAL FEED RENDER WITH COMMENTS & DOWNLOAD =====
-    var originalRenderSocial = window.renderSocial;
-    window.renderSocial = function() {
+    // ===== SOCIAL FEED =====
+    function renderSocial() {
         var feed = document.getElementById('socialFeed');
         if (!feed) return;
+        if (!window.S.username) {
+            feed.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:30px 0;">Please log in</p>';
+            return;
+        }
         if (window.S.socialPosts.length === 0) {
             feed.innerHTML = '<div style="text-align:center;padding:40px 0;color:#94a3b8;"><div style="font-size:48px;margin-bottom:12px;">📸</div><p>No posts yet. Share something!</p></div>';
             return;
@@ -1562,21 +1541,22 @@
             }
             html += '<div style="padding:0 12px 4px;"><p style="font-size:13px;margin:4px 0;">' + p.text + '</p></div>';
             html += '<div class="ig-post-actions">';
-            html += '<button class="ig-post-action ' + (liked ? 'liked' : '') + '" onclick="likePost(\'' + p.id + '\')">' + (liked ? '❤️' : '🤍') + '</button>';
-            html += '<span style="font-size:13px;font-weight:600;color:#94a3b8;" onclick="likePost(\'' + p.id + '\')">' + (p.likes ? p.likes.length : 0) + '</span>';
-            html += '<button class="ig-post-action" onclick="commentOnPost(\'' + p.id + '\')">💬</button>';
+            html += '<button class="ig-post-action ' + (liked ? 'liked' : '') + '" onclick="window.likePost(\'' + p.id + '\')">' + (liked ? '❤️' : '🤍') + '</button>';
+            html += '<span style="font-size:13px;font-weight:600;color:#94a3b8;">' + (p.likes ? p.likes.length : 0) + '</span>';
+            html += '<button class="ig-post-action" onclick="window.commentOnPost(\'' + p.id + '\')">💬</button>';
             html += '<span style="font-size:13px;font-weight:600;color:#94a3b8;">' + commentCount + '</span>';
             if (p.image) {
-                html += '<button class="ig-post-action" onclick="downloadMedia(\'' + p.image + '\', \'winchu-post.jpg\')">⬇️</button>';
+                html += '<button class="ig-post-action" onclick="window.downloadMedia(\'' + p.image + '\', \'winchu-post.jpg\')">⬇️</button>';
             }
             html += '</div>';
             if (commentCount > 0) {
-                html += '<div class="ig-post-comments" onclick="commentOnPost(\'' + p.id + '\')">View ' + commentCount + ' comments</div>';
+                html += '<div class="ig-post-comments" onclick="window.viewComments(\'' + p.id + '\')">View ' + commentCount + ' comments</div>';
             }
             html += '</div>';
         }
         feed.innerHTML = html;
-    };
+    }
+    window.renderSocial = renderSocial;
 
     function timeSince(date) {
         var now = new Date();
@@ -1588,64 +1568,312 @@
         return date.toLocaleDateString();
     }
 
-    // ===== DELETE ONLY OWN ENTRIES =====
-    window.deleteDiaryEntry = function(index) {
-        if (index < 0 || index >= window.S.diary.length) return;
+    function likePost(id) {
+        if (!window.S.username) { window.toast('Please log in'); return; }
+        var post = window.S.socialPosts.find(function(p) { return p.id === id; });
+        if (!post) return;
+        var likes = post.likes || [];
+        var idx = likes.indexOf(window.S.username);
+        if (idx > -1) likes.splice(idx, 1);
+        else likes.push(window.S.username);
+        post.likes = likes;
+        getRef('posts/' + id + '/likes').set(likes);
+        renderSocial();
+    }
+    window.likePost = likePost;
+
+    function commentOnPost(id) {
+        if (!window.S.username) { window.toast('Please log in'); return; }
+        showDialog({
+            emoji: '💬',
+            title: 'Add Comment',
+            subtitle: 'Write your comment',
+            placeholder: 'Type your comment...',
+            confirmText: 'Post'
+        }).then(function(result) {
+            if (result && result.trim()) {
+                var post = window.S.socialPosts.find(function(p) { return p.id === id; });
+                if (!post) return;
+                var comments = post.comments || [];
+                comments.push({ username: window.S.username, text: result.trim(), time: new Date().toISOString() });
+                post.comments = comments;
+                getRef('posts/' + id + '/comments').set(comments);
+                renderSocial();
+                window.toast('Comment added!');
+            }
+        });
+    }
+    window.commentOnPost = commentOnPost;
+
+    function viewComments(id) {
+        var post = window.S.socialPosts.find(function(p) { return p.id === id; });
+        if (!post || !post.comments || post.comments.length === 0) {
+            window.toast('No comments yet');
+            return;
+        }
+        var html = '<div style="padding:10px 0;"><strong>Comments</strong></div>';
+        for (var i = 0; i < post.comments.length; i++) {
+            var c = post.comments[i];
+            var time = new Date(c.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            html += '<div class="comment-item"><strong>' + c.username + '</strong> <span style="color:#94a3b8;font-size:10px;">' + time + '</span><br>' + c.text + '</div>';
+        }
+        showDialog({
+            emoji: '💬',
+            title: 'Comments',
+            subtitle: '',
+            confirmText: 'Close'
+        }).then(function() {});
+        document.getElementById('dialogSubtitle').innerHTML = html;
+        document.getElementById('dialogInput').style.display = 'none';
+        document.getElementById('dialogConfirm').textContent = 'Close';
+        document.getElementById('dialogCancel').style.display = 'none';
+    }
+    window.viewComments = viewComments;
+
+    function downloadMedia(url, filename) {
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'winchu-media.jpg';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.toast('Downloading...');
+    }
+    window.downloadMedia = downloadMedia;
+
+    function deletePost(id) {
         showDialog({
             emoji: '🗑️',
-            title: 'Delete Entry',
-            subtitle: 'Are you sure you want to delete this diary entry?',
+            title: 'Delete Post',
+            subtitle: 'Are you sure you want to delete this post?',
             confirmText: 'Delete',
             danger: true
         }).then(function(result) {
             if (result !== null) {
-                var entry = window.S.diary[index];
-                window.S.diary.splice(index, 1);
-                if (window.S.username) {
-                    // Find and remove from Firebase
-                    var diaryRef = getRef('diary/' + window.S.username);
-                    diaryRef.once('value', function(snapshot) {
-                        var data = snapshot.val();
-                        if (data) {
-                            var keys = Object.keys(data);
-                            for (var i = 0; i < keys.length; i++) {
-                                if (data[keys[i]].date === entry.date && data[keys[i]].content === entry.content) {
-                                    getRef('diary/' + window.S.username + '/' + keys[i]).remove();
-                                    break;
-                                }
-                            }
-                        }
-                    });
-                }
-                renderDiary();
-                window.toast('Entry deleted');
+                getRef('posts/' + id).remove();
+                window.S.socialPosts = window.S.socialPosts.filter(function(p) { return p.id !== id; });
+                renderSocial();
+                renderProfile();
+                window.toast('Post deleted');
             }
         });
-    };
+    }
+    window.deletePost = deletePost;
 
-    // Override renderDiary with delete button
-    var originalRenderDiary = window.renderDiary;
-    window.renderDiary = function() {
-        var container = document.getElementById('diaryEntries');
+    function createPost() {
+        if (!window.S.username) { window.toast('Please log in'); return; }
+        var input = document.getElementById('postInput');
+        var text = input.value.trim();
+        if (!text && !window.selectedFileData) { window.toast('Write something or add media'); return; }
+        
+        var avatar = window.S.avatar || (window.S.selectedAuras.length > 0 ? window.S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊');
+        var isVideo = window.selectedFile && window.selectedFile.type && window.selectedFile.type.startsWith('video/');
+        
+        var post = {
+            author: window.S.username,
+            avatar: avatar,
+            text: text || '',
+            image: window.selectedFileData || null,
+            type: isVideo ? 'video' : 'image',
+            time: new Date().toISOString(),
+            likes: [],
+            comments: []
+        };
+        
+        getRef('posts').push(post);
+        
+        // If video, also add to videos
+        if (isVideo && window.selectedFileData) {
+            var videoPost = {
+                author: window.S.username,
+                avatar: avatar,
+                text: text || '',
+                url: window.selectedFileData,
+                type: 'video',
+                time: new Date().toISOString(),
+                likes: [],
+                comments: []
+            };
+            getRef('videos').push(videoPost);
+        }
+        
+        input.value = '';
+        window.selectedFile = null;
+        window.selectedFileData = null;
+        document.getElementById('filePreview').style.display = 'none';
+        document.getElementById('filePreview').innerHTML = '';
+        window.toast('📝 Posted!');
+    }
+    window.createPost = createPost;
+
+    function handleFileSelect(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+        window.selectedFile = file;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            window.selectedFileData = e.target.result;
+            var preview = document.getElementById('filePreview');
+            preview.style.display = 'block';
+            preview.innerHTML = '<img src="' + e.target.result + '" style="max-height:150px;border-radius:8px;max-width:100%;">';
+        };
+        reader.readAsDataURL(file);
+    }
+    window.handleFileSelect = handleFileSelect;
+
+    // ===== VIDEO UPLOAD =====
+    window.handleVideoUpload = function(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('video/')) {
+            window.toast('Please select a video file');
+            return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var dataUrl = e.target.result;
+            var avatar = window.S.avatar || '😊';
+            var videoPost = {
+                author: window.S.username || 'Anonymous',
+                avatar: avatar,
+                text: '',
+                url: dataUrl,
+                type: 'video',
+                time: new Date().toISOString(),
+                likes: [],
+                comments: []
+            };
+            getRef('videos').push(videoPost);
+            window.toast('📹 Video uploaded!');
+        };
+        reader.readAsDataURL(file);
+    };
+    window.handleVideoUpload = window.handleVideoUpload;
+
+    // ===== VIDEOS =====
+    window.videoData = [];
+
+    function renderVideos() {
+        var container = document.getElementById('videoFeed');
         if (!container) return;
-        if (window.S.diary.length === 0) {
-            container.innerHTML = '<p style="color:#94a3b8;text-align:center;">No entries yet.</p>';
+        if (!window.S.username) {
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:40px 0;">Please log in</p>';
+            return;
+        }
+        if (window.videoData.length === 0) {
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:40px 0;">No videos yet. Tap the 📹 to upload!</p>';
             return;
         }
         var html = '';
-        for (var i = 0; i < window.S.diary.length; i++) {
-            var x = window.S.diary[i];
-            var dateStr = new Date(x.date).toLocaleDateString();
-            html += '<div class="entry-card"><div style="display:flex;justify-content:space-between;margin-bottom:3px;">';
-            html += '<small style="color:#94a3b8;">' + dateStr + '</small>';
-            html += '<span style="font-size:10px;background:rgba(0,0,0,0.04);padding:2px 7px;border-radius:9px;">' + x.mood + '</span>';
-            html += '<button class="btn-sm btn-danger" onclick="window.deleteDiaryEntry(' + i + ')" style="font-size:10px;padding:2px 6px;">🗑️</button>';
-            html += '</div><p style="font-size:12px;white-space:pre-wrap;">' + x.content + '</p></div>';
+        for (var i = 0; i < window.videoData.length; i++) {
+            var v = window.videoData[i];
+            var isLiked = v.likes && v.likes.indexOf(window.S.username) > -1;
+            var likeCount = v.likes ? v.likes.length : 0;
+            var commentCount = v.comments ? v.comments.length : 0;
+            var avatarDisplay = v.avatar || '😊';
+            
+            html += '<div class="tiktok-video">';
+            html += '<video src="' + v.url + '" loop muted playsinline></video>';
+            html += '<div class="overlay">';
+            html += '<div class="user"><div class="avatar">' + avatarDisplay + '</div> @' + v.author + '</div>';
+            html += '<div class="desc">' + (v.text || '') + '</div>';
+            html += '<div class="side-actions">';
+            html += '<button class="' + (isLiked ? 'liked' : '') + '" onclick="window.likeVideo(\'' + v.id + '\')">❤️<span>' + likeCount + '</span></button>';
+            html += '<button onclick="window.commentVideo(\'' + v.id + '\')">💬<span>' + commentCount + '</span></button>';
+            html += '<button onclick="window.downloadMedia(\'' + v.url + '\', \'winchu-video.mp4\')">⬇️<span>Save</span></button>';
+            if (v.author === window.S.username) {
+                html += '<button onclick="window.deleteVideo(\'' + v.id + '\')" style="color:#ef4444;">🗑️<span>Delete</span></button>';
+            }
+            html += '</div></div></div>';
         }
         container.innerHTML = html;
-    };
 
-    // ===== WALLPAPERS WITH PORTRAIT AND LANDSCAPE =====
+        var videos = container.querySelectorAll('video');
+        var observer = new IntersectionObserver(function(entries) {
+            for (var j = 0; j < entries.length; j++) {
+                if (entries[j].isIntersecting) {
+                    entries[j].target.play().catch(function() {});
+                } else {
+                    entries[j].target.pause();
+                }
+            }
+        }, { threshold: 0.5 });
+        for (var k = 0; k < videos.length; k++) {
+            observer.observe(videos[k]);
+        }
+    }
+    window.renderVideos = renderVideos;
+
+    function likeVideo(id) {
+        if (!window.S.username) { window.toast('Please log in'); return; }
+        var video = window.videoData.find(function(v) { return v.id === id; });
+        if (!video) return;
+        var likes = video.likes || [];
+        var idx = likes.indexOf(window.S.username);
+        if (idx > -1) likes.splice(idx, 1);
+        else likes.push(window.S.username);
+        video.likes = likes;
+        getRef('videos/' + id + '/likes').set(likes);
+        renderVideos();
+    }
+    window.likeVideo = likeVideo;
+
+    function commentVideo(id) {
+        if (!window.S.username) { window.toast('Please log in'); return; }
+        showDialog({
+            emoji: '💬',
+            title: 'Add Comment',
+            subtitle: 'Write your comment on this video',
+            placeholder: 'Type your comment...',
+            confirmText: 'Post'
+        }).then(function(result) {
+            if (result && result.trim()) {
+                var video = window.videoData.find(function(v) { return v.id === id; });
+                if (!video) return;
+                var comments = video.comments || [];
+                comments.push({ username: window.S.username, text: result.trim(), time: new Date().toISOString() });
+                video.comments = comments;
+                getRef('videos/' + id + '/comments').set(comments);
+                renderVideos();
+                window.toast('Comment added!');
+            }
+        });
+    }
+    window.commentVideo = commentVideo;
+
+    function deleteVideo(id) {
+        showDialog({
+            emoji: '🗑️',
+            title: 'Delete Video',
+            subtitle: 'Are you sure you want to delete this video?',
+            confirmText: 'Delete',
+            danger: true
+        }).then(function(result) {
+            if (result !== null) {
+                getRef('videos/' + id).remove();
+                window.videoData = window.videoData.filter(function(v) { return v.id !== id; });
+                renderVideos();
+                window.toast('Video deleted');
+            }
+        });
+    }
+    window.deleteVideo = deleteVideo;
+
+    function loadVideos() {
+        var videosRef = getRef('videos');
+        videosRef.orderByKey().limitToLast(50).on('child_added', function(snapshot) {
+            var data = snapshot.val();
+            data.id = snapshot.key;
+            if (!window.videoData.find(function(v) { return v.id === data.id; })) {
+                window.videoData.unshift(data);
+                if (window.videoData.length > 50) window.videoData.pop();
+                renderVideos();
+            }
+        });
+    }
+    window.loadVideos = loadVideos;
+
+    // ===== WALLPAPERS =====
     var PORTRAIT_WALLPAPERS = [
         'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1080&q=80',
         'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1080&q=80',
@@ -1727,191 +1955,390 @@
     }
     window.renderWallpapers = renderWallpapers;
 
-    // ===== TIKTOK VIDEOS =====
-    window.videoData = [];
+    // ===== DIARY =====
+    window.deleteDiaryEntry = function(index) {
+        if (index < 0 || index >= window.S.diary.length) return;
+        showDialog({
+            emoji: '🗑️',
+            title: 'Delete Entry',
+            subtitle: 'Are you sure you want to delete this diary entry?',
+            confirmText: 'Delete',
+            danger: true
+        }).then(function(result) {
+            if (result !== null) {
+                var entry = window.S.diary[index];
+                window.S.diary.splice(index, 1);
+                if (window.S.username) {
+                    var diaryRef = getRef('diary/' + window.S.username);
+                    diaryRef.once('value', function(snapshot) {
+                        var data = snapshot.val();
+                        if (data) {
+                            var keys = Object.keys(data);
+                            for (var i = 0; i < keys.length; i++) {
+                                if (data[keys[i]].date === entry.date && data[keys[i]].content === entry.content) {
+                                    getRef('diary/' + window.S.username + '/' + keys[i]).remove();
+                                    break;
+                                }
+                            }
+                        }
+                    });
+                }
+                renderDiary();
+                window.toast('Entry deleted');
+            }
+        });
+    };
 
-    function renderVideos() {
-        var container = document.getElementById('videoFeed');
+    window.renderDiary = function() {
+        var container = document.getElementById('diaryEntries');
         if (!container) return;
-        if (window.videoData.length === 0) {
-            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:40px 0;">No videos yet. Upload one!</p>';
+        if (window.S.diary.length === 0) {
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;">No entries yet.</p>';
             return;
         }
         var html = '';
-        for (var i = 0; i < window.videoData.length; i++) {
-            var v = window.videoData[i];
-            var isLiked = v.likes && v.likes.indexOf(window.S.username) > -1;
-            var likeCount = v.likes ? v.likes.length : 0;
-            var commentCount = v.comments ? v.comments.length : 0;
-            
-            html += '<div class="tiktok-video">';
-            if (v.type === 'video') {
-                html += '<video src="' + v.url + '" loop muted playsinline></video>';
-            } else {
-                html += '<img src="' + v.url + '" alt="Video thumbnail" />';
-            }
-            html += '<div class="overlay">';
-            html += '<div class="user"><div class="avatar">' + (v.avatar || '😊') + '</div> @' + v.author + '</div>';
-            html += '<div class="desc">' + (v.text || '') + '</div>';
-            html += '<div class="side-actions">';
-            html += '<button class="' + (isLiked ? 'liked' : '') + '" onclick="likeVideo(\'' + v.id + '\')">❤️<span>' + likeCount + '</span></button>';
-            html += '<button onclick="commentVideo(\'' + v.id + '\')">💬<span>' + commentCount + '</span></button>';
-            html += '<button onclick="downloadMedia(\'' + v.url + '\', \'winchu-video.mp4\')">⬇️<span>Save</span></button>';
-            html += '</div></div></div>';
+        for (var i = 0; i < window.S.diary.length; i++) {
+            var x = window.S.diary[i];
+            var dateStr = new Date(x.date).toLocaleDateString();
+            html += '<div class="entry-card"><div style="display:flex;justify-content:space-between;margin-bottom:3px;">';
+            html += '<small style="color:#94a3b8;">' + dateStr + '</small>';
+            html += '<span style="font-size:10px;background:rgba(0,0,0,0.04);padding:2px 7px;border-radius:9px;">' + x.mood + '</span>';
+            html += '<button class="btn-sm btn-danger" onclick="window.deleteDiaryEntry(' + i + ')" style="font-size:10px;padding:2px 6px;">🗑️</button>';
+            html += '</div><p style="font-size:12px;white-space:pre-wrap;">' + x.content + '</p></div>';
         }
         container.innerHTML = html;
-
-        // Auto-play videos on scroll
-        var videos = container.querySelectorAll('video');
-        var observer = new IntersectionObserver(function(entries) {
-            for (var j = 0; j < entries.length; j++) {
-                if (entries[j].isIntersecting) {
-                    entries[j].target.play().catch(function() {});
-                } else {
-                    entries[j].target.pause();
-                }
-            }
-        }, { threshold: 0.5 });
-        for (var k = 0; k < videos.length; k++) {
-            observer.observe(videos[k]);
-        }
-    }
-    window.renderVideos = renderVideos;
-
-    function likeVideo(id) {
-        var video = window.videoData.find(function(v) { return v.id === id; });
-        if (!video) return;
-        var likes = video.likes || [];
-        var idx = likes.indexOf(window.S.username);
-        if (idx > -1) likes.splice(idx, 1);
-        else likes.push(window.S.username);
-        video.likes = likes;
-        if (window.S.username) setData('videos/' + id + '/likes', likes);
-        renderVideos();
-    }
-    window.likeVideo = likeVideo;
-
-    function commentVideo(id) {
-        showDialog({
-            emoji: '💬',
-            title: 'Add Comment',
-            subtitle: 'Write your comment on this video',
-            placeholder: 'Type your comment...',
-            confirmText: 'Post'
-        }).then(function(result) {
-            if (result && result.trim()) {
-                var video = window.videoData.find(function(v) { return v.id === id; });
-                if (!video) return;
-                var comments = video.comments || [];
-                comments.push({ username: window.S.username, text: result.trim(), time: new Date().toISOString() });
-                video.comments = comments;
-                if (window.S.username) setData('videos/' + id + '/comments', comments);
-                renderVideos();
-                window.toast('Comment added!');
-            }
-        });
-    }
-    window.commentVideo = commentVideo;
-
-    function loadVideos() {
-        var videosRef = getRef('videos');
-        videosRef.orderByKey().limitToLast(50).on('child_added', function(snapshot) {
-            var data = snapshot.val();
-            data.id = snapshot.key;
-            if (!window.videoData.find(function(v) { return v.id === data.id; })) {
-                window.videoData.unshift(data);
-                if (window.videoData.length > 50) window.videoData.pop();
-                renderVideos();
-            }
-        });
-    }
-    window.loadVideos = loadVideos;
-
-    // ===== OVERRIDE CREATE POST FOR VIDEOS =====
-    var originalCreatePost = window.createPost;
-    window.createPost = function() {
-        var input = document.getElementById('postInput');
-        var text = input.value.trim();
-        if (!text && !window.selectedFileData) { window.toast('Write something or add media'); return; }
-        
-        var avatar = window.S.selectedAuras.length > 0 ? window.S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊';
-        var isVideo = window.selectedFile && window.selectedFile.type && window.selectedFile.type.startsWith('video/');
-        var avatarUrl = window.S.avatar || avatar;
-        
-        var post = {
-            author: window.S.username || 'You',
-            avatar: avatarUrl,
-            text: text || '',
-            image: window.selectedFileData || null,
-            type: isVideo ? 'video' : 'image',
-            time: new Date().toISOString(),
-            likes: [],
-            comments: []
-        };
-        
-        var postsRef = getRef('posts');
-        postsRef.push(post);
-        
-        // Also add to videos feed if it's a video
-        if (isVideo && window.selectedFileData) {
-            var videoPost = {
-                author: window.S.username || 'You',
-                avatar: avatarUrl,
-                text: text || '',
-                url: window.selectedFileData,
-                type: 'video',
-                time: new Date().toISOString(),
-                likes: [],
-                comments: []
-            };
-            var videosRef = getRef('videos');
-            videosRef.push(videoPost);
-        }
-        
-        input.value = '';
-        window.selectedFile = null;
-        window.selectedFileData = null;
-        document.getElementById('filePreview').style.display = 'none';
-        document.getElementById('filePreview').innerHTML = '';
-        window.toast('📝 Posted!');
     };
 
-    // ===== PROFILE WITH FRIENDS COUNT =====
-    var originalRenderProfile = window.renderProfile;
+    window.saveDiary = function() {
+        if (!window.S.username) { window.toast('Please log in'); return; }
+        var content = document.getElementById('diaryInput').value.trim();
+        var mood = document.getElementById('diaryMood').value.trim() || '—';
+        if (!content) { window.toast('Write something'); return; }
+        var entry = { content: content, mood: mood, date: new Date().toISOString() };
+        window.S.diary.unshift(entry);
+        getRef('diary/' + window.S.username).push(entry);
+        document.getElementById('diaryInput').value = '';
+        document.getElementById('diaryMood').value = '';
+        renderDiary();
+        window.toast('📝 Saved');
+    };
+
+    // ===== PROFILE =====
     window.renderProfile = function() {
-        if (typeof originalRenderProfile === 'function') originalRenderProfile();
+        if (!window.S.username) return;
         
-        // Update friends count
+        var nameEl = document.getElementById('profileName');
+        if (nameEl) nameEl.textContent = window.S.username;
+        
+        var usernameEl = document.getElementById('profileUsername');
+        if (usernameEl) usernameEl.textContent = '@' + window.S.username;
+        
+        var bioEl = document.getElementById('profileBio');
+        if (bioEl) bioEl.textContent = window.S.bio || 'Building my energy. One aura at a time. ⚡';
+        
+        // Posts count
+        var postsEl = document.getElementById('profilePosts');
+        if (postsEl) {
+            var userPosts = window.S.socialPosts.filter(function(p) { return p.author === window.S.username; });
+            postsEl.textContent = userPosts.length;
+        }
+        
+        // Friends count
         var friendsEl = document.getElementById('profileFriends');
         if (friendsEl) {
             friendsEl.textContent = window.S.friends ? window.S.friends.length : 0;
         }
         
-        // Show avatar
+        // Avatar
         if (window.S.avatar) {
-            var avatarContainer = document.getElementById('profileAvatarEmoji');
-            if (avatarContainer) {
-                avatarContainer.innerHTML = '<img src="' + window.S.avatar + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
-            }
-            var postAvatar = document.getElementById('postAvatarEmoji');
-            if (postAvatar) {
-                postAvatar.innerHTML = '<img src="' + window.S.avatar + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
-            }
+            updateAvatarUI(window.S.avatar);
         }
+        
+        // User posts grid
+        var grid = document.getElementById('profilePostsGrid');
+        if (!grid) return;
+        var userPosts2 = window.S.socialPosts.filter(function(p) { return p.author === window.S.username; });
+        if (userPosts2.length === 0) {
+            grid.innerHTML = '<p style="color:#94a3b8;text-align:center;grid-column:1/-1;padding:16px 0;">No posts yet.</p>';
+            return;
+        }
+        var html = '';
+        for (var i = 0; i < userPosts2.length; i++) {
+            var p = userPosts2[i];
+            var img = p.image || 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=400&q=80';
+            html += '<div style="aspect-ratio:1;background-image:url(' + img + ');background-size:cover;background-position:center;border-radius:4px;cursor:pointer;" onclick="window.toast(\'' + (p.text || '').substring(0, 30) + '...\')"></div>';
+        }
+        grid.innerHTML = html;
+    };
+
+    // ===== DASHBOARD =====
+    window.renderHome = function() {
+        if (!window.S.username) {
+            window.navigate('landing');
+            return;
+        }
+        if (window.S.selectedAuras.length === 0) { window.navigate('select'); return; }
+        var p = AURAS[window.S.selectedAuras[0]];
+        var tasks = window.getTasks ? window.getTasks() : [];
+        var score = window.calcScore ? window.calcScore() : { pct: 0, done: 0, total: 0 };
+        var streak = window.calcStreak ? window.calcStreak() : 0;
+        var circ = 2 * Math.PI * 43;
+        var offset = circ - (score.pct / 100) * circ;
+        
+        var titleEl = document.getElementById('homeTitle');
+        if (titleEl) titleEl.textContent = window.S.selectedAuras.map(function(k) { return AURAS[k].emoji + ' ' + AURAS[k].name; }).join(' + ');
+        
+        var badgeEl = document.getElementById('homeBadge');
+        if (badgeEl) badgeEl.textContent = '⚡ ' + window.S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('');
+        
+        var scoreEl = document.getElementById('score');
+        if (scoreEl) scoreEl.textContent = score.pct + '%';
+        
+        var progressEl = document.getElementById('taskProgress');
+        if (progressEl) progressEl.textContent = score.done + '/' + score.total;
+        
+        var streakEl = document.getElementById('streakCount');
+        if (streakEl) streakEl.textContent = streak;
+        
+        var tasksDoneEl = document.getElementById('tasksDone');
+        if (tasksDoneEl) tasksDoneEl.textContent = window.S.completedTasks.length;
+        
+        var diaryCountEl = document.getElementById('diaryCount');
+        if (diaryCountEl) diaryCountEl.textContent = window.S.diary.length;
+        
+        var msgCountEl = document.getElementById('msgCount');
+        if (msgCountEl) msgCountEl.textContent = window.chatMessages.length;
+        
+        var ring = document.getElementById('scoreRing');
+        if (ring) {
+            ring.style.strokeDashoffset = offset;
+            ring.style.stroke = p.accent;
+        }
+        
+        var tasksContainer = document.getElementById('tasks');
+        if (tasksContainer) {
+            tasksContainer.innerHTML = tasks.map(function(t, i) {
+                var c = window.S.completedTasks.indexOf(i) > -1;
+                return '<div class="task-item' + (c ? ' done' : '') + '" onclick="window.toggleTask(' + i + ')"><div class="check-box">' + (c ? '✓' : '') + '</div><span class="task-text">' + t + '</span></div>';
+            }).join('');
+        }
+        window.renderCalendar();
+    };
+
+    window.toggleTask = function(index) {
+        var idx = window.S.completedTasks.indexOf(index);
+        if (idx > -1) window.S.completedTasks.splice(idx, 1);
+        else window.S.completedTasks.push(index);
+        var tasks = window.getTasks ? window.getTasks() : [];
+        var total = tasks.length;
+        var done = window.S.completedTasks.filter(function(x) { return x < total; }).length;
+        var today = new Date().toDateString();
+        if (done === total && total > 0) window.S.streakData[today] = true;
+        else delete window.S.streakData[today];
+        window.renderHome();
+    };
+
+    window.renderCalendar = function() {
+        var n = new Date();
+        var y = n.getFullYear();
+        var m = n.getMonth();
+        var dim = new Date(y, m + 1, 0).getDate();
+        var fd = new Date(y, m, 1).getDay();
+        
+        var monthLabel = document.getElementById('monthLabel');
+        if (monthLabel) monthLabel.textContent = n.toLocaleDateString('en', { month: 'long', year: 'numeric' });
+        
+        var cal = document.getElementById('calendar');
+        if (!cal) return;
+        cal.innerHTML = '';
+        ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].forEach(function(d) {
+            var div = document.createElement('div');
+            div.className = 'cal-day weekday';
+            div.textContent = d;
+            cal.appendChild(div);
+        });
+        for (var i = 0; i < fd; i++) {
+            var div = document.createElement('div');
+            div.className = 'cal-day';
+            div.style.background = 'transparent';
+            cal.appendChild(div);
+        }
+        for (var d = 1; d <= dim; d++) {
+            var ds = new Date(y, m, d).toDateString();
+            var div2 = document.createElement('div');
+            div2.className = 'cal-day';
+            div2.textContent = d;
+            if (window.S.streakData[ds]) {
+                div2.classList.add('active');
+                if (window.S.selectedAuras.length) div2.style.background = AURAS[window.S.selectedAuras[0]].accent;
+            }
+            if (d === n.getDate() && m === n.getMonth() && y === n.getFullYear()) div2.classList.add('today');
+            cal.appendChild(div2);
+        }
+    };
+
+    window.resetDay = function() {
+        if (!confirm('Reset tasks?')) return;
+        window.S.completedTasks = [];
+        delete window.S.streakData[new Date().toDateString()];
+        window.renderHome();
+    };
+
+    // ===== NAVIGATION =====
+    var originalNavigate = window.navigate;
+    window.navigate = function(page) {
+        if (page !== 'landing' && page !== 'login' && page !== 'signup' && !window.S.username) {
+            window.toast('Please log in first');
+            window.navigate('landing');
+            return;
+        }
+        originalNavigate(page);
+        if (page === 'social') renderSocial();
+        if (page === 'videos') renderVideos();
+        if (page === 'chat') renderChatList();
+        if (page === 'profile') renderProfile();
+        if (page === 'home') renderHome();
+        if (page === 'users') renderUsers();
+        if (page === 'diary') renderDiary();
+        if (page === 'wallpapers') renderWallpapers();
+    };
+
+    // ===== POSTS LISTENER =====
+    var postsListener = null;
+
+    function setupPostsListener() {
+        if (postsListener) postsListener.off();
+        var postsRef = getRef('posts');
+        postsListener = postsRef.orderByKey().limitToLast(50);
+        postsListener.on('child_added', function(snapshot) {
+            var post = snapshot.val();
+            post.id = snapshot.key;
+            if (!window.S.socialPosts.find(function(p) { return p.id === post.id; })) {
+                window.S.socialPosts.unshift(post);
+                if (window.S.socialPosts.length > 50) window.S.socialPosts.pop();
+                renderSocial();
+                renderProfile();
+                renderStories();
+            }
+        });
+    }
+
+    function renderStories() {
+        var row = document.getElementById('storyRow');
+        if (!row) return;
+        var users = [...new Set(window.S.socialPosts.map(function(p) { return p.author; }))];
+        if (users.length === 0) {
+            row.innerHTML = '<div style="display:flex;gap:10px;padding:4px 0;color:#94a3b8;font-size:12px;">No stories yet</div>';
+            return;
+        }
+        row.innerHTML = users.slice(0, 10).map(function(u) {
+            var post = window.S.socialPosts.find(function(p) { return p.author === u; });
+            var avatar = post ? post.avatar : '😊';
+            return '<div class="ig-story"><div class="ig-story-avatar"><div class="inner">' + avatar + '</div></div><span class="ig-story-name">' + u + '</span></div>';
+        }).join('');
+    }
+
+    // ===== RESET ALL DATA =====
+    function resetAllData() {
+        if (!confirm('⚠️ This will delete ALL data in the app. Are you sure?')) return;
+        var refs = ['posts', 'videos', 'chats', 'diary', 'routines', 'friendRequests', 'typing', 'messages'];
+        for (var i = 0; i < refs.length; i++) {
+            getRef(refs[i]).remove();
+        }
+        window.toast('🗑️ All data reset!');
+        // Reload
+        window.S.socialPosts = [];
+        window.S.diary = [];
+        window.S.routines = [];
+        window.videoData = [];
+        window.chatMessages = [];
+        renderSocial();
+        renderVideos();
+        renderDiary();
+        renderRoutines();
+        renderChatList();
+    }
+
+    // ===== ROUTINES =====
+    window.saveRoutine = function() {
+        if (!window.S.username) { window.toast('Please log in'); return; }
+        var title = document.getElementById('routineTitle').value.trim();
+        var content = document.getElementById('routineInput').value.trim();
+        if (!title || !content) { window.toast('Add title & description'); return; }
+        var routine = { title: title, content: content, date: new Date().toISOString() };
+        window.S.routines.unshift(routine);
+        getRef('routines/' + window.S.username).push(routine);
+        document.getElementById('routineTitle').value = '';
+        document.getElementById('routineInput').value = '';
+        renderRoutines();
+        window.toast('📋 Saved');
+    };
+
+    window.renderRoutines = function() {
+        var container = document.getElementById('routineEntries');
+        if (!container) return;
+        if (window.S.routines.length === 0) {
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;">No routines yet.</p>';
+            return;
+        }
+        container.innerHTML = window.S.routines.map(function(r) {
+            return '<div class="entry-card"><strong>' + r.title + '</strong><small style="color:#94a3b8;display:block;">' + new Date(r.date).toLocaleDateString() + '</small><p style="font-size:12px;margin-top:3px;white-space:pre-wrap;">' + r.content + '</p></div>';
+        }).join('');
+    };
+
+    // ===== GET TASKS =====
+    window.getTasks = function() {
+        var tasks = [];
+        window.S.selectedAuras.forEach(function(key) {
+            if (AURAS[key]) tasks = tasks.concat(AURAS[key].tasks);
+        });
+        return [...new Set(tasks)].slice(0, 8);
+    };
+
+    window.calcScore = function() {
+        var tasks = window.getTasks();
+        var total = tasks.length;
+        var done = window.S.completedTasks.filter(function(i) { return i < total; }).length;
+        return { pct: total > 0 ? Math.round((done / total) * 100) : 0, done: done, total: total };
+    };
+
+    window.calcStreak = function() {
+        var s = 0;
+        var n = new Date();
+        for (var i = 0; i < 365; i++) {
+            var d = new Date(n);
+            d.setDate(d.getDate() - i);
+            if (window.S.streakData[d.toDateString()]) s++;
+            else break;
+        }
+        return s;
     };
 
     // ===== INIT =====
     function initApp() {
-        if (window.S.username) {
+        if (window.S && window.S.username) {
             loadVideos();
             loadFriends();
             initWallpapers();
+            setupPostsListener();
             renderChatList();
+            renderProfile();
+            renderHome();
+            renderSocial();
+            renderDiary();
+            renderRoutines();
+            
+            // Update online status
+            setInterval(function() {
+                if (window.S && window.S.username) {
+                    setData('users/' + window.S.username + '/last_seen', new Date().toISOString());
+                }
+            }, 30000);
         }
-        console.log('🎬 Winchu · Nexus with all features!');
+        console.log('🎬 Winchu · Nexus - Fresh Start!');
     }
 
-    // Start after auth loads
+    // Override app init
     setTimeout(initApp, 500);
 
     // Expose functions
@@ -1921,7 +2348,14 @@
     window.sendFriendRequest = sendFriendRequest;
     window.acceptFriendRequest = acceptFriendRequest;
     window.loadFriends = loadFriends;
-    window.deleteDiaryEntry = window.deleteDiaryEntry;
+    window.renderChatList = renderChatList;
+    window.renderUsers = renderUsers;
+    window.renderStories = renderStories;
+    window.setupPostsListener = setupPostsListener;
+    window.resetAllData = resetAllData;
+    window.updateAvatarUI = updateAvatarUI;
+
+    console.log('🗑️ All data has been reset. Fresh start!');
     </script>
 </body>
 </html>
