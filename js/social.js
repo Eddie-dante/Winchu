@@ -1,16 +1,18 @@
-// Social Feed Module
+// Social Feed Module - Fix duplicate declaration
 window.postsListener = null;
 window.selectedFile = null;
 window.selectedFileData = null;
 
 // Setup Posts Listener
 window.setupPostsListener = function() {
+    // Remove old listener if exists
     if (window.postsListener) {
         window.postsListener.off();
+        window.postsListener = null;
     }
     
     const postsRef = getRef('posts');
-    window.postsListener = postsRef.orderByKey().limitToLast(50);
+    window.postsListener = postsRef.orderByChild('time').limitToLast(50);
     
     window.postsListener.on('child_added', (snapshot) => {
         const post = snapshot.val();
@@ -21,6 +23,9 @@ window.setupPostsListener = function() {
             if (window.S.socialPosts.length > 50) {
                 window.S.socialPosts.pop();
             }
+            
+            // Sort by time
+            window.S.socialPosts.sort((a, b) => new Date(b.time) - new Date(a.time));
             
             if (window.renderSocial) window.renderSocial();
             if (window.renderProfile) window.renderProfile();
@@ -137,13 +142,15 @@ window.createPost = function() {
         comments: []
     };
     
-    pushData('posts', post)
+    // Push to Firebase
+    const newPostRef = getRef('posts').push();
+    newPostRef.set(post)
         .then(() => {
             window.toast('📝 Posted!');
         })
-        .catch(err => {
+        .catch((err) => {
             console.error('Post error:', err);
-            window.toast('Failed to post');
+            window.toast('Failed to post. Check permissions.');
         });
     
     // Clear input
@@ -168,6 +175,12 @@ window.handleFileSelect = function(event) {
     // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
         window.toast('File too large (max 5MB)');
+        return;
+    }
+    
+    // Check file type
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+        window.toast('Please select an image or video');
         return;
     }
     
@@ -210,11 +223,14 @@ window.likePost = function(postId) {
     }
     
     post.likes = likes;
-    getRef('posts/' + postId + '/likes').set(likes);
-    
-    window.renderSocial();
-    window.renderProfile();
-    saveUserState();
+    getRef('posts/' + postId + '/likes').set(likes)
+        .then(() => {
+            window.renderSocial();
+            saveUserState();
+        })
+        .catch(err => {
+            console.error('Like error:', err);
+        });
 };
 
 // Comment on Post
@@ -224,7 +240,7 @@ window.commentOnPost = function(postId) {
         return;
     }
     
-    showDialog({
+    window.showDialog({
         emoji: '💬',
         title: 'Add Comment',
         subtitle: 'Write your comment',
@@ -243,21 +259,25 @@ window.commentOnPost = function(postId) {
             });
             
             post.comments = comments;
-            getRef('posts/' + postId + '/comments').set(comments);
-            
-            window.renderSocial();
-            window.toast('Comment added! 💬');
-            saveUserState();
+            getRef('posts/' + postId + '/comments').set(comments)
+                .then(() => {
+                    window.renderSocial();
+                    window.toast('Comment added! 💬');
+                    saveUserState();
+                })
+                .catch(err => {
+                    console.error('Comment error:', err);
+                });
         }
     });
 };
 
 // Delete Post
 window.deletePost = function(postId) {
-    showDialog({
+    window.showDialog({
         emoji: '🗑️',
         title: 'Delete Post',
-        subtitle: 'Are you sure you want to delete this post?',
+        subtitle: 'Are you sure?',
         confirmText: 'Delete',
         danger: true
     }).then(result => {
@@ -270,8 +290,9 @@ window.deletePost = function(postId) {
                     window.toast('Post deleted');
                     saveUserState();
                 })
-                .catch(() => {
-                    window.toast('Failed to delete post');
+                .catch(err => {
+                    console.error('Delete error:', err);
+                    window.toast('Failed to delete');
                 });
         }
     });
@@ -290,7 +311,6 @@ window.downloadMedia = function(url, filename) {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    window.toast('Downloading...');
 };
 
 // Render Stories
@@ -301,7 +321,7 @@ window.renderStories = function() {
     const users = [...new Set(window.S.socialPosts.map(p => p.author))];
     
     if (users.length === 0) {
-        row.innerHTML = '<div style="display:flex;gap:10px;padding:4px 0;color:#94a3b8;font-size:12px;">No stories yet</div>';
+        row.innerHTML = '<div style="font-size:12px;color:#94a3b8;padding:8px 0;">No stories yet</div>';
         return;
     }
     
@@ -318,7 +338,7 @@ window.renderStories = function() {
     }).join('');
 };
 
-// Escape HTML for posts
+// Escape HTML helper
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;

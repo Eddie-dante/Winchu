@@ -6,13 +6,14 @@ const firebaseConfig = {
     projectId: "nexus-wegem",
     storageBucket: "nexus-wegem.firebasestorage.app",
     messagingSenderId: "383870608188",
-    appId: "1:383870608188:web:043f97e81bcb6dbb68b439",
-    measurementId: "G-GGNFGS1MEL"
+    appId: "1:383870608188:web:043f97e81bcb6dbb68b439"
 };
 
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
+
+console.log('🔥 Firebase initialized!');
 
 // Firebase helper functions
 function getRef(path) {
@@ -37,9 +38,11 @@ function removeData(path) {
 
 // Initialize online presence
 function setupPresence() {
+    if (!window.S || !window.S.username) return;
+    
     const connectedRef = database.ref('.info/connected');
     connectedRef.on('value', (snap) => {
-        if (snap.val() === true && window.S && window.S.username) {
+        if (snap.val() === true) {
             const userRef = database.ref('users/' + window.S.username);
             userRef.onDisconnect().update({
                 online: false,
@@ -52,5 +55,3 @@ function setupPresence() {
         }
     });
 }
-
-console.log('🔥 Firebase initialized - Nexus Project');
