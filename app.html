@@ -4,21 +4,242 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Winchu · Nexus</title>
-    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
     <div class="signature">id³</div>
     <button class="wp-fab" id="wpFab" onclick="window.navigate('wallpapers')" style="display:none;">🎨</button>
     <div id="toastContainer"></div>
 
-    <!-- Pages Container -->
-    <div id="page-container">
-        <!-- Pages loaded here -->
+    <!-- ==================== LANDING ==================== -->
+    <div class="page active" id="page-landing">
+        <div class="container landing-content">
+            <span class="landing-icon">⚡</span>
+            <h1 class="landing-title">Winchu</h1>
+            <p class="landing-subtitle">Shape your presence. Manifest your energy.</p>
+            <button class="btn-primary" onclick="window.navigate('login')">Sign In</button>
+            <button class="btn-secondary" onclick="window.navigate('signup')" style="margin-top:8px;">Create Account</button>
+        </div>
     </div>
 
-    <!-- Bottom Nav -->
+    <!-- ==================== SIGNUP ==================== -->
+    <div class="page" id="page-signup">
+        <div class="container">
+            <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">✨ Create Account</h2>
+            <input type="text" id="signupName" placeholder="Full name" style="margin-bottom:8px;">
+            <input type="text" id="signupUser" placeholder="Username" style="margin-bottom:8px;">
+            <input type="password" id="signupPass" placeholder="Password" style="margin-bottom:16px;">
+            <button class="btn-primary" onclick="window.handleSignup()">Sign Up</button>
+            <div class="auth-toggle" onclick="window.navigate('login')">Already have an account? Log in</div>
+            <button class="btn-secondary" onclick="window.navigate('landing')" style="margin-top:8px;">← Back</button>
+        </div>
+    </div>
+
+    <!-- ==================== LOGIN ==================== -->
+    <div class="page" id="page-login">
+        <div class="container">
+            <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">🔐 Sign In</h2>
+            <input type="text" id="loginUser" placeholder="Username" style="margin-bottom:8px;">
+            <input type="password" id="loginPass" placeholder="Password" style="margin-bottom:16px;">
+            <button class="btn-primary" onclick="window.handleLogin()">Log In</button>
+            <div class="auth-toggle" onclick="window.navigate('signup')">No account? Create one</div>
+            <button class="btn-secondary" onclick="window.navigate('landing')" style="margin-top:8px;">← Back</button>
+        </div>
+    </div>
+
+    <!-- ==================== AURA SELECTION ==================== -->
+    <div class="page" id="page-select">
+        <div class="container">
+            <h2 style="font-size:19px;font-weight:700;margin-bottom:3px;">Choose Your Auras</h2>
+            <p style="color:#64748b;font-size:12px;margin-bottom:10px;">Select up to 3 energies</p>
+            <div class="counter-chip"><span>✧</span> <strong id="counter">0</strong><span>/3</span></div>
+            <div class="aura-grid" id="auraGrid"></div>
+            <button class="btn-primary" onclick="window.confirmSelection()" style="margin-top:10px;">Continue →</button>
+        </div>
+    </div>
+
+    <!-- ==================== DASHBOARD ==================== -->
+    <div class="page" id="page-home">
+        <div class="container">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <h2 id="homeTitle" style="font-size:17px;font-weight:700;">Dashboard</h2>
+                <span id="homeBadge" style="font-size:10px;background:rgba(0,0,0,0.04);padding:3px 10px;border-radius:18px;">⚡</span>
+            </div>
+            <button class="btn-sm" onclick="window.navigate('users')" style="width:100%;margin-bottom:10px;background:rgba(99,102,241,0.15);border-color:#6366f1;">
+                👥 View All Users
+            </button>
+            <div class="score-ring-wrap">
+                <div class="score-ring">
+                    <svg viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="43" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="5"/>
+                        <circle id="scoreRing" cx="50" cy="50" r="43" fill="none" stroke="#0f172a" stroke-width="5" stroke-linecap="round" stroke-dasharray="270.18" stroke-dashoffset="270.18"/>
+                    </svg>
+                    <div class="center"><div class="num" id="score">0%</div><div class="label">Strength</div></div>
+                </div>
+            </div>
+            <div class="stat-row">
+                <div class="stat-card"><div class="stat-icon">🔥</div><div class="stat-value" id="streakCount">0</div><div class="stat-label">Streak</div></div>
+                <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" id="tasksDone">0</div><div class="stat-label">Tasks</div></div>
+                <div class="stat-card"><div class="stat-icon">📖</div><div class="stat-value" id="diaryCount">0</div><div class="stat-label">Diary</div></div>
+                <div class="stat-card"><div class="stat-icon">💬</div><div class="stat-value" id="msgCount">0</div><div class="stat-label">Chats</div></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:#475569;margin-bottom:6px;">
+                <span>Today</span><span id="taskProgress" style="color:#94a3b8;">0/0</span>
+            </div>
+            <div id="tasks"></div>
+            <div class="calendar-wrap">
+                <div class="cal-header"><strong>📅 Calendar</strong><span id="monthLabel" style="font-size:11px;color:#94a3b8;">—</span></div>
+                <div class="cal-grid" id="calendar"></div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px;">
+                <button class="btn-sm" onclick="window.resetDay()">↺ Reset</button>
+                <button class="btn-sm" onclick="window.navigate('select')">✧ Auras</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== USERS ==================== -->
+    <div class="page" id="page-users">
+        <div class="container">
+            <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">👥 All Users</h2>
+            <button class="btn-sm" onclick="window.navigate('home')" style="margin-bottom:10px;">← Back to Dashboard</button>
+            <div id="usersList">
+                <p style="color:#94a3b8;text-align:center;padding:20px;">Loading users...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== DIARY ==================== -->
+    <div class="page" id="page-diary">
+        <div class="container">
+            <h2 style="font-size:19px;font-weight:700;margin-bottom:10px;">📖 Diary</h2>
+            <textarea id="diaryInput" rows="3" placeholder="Dear diary..."></textarea>
+            <div style="display:flex;gap:6px;margin-top:6px;">
+                <input type="text" id="diaryMood" placeholder="Mood" style="flex:1;">
+                <button class="btn-sm btn-primary" onclick="window.saveDiary()" style="width:auto;">💾</button>
+            </div>
+            <input type="search" id="diarySearch" placeholder="🔍 Search..." oninput="window.renderDiary()" style="margin-top:8px;">
+            <div id="diaryEntries" style="max-height:320px;overflow-y:auto;margin-top:8px;">
+                <p style="color:#94a3b8;text-align:center;">No entries yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== ROUTINE ==================== -->
+    <div class="page" id="page-routine">
+        <div class="container">
+            <h2 style="font-size:19px;font-weight:700;margin-bottom:10px;">📋 Routines</h2>
+            <input type="text" id="routineTitle" placeholder="Title...">
+            <textarea id="routineInput" rows="2" placeholder="Description..." style="margin-top:6px;"></textarea>
+            <button class="btn-sm btn-primary" onclick="window.saveRoutine()" style="margin-top:6px;width:100%;">💾 Save</button>
+            <div id="routineEntries" style="max-height:320px;overflow-y:auto;margin-top:8px;">
+                <p style="color:#94a3b8;text-align:center;">No routines yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== CHAT ==================== -->
+    <div class="page" id="page-chat">
+        <div class="container">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <h2 style="font-size:19px;font-weight:700;">💬 Chat</h2>
+                <span style="font-size:11px;color:#4ade80;">● <span id="onlineCount">0</span></span>
+            </div>
+            <div style="font-size:11px;color:#64748b;margin-bottom:6px;">
+                You: <strong id="myUsername">—</strong>
+                <button class="btn-sm" onclick="window.changeUsername()" style="margin-left:6px;font-size:10px;">✏️</button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <p style="color:#94a3b8;text-align:center;">Loading...</p>
+            </div>
+            <div style="display:flex;gap:6px;">
+                <input type="text" id="chatInput" placeholder="Message..." onkeypress="if(event.key==='Enter')window.sendMessage()" style="flex:1;">
+                <button class="btn-sm btn-primary" onclick="window.sendMessage()" style="width:auto;">📤</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SOCIAL FEED ==================== -->
+    <div class="page" id="page-social">
+        <div class="container" style="padding: 16px 14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <h2 style="font-size:20px;font-weight:700;">Winchu</h2>
+                <div style="display:flex;gap:12px;align-items:center;">
+                    <button class="btn-sm" onclick="window.navigate('wallpapers')" style="font-size:16px;background:none;border:none;padding:4px;">🎨</button>
+                    <button class="btn-sm" onclick="document.getElementById('postInput').focus()" style="font-size:16px;background:none;border:none;padding:4px;">➕</button>
+                </div>
+            </div>
+            <div class="ig-story-row" id="storyRow"></div>
+            <div style="background:rgba(255,255,255,0.5);border-radius:12px;padding:10px 12px;margin-bottom:14px;border:1px solid rgba(0,0,0,0.04);">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="ig-post-avatar" style="width:32px;height:32px;font-size:16px;flex-shrink:0;">
+                        <span id="postAvatarEmoji">😊</span>
+                    </div>
+                    <input type="text" id="postInput" placeholder="What's on your mind?" style="flex:1;border:none;background:transparent;padding:6px 0;font-size:13px;outline:none;">
+                    <div class="file-input-wrapper">
+                        <button class="btn-sm" style="font-size:16px;background:none;border:none;padding:4px;cursor:pointer;">📎</button>
+                        <input type="file" id="postFile" accept="image/*,video/*" onchange="window.handleFileSelect(event)">
+                    </div>
+                    <button class="btn-sm btn-primary" onclick="window.createPost()" style="width:auto;padding:6px 14px;font-size:12px;">Post</button>
+                </div>
+                <div id="filePreview" style="margin-top:4px;display:none;"></div>
+            </div>
+            <div id="socialFeed" style="max-height:520px;overflow-y:auto;padding-bottom:10px;">
+                <p style="color:#94a3b8;text-align:center;padding:30px 0;">No posts yet. Share something!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== PROFILE ==================== -->
+    <div class="page" id="page-profile">
+        <div class="container">
+            <div class="profile-header">
+                <div class="profile-avatar-large" id="profileAvatarContainer">
+                    <div class="inner" id="profileAvatarEmoji">😊</div>
+                </div>
+                <div class="profile-name" id="profileName">—</div>
+                <div class="profile-username" id="profileUsername">@—</div>
+                <div class="profile-stats">
+                    <div class="profile-stat"><div class="num" id="profilePosts">0</div><div class="label">Posts</div></div>
+                    <div class="profile-stat"><div class="num" id="profileFollowers">0</div><div class="label">Followers</div></div>
+                    <div class="profile-stat"><div class="num" id="profileFollowing">0</div><div class="label">Following</div></div>
+                </div>
+                <div class="profile-bio" id="profileBio">Building my energy. One aura at a time. ⚡</div>
+                <div style="display:flex;gap:8px;margin:6px 0;flex-wrap:wrap;justify-content:center;">
+                    <button class="profile-edit-btn" onclick="window.editProfile()">✏️ Edit Bio</button>
+                    <button class="profile-edit-btn" onclick="document.getElementById('profileAvatarInput').click()">📷 Change Avatar</button>
+                    <input type="file" id="profileAvatarInput" accept="image/*" style="display:none;" onchange="window.handleAvatarSelect(event)">
+                </div>
+                <button class="profile-edit-btn" onclick="window.logout()" style="margin-top:6px;color:#ef4444;border-color:#ef4444;">🚪 Logout</button>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:12px;">
+                <button class="btn-sm" style="flex:1;background:rgba(0,0,0,0.05);" onclick="window.navigate('home')">📊 Dashboard</button>
+                <button class="btn-sm" style="flex:1;background:rgba(0,0,0,0.05);" onclick="window.navigate('select')">✧ Auras</button>
+            </div>
+            <h3 style="font-size:14px;font-weight:600;margin-bottom:8px;">📸 Your Posts</h3>
+            <div id="profilePostsGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;">
+                <p style="color:#94a3b8;text-align:center;grid-column:1/-1;padding:16px 0;">No posts yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== WALLPAPERS ==================== -->
+    <div class="page" id="page-wallpapers">
+        <div class="container">
+            <h2 style="font-size:19px;font-weight:700;margin-bottom:8px;">🎨 Walls</h2>
+            <button class="btn-sm" onclick="window.randomWallpaper()" style="width:100%;margin-bottom:8px;">🎲 Random</button>
+            <p style="font-size:10px;color:#94a3b8;" id="wpCount">50+ wallpapers</p>
+            <div class="wp-grid" id="wpGrid"></div>
+        </div>
+    </div>
+
+    <!-- ==================== BOTTOM NAV ==================== -->
     <nav class="bottom-nav" id="bottomNav" style="display:none;">
         <button class="nav-btn active" data-page="social" onclick="window.navigate('social')"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
         <button class="nav-btn" data-page="home" onclick="window.navigate('home')"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></button>
@@ -28,16 +249,49 @@
         <button class="nav-btn" data-page="profile" onclick="window.navigate('profile')"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></button>
     </nav>
 
-    <!-- Scripts -->
+    <!-- ==================== SCRIPTS ==================== -->
     <script src="js/firebase.js"></script>
-    <script src="js/app.js"></script>
     <script src="js/auth.js"></script>
-    <script src="js/dashboard.js"></script>
+    <script src="js/app.js"></script>
     <script src="js/chat.js"></script>
     <script src="js/social.js"></script>
+    <script src="js/dashboard.js"></script>
     <script src="js/diary.js"></script>
     <script src="js/routine.js"></script>
     <script src="js/profile.js"></script>
-    <script src="js/wallpapers.js"></script>
+    <!-- <script src="js/wallpapers.js"></script> -->
+    
+    <!-- Wallpaper logic inlined -->
+    <script>
+    // Wallpaper Logic (inlined to avoid loading issues)
+    function randomWallpaper() {
+        setWallpaper(UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)]);
+    }
+    window.randomWallpaper = randomWallpaper;
+
+    function setWallpaper(url) {
+        window.S.wallpaper = url;
+        window.setBg(url);
+        renderWallpapers();
+        window.toast('Applied');
+    }
+    window.setWallpaper = setWallpaper;
+
+    function renderWallpapers() {
+        var countEl = document.getElementById('wpCount');
+        if (countEl) countEl.textContent = UNSPLASH.length + '+ wallpapers';
+        var grid = document.getElementById('wpGrid');
+        if (!grid) return;
+        var html = '';
+        for (var i = 0; i < UNSPLASH.length; i++) {
+            var url = UNSPLASH[i];
+            var selected = window.S.wallpaper === url;
+            var cls = 'wp-thumb' + (selected ? ' selected' : '');
+            html += '<div class="' + cls + '" style="background-image:url(' + url + ')" onclick="setWallpaper(\'' + url + '\')"></div>';
+        }
+        grid.innerHTML = html;
+    }
+    window.renderWallpapers = renderWallpapers;
+    </script>
 </body>
 </html>
