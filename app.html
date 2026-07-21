@@ -9,8 +9,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
-    <!-- Styles -->
     <style>
+        /* ===== CSS VARIABLES ===== */
         :root {
             --bg: #f1f5f9;
             --text: #0f172a;
@@ -81,6 +81,7 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.08);
         }
 
+        /* ===== BUTTONS ===== */
         button {
             display: inline-flex;
             align-items: center;
@@ -125,6 +126,7 @@
         }
         .btn-danger { color: #ef4444 !important; }
 
+        /* ===== LANDING ===== */
         .landing-content { text-align: center; }
         .landing-icon { font-size: 72px; margin-bottom: 14px; display: block; }
         .landing-title {
@@ -138,6 +140,7 @@
         }
         .landing-subtitle { color: #64748b; font-size: 14px; margin-bottom: 36px; }
 
+        /* ===== AURAS ===== */
         .counter-chip {
             display: inline-flex;
             align-items: center;
@@ -149,16 +152,12 @@
             color: #475569;
             margin-bottom: 16px;
         }
-
         .aura-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 7px;
         }
-        @media (max-width: 380px) {
-            .aura-grid { grid-template-columns: 1fr; }
-        }
-
+        @media (max-width: 380px) { .aura-grid { grid-template-columns: 1fr; } }
         .aura-btn {
             display: flex;
             align-items: center;
@@ -170,21 +169,15 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        .aura-btn:hover {
-            border-color: rgba(0,0,0,0.15);
-            background: rgba(255,255,255,0.6);
-        }
-        .aura-btn.selected {
-            border-color: #0f172a;
-            background: rgba(255,255,255,0.7);
-            box-shadow: 0 0 20px rgba(15,23,42,0.1);
-        }
+        .aura-btn:hover { border-color: rgba(0,0,0,0.15); background: rgba(255,255,255,0.6); }
+        .aura-btn.selected { border-color: #0f172a; background: rgba(255,255,255,0.7); box-shadow: 0 0 20px rgba(15,23,42,0.1); }
         .aura-btn .emoji { font-size: 22px; flex-shrink: 0; }
         .aura-btn .info h3 { font-size: 12px; font-weight: 600; }
         .aura-btn .info p { font-size: 10px; color: #64748b; }
         .aura-btn .check-mark { margin-left: auto; opacity: 0; font-size: 13px; }
         .aura-btn.selected .check-mark { opacity: 1; }
 
+        /* ===== STATS ===== */
         .stat-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -203,6 +196,7 @@
         .stat-card .stat-value { font-size: 20px; font-weight: 700; }
         .stat-card .stat-label { font-size: 9px; color: #94a3b8; text-transform: uppercase; }
 
+        /* ===== SCORE RING ===== */
         .score-ring-wrap { display: flex; justify-content: center; margin: 14px 0; }
         .score-ring { position: relative; width: 100px; height: 100px; }
         .score-ring svg { transform: rotate(-90deg); width: 100px; height: 100px; }
@@ -216,6 +210,7 @@
         .score-ring .center .num { font-size: 28px; font-weight: 700; }
         .score-ring .center .label { font-size: 8px; color: #94a3b8; text-transform: uppercase; }
 
+        /* ===== TASKS ===== */
         .task-item {
             display: flex;
             align-items: center;
@@ -243,14 +238,11 @@
             flex-shrink: 0;
             background: rgba(255,255,255,0.5);
         }
-        .task-item.done .check-box {
-            background: #0f172a;
-            border-color: #0f172a;
-            color: #fff;
-        }
+        .task-item.done .check-box { background: #0f172a; border-color: #0f172a; color: #fff; }
         .task-text { font-size: 12px; flex: 1; }
         .task-item.done .task-text { text-decoration: line-through; color: #94a3b8; }
 
+        /* ===== CALENDAR ===== */
         .calendar-wrap {
             padding: 14px;
             background: rgba(255,255,255,0.3);
@@ -274,6 +266,7 @@
         .cal-day.active { color: #fff; font-weight: 600; }
         .cal-day.today { border: 2px solid #0f172a; background: rgba(255,255,255,0.3); color: #0f172a; font-weight: 600; }
 
+        /* ===== ENTRIES ===== */
         .entry-card {
             background: rgba(255,255,255,0.4);
             border: 1px solid rgba(0,0,0,0.04);
@@ -283,6 +276,7 @@
             backdrop-filter: blur(4px);
         }
 
+        /* ===== FORMS ===== */
         textarea, input[type="text"], input[type="search"], input[type="password"] {
             width: 100%;
             padding: 10px 13px;
@@ -296,6 +290,7 @@
         }
         textarea:focus, input:focus { border-color: #0f172a; }
 
+        /* ===== CHAT ===== */
         .chat-bubble {
             padding: 9px 13px;
             border-radius: 15px;
@@ -305,19 +300,11 @@
             line-height: 1.4;
             word-wrap: break-word;
         }
-        .chat-sent {
-            background: rgba(15, 23, 42, 0.85);
-            color: #fff;
-            margin-left: auto;
-        }
-        .chat-received {
-            background: rgba(241, 245, 249, 0.7);
-            color: #1e293b;
-            margin-right: auto;
-            backdrop-filter: blur(4px);
-        }
+        .chat-sent { background: rgba(15, 23, 42, 0.85); color: #fff; margin-left: auto; }
+        .chat-received { background: rgba(241, 245, 249, 0.7); color: #1e293b; margin-right: auto; backdrop-filter: blur(4px); }
         .chat-messages { max-height: 340px; overflow-y: auto; padding: 6px 0; margin: 8px 0; }
 
+        /* ===== SOCIAL FEED ===== */
         .ig-story-row {
             display: flex;
             gap: 14px;
@@ -356,7 +343,9 @@
             align-items: center;
             justify-content: center;
             font-size: 22px;
+            overflow: hidden;
         }
+        .ig-story-avatar .inner img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
         .ig-story-name { font-size: 9px; color: #64748b; max-width: 56px; overflow: hidden; text-overflow: ellipsis; }
 
         .ig-post {
@@ -385,11 +374,7 @@
             flex-shrink: 0;
             overflow: hidden;
         }
-        .ig-post-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+        .ig-post-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
         .ig-post-user { font-weight: 600; font-size: 13px; }
         .ig-post-time { font-size: 10px; color: #94a3b8; margin-left: auto; }
         .ig-post-image {
@@ -420,11 +405,11 @@
         }
         .ig-post-action:active { transform: scale(1.2); }
         .ig-post-action.liked { color: #ef4444; }
-        .ig-post-likes { font-size: 13px; font-weight: 600; padding: 0 12px 4px; }
+        .ig-post-likes { font-size: 13px; font-weight: 600; padding: 0 12px 4px; cursor: pointer; }
         .ig-post-caption { padding: 0 12px 8px; font-size: 13px; line-height: 1.4; }
         .ig-post-caption strong { font-weight: 600; }
-        .ig-post-comment { padding: 0 12px 10px; font-size: 12px; color: #64748b; cursor: pointer; }
 
+        /* ===== WALLPAPERS ===== */
         .wp-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -432,7 +417,7 @@
             margin: 10px 0;
         }
         .wp-thumb {
-            aspect-ratio: 16/10;
+            aspect-ratio: 9/16;
             border-radius: 10px;
             background-size: cover;
             background-position: center;
@@ -440,7 +425,9 @@
             border: 2px solid transparent;
         }
         .wp-thumb.selected { border-color: #0f172a; }
+        .wp-thumb.portrait { aspect-ratio: 9/16; }
 
+        /* ===== PROFILE ===== */
         .profile-header {
             display: flex;
             flex-direction: column;
@@ -469,24 +456,14 @@
             font-size: 36px;
             overflow: hidden;
         }
-        .profile-avatar-large .inner img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+        .profile-avatar-large .inner img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
         .profile-name { font-size: 20px; font-weight: 700; }
         .profile-username { font-size: 13px; color: #64748b; }
         .profile-stats { display: flex; gap: 32px; margin: 12px 0 8px; }
         .profile-stat { text-align: center; }
         .profile-stat .num { font-size: 18px; font-weight: 700; }
         .profile-stat .label { font-size: 11px; color: #94a3b8; }
-        .profile-bio {
-            font-size: 13px;
-            color: #475569;
-            text-align: center;
-            margin: 6px 0 10px;
-            padding: 0 16px;
-        }
+        .profile-bio { font-size: 13px; color: #475569; text-align: center; margin: 6px 0 10px; padding: 0 16px; }
         .profile-edit-btn {
             padding: 6px 20px;
             border-radius: 8px;
@@ -498,6 +475,7 @@
         }
         .profile-edit-btn:hover { background: rgba(0,0,0,0.05); }
 
+        /* ===== BOTTOM NAV ===== */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -516,13 +494,7 @@
             gap: 0;
         }
         @media (min-width: 600px) {
-            .bottom-nav {
-                max-width: 500px;
-                left: 50%;
-                transform: translateX(-50%);
-                border-radius: 18px 18px 0 0;
-                padding: 6px 8px;
-            }
+            .bottom-nav { max-width: 500px; left: 50%; transform: translateX(-50%); border-radius: 18px 18px 0 0; padding: 6px 8px; }
         }
         .nav-btn {
             display: flex;
@@ -550,46 +522,10 @@
         .nav-btn.active { color: #0f172a; background: rgba(0,0,0,0.05); font-weight: 600; }
         .nav-btn .nav-icon { font-size: 18px; line-height: 1; }
         .nav-btn .nav-label { line-height: 1; font-size: 8px; }
-        @media (min-width: 420px) {
-            .nav-btn .nav-icon { font-size: 19px; }
-            .nav-btn .nav-label { font-size: 9px; }
-        }
-        @media (max-width: 360px) {
-            .nav-btn .nav-icon { font-size: 16px; }
-            .nav-btn .nav-label { font-size: 7px; }
-        }
+        @media (min-width: 420px) { .nav-btn .nav-icon { font-size: 19px; } .nav-btn .nav-label { font-size: 9px; } }
+        @media (max-width: 360px) { .nav-btn .nav-icon { font-size: 16px; } .nav-btn .nav-label { font-size: 7px; } }
 
-        .signature {
-            position: fixed;
-            bottom: 75px;
-            right: 16px;
-            font-size: 10px;
-            font-weight: 600;
-            letter-spacing: 1.5px;
-            color: #0f172a;
-            opacity: 0.15;
-            z-index: 100;
-            pointer-events: none;
-        }
-        .wp-fab {
-            position: fixed;
-            bottom: 75px;
-            left: 16px;
-            z-index: 999;
-            background: rgba(15,23,42,0.85);
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: none;
-            color: #fff;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.2);
-        }
-
+        /* ===== TOAST ===== */
         .toast {
             position: fixed;
             top: 16px;
@@ -606,16 +542,10 @@
             color: #fff;
             backdrop-filter: blur(12px);
         }
-        @keyframes toastIn {
-            from { opacity:0; transform:translateX(-50%) translateY(-16px); }
-            to { opacity:1; transform:translateX(-50%) translateY(0); }
-        }
-        @keyframes toastOut {
-            from { opacity:1; }
-            to { opacity:0; transform:translateX(-50%) translateY(-16px); }
-        }
+        @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(-16px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+        @keyframes toastOut { from { opacity:1; } to { opacity:0; transform:translateX(-50%) translateY(-16px); } }
 
-        /* ========== CUSTOM DIALOG ========== */
+        /* ===== DIALOG ===== */
         .dialog-overlay {
             position: fixed;
             inset: 0;
@@ -627,14 +557,8 @@
             justify-content: center;
             padding: 20px;
         }
-        .dialog-overlay.active {
-            display: flex;
-            animation: fadeIn 0.3s ease;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
+        .dialog-overlay.active { display: flex; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .dialog {
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(32px);
@@ -646,16 +570,8 @@
             border: 1px solid rgba(255, 255, 255, 0.5);
             box-shadow: 0 24px 80px rgba(0,0,0,0.2);
         }
-        .dialog-title {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-        .dialog-subtitle {
-            font-size: 13px;
-            color: #64748b;
-            margin-bottom: 16px;
-        }
+        .dialog-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+        .dialog-subtitle { font-size: 13px; color: #64748b; margin-bottom: 16px; }
         .dialog-input {
             width: 100%;
             padding: 12px 14px;
@@ -666,80 +582,25 @@
             outline: none;
             font-family: var(--font);
         }
-        .dialog-input:focus {
-            border-color: #0f172a;
-        }
-        .dialog-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 16px;
-        }
-        .dialog-actions button {
-            flex: 1;
-            padding: 12px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            border: none;
-            transition: all 0.2s;
-        }
-        .dialog-actions .dialog-cancel {
-            background: rgba(0,0,0,0.05);
-            color: #64748b;
-        }
-        .dialog-actions .dialog-cancel:hover {
-            background: rgba(0,0,0,0.1);
-        }
-        .dialog-actions .dialog-confirm {
-            background: rgba(15, 23, 42, 0.85);
-            color: #fff;
-        }
-        .dialog-actions .dialog-confirm:hover {
-            background: rgba(15, 23, 42, 1);
-        }
-        .dialog-actions .dialog-danger {
-            background: rgba(239, 68, 68, 0.85);
-            color: #fff;
-        }
-        .dialog-actions .dialog-danger:hover {
-            background: rgba(239, 68, 68, 1);
-        }
-        .dialog-emoji {
-            font-size: 48px;
-            text-align: center;
-            margin-bottom: 8px;
-        }
+        .dialog-input:focus { border-color: #0f172a; }
+        .dialog-actions { display: flex; gap: 10px; margin-top: 16px; }
+        .dialog-actions button { flex: 1; padding: 12px; border-radius: 12px; font-weight: 600; font-size: 14px; cursor: pointer; border: none; transition: all 0.2s; }
+        .dialog-actions .dialog-cancel { background: rgba(0,0,0,0.05); color: #64748b; }
+        .dialog-actions .dialog-cancel:hover { background: rgba(0,0,0,0.1); }
+        .dialog-actions .dialog-confirm { background: rgba(15, 23, 42, 0.85); color: #fff; }
+        .dialog-actions .dialog-confirm:hover { background: rgba(15, 23, 42, 1); }
+        .dialog-actions .dialog-danger { background: rgba(239, 68, 68, 0.85); color: #fff; }
+        .dialog-actions .dialog-danger:hover { background: rgba(239, 68, 68, 1); }
+        .dialog-emoji { font-size: 48px; text-align: center; margin-bottom: 8px; }
 
+        /* ===== MISC ===== */
+        .signature { position: fixed; bottom: 75px; right: 16px; font-size: 10px; font-weight: 600; letter-spacing: 1.5px; color: #0f172a; opacity: 0.15; z-index: 100; pointer-events: none; }
+        .wp-fab { position: fixed; bottom: 75px; left: 16px; z-index: 999; background: rgba(15,23,42,0.85); width: 34px; height: 34px; border-radius: 50%; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; border: none; color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
         .auth-toggle { font-size: 12px; color: #64748b; margin-top: 12px; cursor: pointer; text-decoration: underline; }
-
-        .file-input-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
-        }
-        .file-input-wrapper input[type=file] {
-            position: absolute;
-            left: 0;
-            top: 0;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
-        .post-image {
-            width: 100%;
-            max-height: 300px;
-            object-fit: cover;
-            border-radius: 8px;
-            margin: 4px 0;
-        }
-        .post-video {
-            width: 100%;
-            max-height: 300px;
-            border-radius: 8px;
-            margin: 4px 0;
-        }
+        .file-input-wrapper { position: relative; overflow: hidden; display: inline-block; }
+        .file-input-wrapper input[type=file] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+        .post-image { width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; margin: 4px 0; }
+        .post-video { width: 100%; max-height: 300px; border-radius: 8px; margin: 4px 0; }
 
         .user-card {
             display: flex;
@@ -751,36 +612,79 @@
             border: 1px solid rgba(0,0,0,0.05);
             backdrop-filter: blur(4px);
         }
-        .user-card .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            background: rgba(226, 232, 240, 0.5);
-            margin-right: 10px;
-            flex-shrink: 0;
-            overflow: hidden;
-        }
-        .user-card .user-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+        .user-card .user-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; background: rgba(226, 232, 240, 0.5); margin-right: 10px; flex-shrink: 0; overflow: hidden; }
+        .user-card .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .user-card .user-info { flex: 1; }
         .user-card .user-info .name { font-weight: 600; font-size: 14px; }
         .user-card .user-info .bio { font-size: 11px; color: #64748b; }
-        .user-card .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 4px;
-        }
+        .user-card .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
         .user-card .status-dot.online { background: #4ade80; }
         .user-card .status-dot.offline { background: #94a3b8; }
+
+        /* ===== TIKTOK VIDEOS ===== */
+        .tiktok-container {
+            max-height: 70vh;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            -webkit-overflow-scrolling: touch;
+            margin: 0 -22px;
+            padding: 0 22px;
+        }
+        .tiktok-container::-webkit-scrollbar { display: none; }
+        .tiktok-video {
+            scroll-snap-align: start;
+            margin-bottom: 16px;
+            border-radius: 16px;
+            overflow: hidden;
+            background: rgba(0,0,0,0.1);
+            position: relative;
+            aspect-ratio: 9/16;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tiktok-video video,
+        .tiktok-video img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            inset: 0;
+        }
+        .tiktok-video .overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 40px 16px 20px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.7));
+            color: #fff;
+        }
+        .tiktok-video .overlay .user {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .tiktok-video .overlay .desc {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        .tiktok-video .overlay .actions {
+            display: flex;
+            gap: 16px;
+            margin-top: 8px;
+        }
+        .tiktok-video .overlay .actions button {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+        }
+        .tiktok-video .overlay .actions button.liked { color: #ef4444; background: rgba(239,68,68,0.3); }
 
         @media (max-width: 480px) {
             .container { padding: 20px 14px; border-radius: 24px; }
@@ -795,6 +699,7 @@
             .profile-avatar-large .inner { font-size: 28px; }
             .profile-stats { gap: 16px; }
             .dialog { padding: 20px 16px; }
+            .tiktok-container { margin: 0 -14px; padding: 0 14px; }
         }
     </style>
 </head>
@@ -803,7 +708,7 @@
     <button class="wp-fab" id="wpFab" onclick="window.navigate('wallpapers')" style="display:none;">🎨</button>
     <div id="toastContainer"></div>
 
-    <!-- ========== CUSTOM DIALOG ========== -->
+    <!-- ===== DIALOG ===== -->
     <div class="dialog-overlay" id="dialogOverlay">
         <div class="dialog" id="dialog">
             <div class="dialog-emoji" id="dialogEmoji">💬</div>
@@ -817,7 +722,7 @@
         </div>
     </div>
 
-    <!-- ==================== LANDING ==================== -->
+    <!-- ===== LANDING ===== -->
     <div class="page active" id="page-landing">
         <div class="container landing-content">
             <span class="landing-icon">⚡</span>
@@ -828,7 +733,7 @@
         </div>
     </div>
 
-    <!-- ==================== SIGNUP ==================== -->
+    <!-- ===== SIGNUP ===== -->
     <div class="page" id="page-signup">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">✨ Create Account</h2>
@@ -841,7 +746,7 @@
         </div>
     </div>
 
-    <!-- ==================== LOGIN ==================== -->
+    <!-- ===== LOGIN ===== -->
     <div class="page" id="page-login">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">🔐 Sign In</h2>
@@ -853,7 +758,7 @@
         </div>
     </div>
 
-    <!-- ==================== AURA SELECTION ==================== -->
+    <!-- ===== AURA SELECTION ===== -->
     <div class="page" id="page-select">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:3px;">Choose Your Auras</h2>
@@ -864,7 +769,7 @@
         </div>
     </div>
 
-    <!-- ==================== DASHBOARD ==================== -->
+    <!-- ===== DASHBOARD ===== -->
     <div class="page" id="page-home">
         <div class="container">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -904,18 +809,16 @@
         </div>
     </div>
 
-    <!-- ==================== USERS ==================== -->
+    <!-- ===== USERS ===== -->
     <div class="page" id="page-users">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:16px;">👥 All Users</h2>
             <button class="btn-sm" onclick="window.navigate('home')" style="margin-bottom:10px;">← Back to Dashboard</button>
-            <div id="usersList">
-                <p style="color:#94a3b8;text-align:center;padding:20px;">Loading users...</p>
-            </div>
+            <div id="usersList"><p style="color:#94a3b8;text-align:center;padding:20px;">Loading users...</p></div>
         </div>
     </div>
 
-    <!-- ==================== DIARY ==================== -->
+    <!-- ===== DIARY ===== -->
     <div class="page" id="page-diary">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:10px;">📖 Diary</h2>
@@ -924,14 +827,13 @@
                 <input type="text" id="diaryMood" placeholder="Mood" style="flex:1;">
                 <button class="btn-sm btn-primary" onclick="window.saveDiary()" style="width:auto;">💾</button>
             </div>
-            <input type="search" id="diarySearch" placeholder="🔍 Search..." oninput="window.renderDiary()" style="margin-top:8px;">
             <div id="diaryEntries" style="max-height:320px;overflow-y:auto;margin-top:8px;">
                 <p style="color:#94a3b8;text-align:center;">No entries yet.</p>
             </div>
         </div>
     </div>
 
-    <!-- ==================== ROUTINE ==================== -->
+    <!-- ===== ROUTINE ===== -->
     <div class="page" id="page-routine">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:10px;">📋 Routines</h2>
@@ -944,7 +846,7 @@
         </div>
     </div>
 
-    <!-- ==================== CHAT ==================== -->
+    <!-- ===== CHAT ===== -->
     <div class="page" id="page-chat">
         <div class="container">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
@@ -955,9 +857,7 @@
                 You: <strong id="myUsername">—</strong>
                 <button class="btn-sm" onclick="window.changeUsername()" style="margin-left:6px;font-size:10px;">✏️</button>
             </div>
-            <div class="chat-messages" id="chatMessages">
-                <p style="color:#94a3b8;text-align:center;">Loading...</p>
-            </div>
+            <div class="chat-messages" id="chatMessages"><p style="color:#94a3b8;text-align:center;">Loading...</p></div>
             <div style="display:flex;gap:6px;">
                 <input type="text" id="chatInput" placeholder="Message..." onkeypress="if(event.key==='Enter')window.sendMessage()" style="flex:1;">
                 <button class="btn-sm btn-primary" onclick="window.sendMessage()" style="width:auto;">📤</button>
@@ -965,12 +865,13 @@
         </div>
     </div>
 
-    <!-- ==================== SOCIAL FEED ==================== -->
+    <!-- ===== SOCIAL FEED ===== -->
     <div class="page" id="page-social">
         <div class="container" style="padding: 16px 14px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
                 <h2 style="font-size:20px;font-weight:700;">Winchu</h2>
                 <div style="display:flex;gap:12px;align-items:center;">
+                    <button class="btn-sm" onclick="window.navigate('videos')" style="font-size:16px;background:none;border:none;padding:4px;">🎬</button>
                     <button class="btn-sm" onclick="window.navigate('wallpapers')" style="font-size:16px;background:none;border:none;padding:4px;">🎨</button>
                     <button class="btn-sm" onclick="document.getElementById('postInput').focus()" style="font-size:16px;background:none;border:none;padding:4px;">➕</button>
                 </div>
@@ -996,7 +897,20 @@
         </div>
     </div>
 
-    <!-- ==================== PROFILE ==================== -->
+    <!-- ===== TIKTOK VIDEOS ===== -->
+    <div class="page" id="page-videos">
+        <div class="container" style="padding: 16px 14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <h2 style="font-size:20px;font-weight:700;">🎬 Videos</h2>
+                <button class="btn-sm" onclick="window.navigate('social')">← Back</button>
+            </div>
+            <div class="tiktok-container" id="videoFeed">
+                <p style="color:#94a3b8;text-align:center;padding:40px 0;">No videos yet. Upload one!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PROFILE ===== -->
     <div class="page" id="page-profile">
         <div class="container">
             <div class="profile-header">
@@ -1029,27 +943,27 @@
         </div>
     </div>
 
-    <!-- ==================== WALLPAPERS ==================== -->
+    <!-- ===== WALLPAPERS ===== -->
     <div class="page" id="page-wallpapers">
         <div class="container">
             <h2 style="font-size:19px;font-weight:700;margin-bottom:8px;">🎨 Walls</h2>
             <button class="btn-sm" onclick="window.randomWallpaper()" style="width:100%;margin-bottom:8px;">🎲 Random</button>
-            <p style="font-size:10px;color:#94a3b8;" id="wpCount">50+ wallpapers</p>
+            <p style="font-size:10px;color:#94a3b8;" id="wpCount">Loading...</p>
             <div class="wp-grid" id="wpGrid"></div>
         </div>
     </div>
 
-    <!-- ==================== BOTTOM NAV ==================== -->
+    <!-- ===== BOTTOM NAV ===== -->
     <nav class="bottom-nav" id="bottomNav" style="display:none;">
         <button class="nav-btn active" data-page="social" onclick="window.navigate('social')"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
+        <button class="nav-btn" data-page="videos" onclick="window.navigate('videos')"><span class="nav-icon">🎬</span><span class="nav-label">Videos</span></button>
         <button class="nav-btn" data-page="home" onclick="window.navigate('home')"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></button>
         <button class="nav-btn" data-page="diary" onclick="window.navigate('diary')"><span class="nav-icon">📖</span><span class="nav-label">Diary</span></button>
-        <button class="nav-btn" data-page="routine" onclick="window.navigate('routine')"><span class="nav-icon">📋</span><span class="nav-label">Routine</span></button>
         <button class="nav-btn" data-page="chat" onclick="window.navigate('chat')"><span class="nav-icon">💬</span><span class="nav-label">Chat</span></button>
         <button class="nav-btn" data-page="profile" onclick="window.navigate('profile')"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></button>
     </nav>
 
-    <!-- ==================== SCRIPTS ==================== -->
+    <!-- ===== SCRIPTS ===== -->
     <script src="js/firebase.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/app.js"></script>
@@ -1059,16 +973,17 @@
     <script src="js/diary.js"></script>
     <script src="js/routine.js"></script>
     <script src="js/profile.js"></script>
-    
-    <!-- ==================== INLINED SCRIPTS ==================== -->
-    <script>
-    // ========== CUSTOM DIALOG ==========
-    var dialogResolve = null;
 
+    <script>
+    // ============================================================
+    // ===== INLINED SCRIPTS =====
+    // ============================================================
+
+    // ===== DIALOG =====
+    var dialogResolve = null;
     function showDialog(options) {
         return new Promise(function(resolve) {
             var overlay = document.getElementById('dialogOverlay');
-            var dialog = document.getElementById('dialog');
             var emoji = document.getElementById('dialogEmoji');
             var title = document.getElementById('dialogTitle');
             var subtitle = document.getElementById('dialogSubtitle');
@@ -1076,61 +991,29 @@
             var cancelBtn = document.getElementById('dialogCancel');
             var confirmBtn = document.getElementById('dialogConfirm');
 
-            // Set content
             emoji.textContent = options.emoji || '💬';
             title.textContent = options.title || 'Dialog';
             subtitle.textContent = options.subtitle || 'Please enter your input';
             input.value = options.defaultValue || '';
             input.placeholder = options.placeholder || 'Type here...';
-            
-            // Set button text
             cancelBtn.textContent = options.cancelText || 'Cancel';
             confirmBtn.textContent = options.confirmText || 'Confirm';
-            
-            // Set confirm button style
             confirmBtn.className = options.danger ? 'dialog-danger' : 'dialog-confirm';
 
-            // Show overlay
             overlay.classList.add('active');
             input.focus();
             input.select();
-
             dialogResolve = resolve;
 
-            // Cancel
-            cancelBtn.onclick = function() {
-                overlay.classList.remove('active');
-                resolve(null);
-            };
-
-            // Confirm
-            confirmBtn.onclick = function() {
-                overlay.classList.remove('active');
-                resolve(input.value);
-            };
-
-            // Enter key
-            input.onkeypress = function(e) {
-                if (e.key === 'Enter') {
-                    overlay.classList.remove('active');
-                    resolve(input.value);
-                }
-            };
-
-            // Click outside to close
-            overlay.onclick = function(e) {
-                if (e.target === overlay) {
-                    overlay.classList.remove('active');
-                    resolve(null);
-                }
-            };
+            cancelBtn.onclick = function() { overlay.classList.remove('active'); resolve(null); };
+            confirmBtn.onclick = function() { overlay.classList.remove('active'); resolve(input.value); };
+            input.onkeypress = function(e) { if (e.key === 'Enter') { overlay.classList.remove('active'); resolve(input.value); } };
+            overlay.onclick = function(e) { if (e.target === overlay) { overlay.classList.remove('active'); resolve(null); } };
         });
     }
     window.showDialog = showDialog;
 
-    // ========== OVERRIDE FUNCTIONS WITH DIALOG ==========
-    
-    // Override changeUsername to use dialog
+    // ===== OVERRIDE FUNCTIONS =====
     var originalChangeUsername = window.changeUsername;
     window.changeUsername = function() {
         showDialog({
@@ -1155,7 +1038,6 @@
         });
     };
 
-    // Override editProfile to use dialog
     var originalEditProfile = window.editProfile;
     window.editProfile = function() {
         showDialog({
@@ -1168,77 +1050,45 @@
         }).then(function(result) {
             if (result !== null) {
                 window.S.bio = result.trim() || 'Building my energy. One aura at a time. ⚡';
-                if (window.S.username) {
-                    setData('users/' + window.S.username + '/bio', window.S.bio);
-                }
+                if (window.S.username) setData('users/' + window.S.username + '/bio', window.S.bio);
                 renderProfile();
                 window.toast('Bio updated');
             }
         });
     };
 
-    // ========== AVATAR FIX ==========
-    // Fix handleAvatarSelect to properly display avatar
+    // ===== AVATAR FIX =====
     var originalHandleAvatarSelect = window.handleAvatarSelect;
     window.handleAvatarSelect = function(event) {
         var file = event.target.files[0];
         if (!file) return;
-
         var reader = new FileReader();
         reader.onload = function(e) {
             var dataUrl = e.target.result;
             window.S.avatar = dataUrl;
-            
-            // Save to Firebase
-            if (window.S.username) {
-                setData('users/' + window.S.username + '/avatar', dataUrl);
-            }
-            
-            // Update profile avatar
+            if (window.S.username) setData('users/' + window.S.username + '/avatar', dataUrl);
             var avatarContainer = document.getElementById('profileAvatarEmoji');
-            if (avatarContainer) {
-                avatarContainer.innerHTML = '<img src="' + dataUrl + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
-            }
-            
+            if (avatarContainer) avatarContainer.innerHTML = '<img src="' + dataUrl + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
             window.toast('✅ Avatar updated!');
         };
         reader.readAsDataURL(file);
     };
 
-    // ========== CHAT FIX ==========
-    // Fix sendMessage to work properly
-    var originalSendMessage = window.sendMessage;
+    // ===== CHAT FIX =====
     window.sendMessage = function() {
-        if (!window.S.username) {
-            window.toast('Please log in');
-            return;
-        }
+        if (!window.S.username) { window.toast('Please log in'); return; }
         var input = document.getElementById('chatInput');
         var text = input.value.trim();
-        if (!text) {
-            window.toast('Type a message');
-            return;
-        }
-
-        var message = {
-            username: window.S.username,
-            text: text,
-            time: new Date().toISOString()
-        };
-        
+        if (!text) { window.toast('Type a message'); return; }
+        var message = { username: window.S.username, text: text, time: new Date().toISOString() };
         var messagesRef = getRef('messages');
         messagesRef.push(message).then(function() {
             input.value = '';
-            if (window.S.username) {
-                setData('users/' + window.S.username + '/last_seen', new Date().toISOString());
-            }
-        }).catch(function(err) {
-            console.error('Send message error:', err);
-            window.toast('Failed to send message');
-        });
+            if (window.S.username) setData('users/' + window.S.username + '/last_seen', new Date().toISOString());
+        }).catch(function(err) { console.error('Send error:', err); window.toast('Failed to send'); });
     };
 
-    // ========== AURA SELECTION ==========
+    // ===== AURA SELECTION =====
     function renderAuraGrid() {
         var grid = document.getElementById('auraGrid');
         if (!grid) return;
@@ -1263,67 +1113,207 @@
 
     function toggleAura(key) {
         var idx = window.S.selectedAuras.indexOf(key);
-        if (idx > -1) {
-            window.S.selectedAuras.splice(idx, 1);
-        } else if (window.S.selectedAuras.length < 3) {
-            window.S.selectedAuras.push(key);
-        }
+        if (idx > -1) window.S.selectedAuras.splice(idx, 1);
+        else if (window.S.selectedAuras.length < 3) window.S.selectedAuras.push(key);
         renderAuraGrid();
     }
     window.toggleAura = toggleAura;
 
     function confirmSelection() {
-        if (window.S.selectedAuras.length === 0) {
-            window.toast('Select at least one aura');
-            return;
-        }
-        if (window.S.username) {
-            setData('users/' + window.S.username + '/selected_auras', window.S.selectedAuras);
-        }
+        if (window.S.selectedAuras.length === 0) { window.toast('Select at least one aura'); return; }
+        if (window.S.username) setData('users/' + window.S.username + '/selected_auras', window.S.selectedAuras);
         window.navigate('social');
         window.toast('Auras activated! ✨');
     }
     window.confirmSelection = confirmSelection;
 
-    // ========== WALLPAPER ==========
-    function randomWallpaper() {
-        setWallpaper(UNSPLASH[Math.floor(Math.random() * UNSPLASH.length)]);
+    // ===== LIKES FIX =====
+    function likePost(id) {
+        if (!id) return;
+        var post = window.S.socialPosts.find(function(p) { return p.id === id; });
+        if (!post) return;
+        var likes = post.likes || [];
+        var idx = likes.indexOf(window.S.username);
+        if (idx > -1) likes.splice(idx, 1);
+        else likes.push(window.S.username);
+        post.likes = likes;
+        var postRef = getRef('posts/' + id + '/likes');
+        postRef.set(likes);
+        renderSocial();
     }
+    window.likePost = likePost;
+
+    // ===== WALLPAPERS (Portrait) =====
+    var PORTRAIT_WALLPAPERS = [
+        'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1080&q=80',
+        'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1080&q=80',
+        'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1080&q=80',
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&q=80',
+        'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1080&q=80',
+        'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=1080&q=80',
+        'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=1080&q=80',
+        'https://images.unsplash.com/photo-1470071459606-3b5ec3a7fe05?w=1080&q=80',
+        'https://images.unsplash.com/photo-1440589473619-3cde28941638?w=1080&q=80',
+        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1080&q=80',
+        'https://images.unsplash.com/photo-1528825871115-3581a5387919?w=1080&q=80',
+        'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1080&q=80',
+        'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=1080&q=80',
+        'https://images.unsplash.com/photo-1597696929736-6d13bed8e6a8?w=1080&q=80',
+        'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=1080&q=80',
+        'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1080&q=80',
+        'https://images.unsplash.com/photo-1647811867884-b14ab4f81b36?w=1080&q=80',
+        'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=1080&q=80',
+        'https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?w=1080&q=80',
+        'https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1080&q=80'
+    ];
+
+    function randomWallpaper() { setWallpaper(PORTRAIT_WALLPAPERS[Math.floor(Math.random() * PORTRAIT_WALLPAPERS.length)]); }
     window.randomWallpaper = randomWallpaper;
 
     function setWallpaper(url) {
         window.S.wallpaper = url;
         window.setBg(url);
         renderWallpapers();
-        window.toast('Applied');
+        window.toast('✅ Applied');
     }
     window.setWallpaper = setWallpaper;
 
     function renderWallpapers() {
         var countEl = document.getElementById('wpCount');
-        if (countEl) countEl.textContent = UNSPLASH.length + '+ wallpapers';
+        if (countEl) countEl.textContent = PORTRAIT_WALLPAPERS.length + ' portrait wallpapers';
         var grid = document.getElementById('wpGrid');
         if (!grid) return;
         var html = '';
-        for (var i = 0; i < UNSPLASH.length; i++) {
-            var url = UNSPLASH[i];
+        for (var i = 0; i < PORTRAIT_WALLPAPERS.length; i++) {
+            var url = PORTRAIT_WALLPAPERS[i];
             var selected = window.S.wallpaper === url;
-            var cls = 'wp-thumb' + (selected ? ' selected' : '');
+            var cls = 'wp-thumb portrait' + (selected ? ' selected' : '');
             html += '<div class="' + cls + '" style="background-image:url(' + url + ')" onclick="setWallpaper(\'' + url + '\')"></div>';
         }
         grid.innerHTML = html;
     }
     window.renderWallpapers = renderWallpapers;
 
-    // ========== RENDER PROFILE AVATAR ==========
-    // Override renderProfile to show avatar image
-    var originalRenderProfile = window.renderProfile;
-    window.renderProfile = function() {
-        if (typeof originalRenderProfile === 'function') {
-            originalRenderProfile();
+    // ===== TIKTOK VIDEOS =====
+    window.videoData = [];
+
+    function renderVideos() {
+        var container = document.getElementById('videoFeed');
+        if (!container) return;
+        if (window.videoData.length === 0) {
+            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:40px 0;">No videos yet. Upload one!</p>';
+            return;
+        }
+        var html = '';
+        for (var i = 0; i < window.videoData.length; i++) {
+            var v = window.videoData[i];
+            var isLiked = v.likes && v.likes.indexOf(window.S.username) > -1;
+            html += '<div class="tiktok-video">';
+            if (v.type === 'video') {
+                html += '<video src="' + v.url + '" loop muted playsinline></video>';
+            } else {
+                html += '<img src="' + v.url + '" alt="Video thumbnail" />';
+            }
+            html += '<div class="overlay"><div class="user">@' + v.author + '</div>';
+            html += '<div class="desc">' + (v.text || '') + '</div>';
+            html += '<div class="actions">';
+            html += '<button class="' + (isLiked ? 'liked' : '') + '" onclick="likeVideo(\'' + v.id + '\')">' + (isLiked ? '❤️' : '🤍') + ' ' + (v.likes ? v.likes.length : 0) + '</button>';
+            html += '</div></div></div>';
+        }
+        container.innerHTML = html;
+
+        // Auto-play videos on scroll
+        var videos = container.querySelectorAll('video');
+        var observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    entry.target.play().catch(function() {});
+                } else {
+                    entry.target.pause();
+                }
+            });
+        }, { threshold: 0.5 });
+        videos.forEach(function(v) { observer.observe(v); });
+    }
+    window.renderVideos = renderVideos;
+
+    function likeVideo(id) {
+        var video = window.videoData.find(function(v) { return v.id === id; });
+        if (!video) return;
+        var likes = video.likes || [];
+        var idx = likes.indexOf(window.S.username);
+        if (idx > -1) likes.splice(idx, 1);
+        else likes.push(window.S.username);
+        video.likes = likes;
+        if (window.S.username) setData('videos/' + id + '/likes', likes);
+        renderVideos();
+    }
+    window.likeVideo = likeVideo;
+
+    // ===== LOAD VIDEOS FROM FIREBASE =====
+    function loadVideos() {
+        var videosRef = getRef('videos');
+        videosRef.orderByKey().limitToLast(50).on('child_added', function(snapshot) {
+            var data = snapshot.val();
+            data.id = snapshot.key;
+            if (!window.videoData.find(function(v) { return v.id === data.id; })) {
+                window.videoData.unshift(data);
+                if (window.videoData.length > 50) window.videoData.pop();
+                renderVideos();
+            }
+        });
+    }
+    window.loadVideos = loadVideos;
+
+    // ===== OVERRIDE CREATE POST TO SUPPORT VIDEOS =====
+    var originalCreatePost = window.createPost;
+    window.createPost = function() {
+        var input = document.getElementById('postInput');
+        var text = input.value.trim();
+        if (!text && !window.selectedFileData) { window.toast('Write something or add media'); return; }
+        
+        var avatar = window.S.selectedAuras.length > 0 ? window.S.selectedAuras.map(function(k) { return AURAS[k].emoji; }).join('') : '😊';
+        var isVideo = window.selectedFile && window.selectedFile.type && window.selectedFile.type.startsWith('video/');
+        
+        var post = {
+            author: window.S.username || 'You',
+            avatar: avatar,
+            text: text || '',
+            image: window.selectedFileData || null,
+            type: isVideo ? 'video' : 'image',
+            time: new Date().toISOString(),
+            likes: []
+        };
+        
+        var postsRef = getRef('posts');
+        postsRef.push(post);
+        
+        // Also add to videos feed if it's a video
+        if (isVideo && window.selectedFileData) {
+            var videoPost = {
+                author: window.S.username || 'You',
+                text: text || '',
+                url: window.selectedFileData,
+                type: 'video',
+                time: new Date().toISOString(),
+                likes: []
+            };
+            var videosRef = getRef('videos');
+            videosRef.push(videoPost);
         }
         
-        // Show avatar image if exists
+        input.value = '';
+        window.selectedFile = null;
+        window.selectedFileData = null;
+        document.getElementById('filePreview').style.display = 'none';
+        document.getElementById('filePreview').innerHTML = '';
+        window.toast('📝 Posted!');
+    };
+
+    // ===== OVERRIDE RENDER PROFILE FOR AVATAR =====
+    var originalRenderProfile = window.renderProfile;
+    window.renderProfile = function() {
+        if (typeof originalRenderProfile === 'function') originalRenderProfile();
         if (window.S.avatar) {
             var avatarContainer = document.getElementById('profileAvatarEmoji');
             if (avatarContainer) {
@@ -1331,6 +1321,15 @@
             }
         }
     };
+
+    // ===== INIT =====
+    setTimeout(function() {
+        if (window.S.username) {
+            loadVideos();
+        }
+    }, 500);
+
+    console.log('🎬 Winchu · Nexus with Videos & Portrait Wallpapers!');
     </script>
 </body>
 </html>
