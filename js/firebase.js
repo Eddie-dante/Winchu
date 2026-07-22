@@ -1,4 +1,4 @@
-// Firebase Configuration
+// Firebase Configuration - Fixed connection
 const firebaseConfig = {
     apiKey: "AIzaSyBxRC99vpLBRpkhXmUiYVXi0lFaN5ayXj8",
     authDomain: "nexus-wegem.firebaseapp.com",
@@ -10,41 +10,81 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
+let database;
+let firebaseReady = false;
+
 try {
-    if (!firebase.apps.length) {
+    // Check if Firebase is already initialized
+    if (!firebase.apps || !firebase.apps.length) {
         firebase.initializeApp(firebaseConfig);
     }
-    console.log('🔥 Firebase initialized');
+    database = firebase.database();
+    firebaseReady = true;
+    console.log('🔥 Firebase initialized successfully');
 } catch (e) {
     console.error('Firebase init error:', e);
+    firebaseReady = false;
 }
 
-const database = firebase.database();
-
-// Helper functions
+// Helper functions with connection check
 function getRef(path) {
+    if (!database) {
+        console.error('Database not initialized');
+        return null;
+    }
     return database.ref(path);
 }
 
 function setData(path, data) {
-    return database.ref(path).set(data);
+    if (!database) return Promise.reject('No database connection');
+    return database.ref(path).set(data).catch(function(error) {
+        console.error('setData error:', error);
+        throw error;
+    });
 }
 
 function pushData(path, data) {
-    return database.ref(path).push(data);
+    if (!database) return Promise.reject('No database connection');
+    return database.ref(path).push(data).catch(function(error) {
+        console.error('pushData error:', error);
+        throw error;
+    });
 }
 
 function updateData(path, data) {
-    return database.ref(path).update(data);
+    if (!database) return Promise.reject('No database connection');
+    return database.ref(path).update(data).catch(function(error) {
+        console.error('updateData error:', error);
+        throw error;
+    });
 }
 
 function removeData(path) {
-    return database.ref(path).remove();
+    if (!database) return Promise.reject('No database connection');
+    return database.ref(path).remove().catch(function(error) {
+        console.error('removeData error:', error);
+        throw error;
+    });
+}
+
+// Check connection status
+function checkConnection() {
+    if (!database) return Promise.resolve(false);
+    
+    return new Promise(function(resolve) {
+        database.ref('.info/connected').once('value').then(function(snap) {
+            const connected = snap.val() === true;
+            console.log('Firebase connection check:', connected ? 'ONLINE' : 'OFFLINE');
+            resolve(connected);
+        }).catch(function() {
+            resolve(false);
+        });
+    });
 }
 
 // Online presence
 function setupPresence() {
-    if (!S || !S.username) return;
+    if (!database || !S || !S.username) return;
     
     const connectedRef = database.ref('.info/connected');
     connectedRef.on('value', function(snap) {
@@ -58,17 +98,20 @@ function setupPresence() {
                 online: true,
                 last_seen: firebase.database.ServerValue.TIMESTAMP
             });
+            console.log('✅ Presence set for:', S.username);
         }
     });
 }
 
-// Test connection
-database.ref('.info/connected').on('value', function(snap) {
-    if (snap.val() === true) {
-        console.log('✅ Connected to Firebase');
-    } else {
-        console.log('❌ Disconnected from Firebase');
-    }
-});
+// Monitor connection
+if (database) {
+    database.ref('.info/connected').on('value', function(snap) {
+        if (snap.val() === true) {
+            console.log('✅ Connected to Firebase Realtime Database');
+        } else {
+            console.log('❌ Disconnected from Firebase - trying to reconnect...');
+        }
+    });
+}
 
-console.log('🔒 Firebase module loaded');
+console.log('🔒 Firebase module loaded - ready:', firebaseReady);
