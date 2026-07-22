@@ -1,4 +1,4 @@
-// Videos Module
+// Videos Module - Full screen adaptive with save and download buttons
 
 function renderVideos() {
     const container = document.getElementById('videoFeed');
@@ -22,7 +22,8 @@ function renderVideos() {
         const commentCount = (v.comments || []).length;
         
         html += `<div class="tiktok-video">
-            <video src="${v.url}" loop playsinline preload="metadata"></video>
+            <video src="${v.url}" loop playsinline preload="metadata" 
+                style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;"></video>
             <div class="overlay">
                 <div class="user" onclick="viewUserProfile('${v.author}')">
                     <div class="avatar">${v.avatar || '😊'}</div>
@@ -30,10 +31,22 @@ function renderVideos() {
                 </div>
                 <div class="desc">${escapeHtml(v.text || '')}</div>
                 <div class="side-actions">
-                    <button class="${liked ? 'liked' : ''}" onclick="likeVideo('${v.id}')">❤️<span>${likeCount}</span></button>
-                    <button onclick="commentVideo('${v.id}')">💬<span>${commentCount}</span></button>
-                    <button class="${bookmarked ? 'bookmarked' : ''}" onclick="bookmarkItem('${v.id}','video')">🔖<span>Save</span></button>
-                    ${v.author === S.username ? `<button onclick="deleteVideo('${v.id}')" style="color:#ef4444;">🗑️<span>Delete</span></button>` : ''}
+                    <button class="${liked ? 'liked' : ''}" onclick="likeVideo('${v.id}')">
+                        ❤️<span>${likeCount}</span>
+                    </button>
+                    <button onclick="commentVideo('${v.id}')">
+                        💬<span>${commentCount}</span>
+                    </button>
+                    <button class="${bookmarked ? 'bookmarked' : ''}" onclick="bookmarkItem('${v.id}','video')">
+                        🔖<span>Save</span>
+                    </button>
+                    <button onclick="downloadVideo('${v.url}', 'winchu-video-${v.id}.mp4')">
+                        ⬇️<span>Download</span>
+                    </button>
+                    ${v.author === S.username ? 
+                        `<button onclick="deleteVideo('${v.id}')" style="color:#ef4444;">
+                            🗑️<span>Delete</span>
+                        </button>` : ''}
                 </div>
             </div>
         </div>`;
@@ -47,6 +60,7 @@ function renderVideos() {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.muted = false;
+                entry.target.volume = 1.0;
                 entry.target.play().catch(() => {});
             } else {
                 entry.target.pause();
@@ -55,6 +69,15 @@ function renderVideos() {
     }, { threshold: 0.6 });
     
     videos.forEach(v => observer.observe(v));
+    
+    // Add click to mute/unmute
+    videos.forEach(v => {
+        v.addEventListener('click', (e) => {
+            e.stopPropagation();
+            v.muted = !v.muted;
+            toast(v.muted ? '🔇 Muted' : '🔊 Unmuted');
+        });
+    });
 }
 
 function likeVideo(id) {
@@ -124,6 +147,28 @@ function deleteVideo(id) {
     });
 }
 
+function downloadVideo(url, filename) {
+    if (!url) {
+        toast('No video to download');
+        return;
+    }
+    
+    // For data URLs, create a direct download
+    if (url.startsWith('data:')) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'winchu-video.mp4';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        toast('⬇️ Downloading video...');
+    } else {
+        // For external URLs, open in new tab
+        window.open(url, '_blank');
+        toast('⬇️ Opening video...');
+    }
+}
+
 function handleVideoUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -132,6 +177,13 @@ function handleVideoUpload(event) {
         toast('Video too large (max 50MB)');
         return;
     }
+    
+    if (!file.type.startsWith('video/')) {
+        toast('Please select a video file');
+        return;
+    }
+    
+    toast('📹 Uploading video...');
     
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -146,9 +198,16 @@ function handleVideoUpload(event) {
         };
         
         pushData('videos', video).then(() => {
-            toast('📹 Video uploaded!');
+            toast('📹 Video uploaded successfully!');
+        }).catch(() => {
+            toast('Failed to upload video');
         });
     };
+    
+    reader.onerror = function() {
+        toast('Error reading video file');
+    };
+    
     reader.readAsDataURL(file);
 }
 
@@ -168,8 +227,20 @@ function loadVideos() {
         }
     });
     
+    videosListener.on('child_changed', (snapshot) => {
+        const data = snapshot.val();
+        data.id = snapshot.key;
+        const idx = S.videoData.findIndex(v => v.id === data.id);
+        if (idx > -1) {
+            S.videoData[idx] = data;
+            renderVideos();
+        }
+    });
+    
     videosListener.on('child_removed', (snapshot) => {
         S.videoData = S.videoData.filter(v => v.id !== snapshot.key);
         renderVideos();
     });
 }
+
+console.log('🎬 Video module loaded');
