@@ -1,4 +1,4 @@
-// Firebase Configuration - Simplified
+// Firebase Configuration
 var firebaseConfig = {
     apiKey: "AIzaSyBxRC99vpLBRpkhXmUiYVXi0lFaN5ayXj8",
     authDomain: "nexus-wegem.firebaseapp.com",
@@ -9,54 +9,27 @@ var firebaseConfig = {
     appId: "1:383870608188:web:043f97e81bcb6dbb68b439"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
-var database = firebase.database();
-console.log('Firebase initialized');
+var db = firebase.database();
+console.log('Firebase ready');
 
-// Simple helper functions
-function getRef(path) {
-    return database.ref(path);
-}
+// Test connection
+db.ref('.info/connected').on('value', function(s) {
+    console.log(s.val() ? '✅ ONLINE' : '❌ OFFLINE');
+});
 
-function setData(path, data) {
-    return database.ref(path).set(data);
-}
+function getRef(p) { return db.ref(p); }
+function setData(p, d) { return db.ref(p).set(d); }
+function pushData(p, d) { return db.ref(p).push(d); }
+function updateData(p, d) { return db.ref(p).update(d); }
+function removeData(p) { return db.ref(p).remove(); }
 
-function pushData(path, data) {
-    var newRef = database.ref(path).push();
-    return newRef.set(data).then(function() {
-        return { key: newRef.key };
-    });
-}
-
-function updateData(path, data) {
-    return database.ref(path).update(data);
-}
-
-function removeData(path) {
-    return database.ref(path).remove();
-}
-
-// Setup presence
 function setupPresence() {
     if (!S || !S.username) return;
-    
-    database.ref('.info/connected').on('value', function(snap) {
+    db.ref('.info/connected').on('value', function(snap) {
         if (snap.val() === true && S.username) {
-            database.ref('users/' + S.username).onDisconnect().update({
-                online: false,
-                last_seen: firebase.database.ServerValue.TIMESTAMP
-            });
-            database.ref('users/' + S.username).update({
-                online: true,
-                last_seen: firebase.database.ServerValue.TIMESTAMP
-            });
+            db.ref('users/' + S.username).onDisconnect().update({ online: false });
+            db.ref('users/' + S.username).update({ online: true });
         }
     });
 }
-
-// Log connection status
-database.ref('.info/connected').on('value', function(snap) {
-    console.log('Firebase:', snap.val() ? 'ONLINE' : 'OFFLINE');
-});
