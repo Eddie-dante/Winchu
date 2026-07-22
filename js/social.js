@@ -1,4 +1,4 @@
-// Social Feed Module - Fixed avatars, friends-only feed, status/stories
+// Social Feed Module - Shows ALL posts on platform, fixed avatars, status/stories
 
 function renderSocial() {
     const feed = document.getElementById('socialFeed');
@@ -9,34 +9,28 @@ function renderSocial() {
         return;
     }
     
-    // Filter to show only friends' posts AND user's own posts
-    const friendsList = S.friends || [];
-    const allAllowed = [S.username, ...friendsList];
+    // Show ALL posts (not just friends)
+    const allPosts = S.socialPosts || [];
     
-    const filteredPosts = (S.socialPosts || []).filter(p => allAllowed.includes(p.author));
-    
-    if (filteredPosts.length === 0) {
-        feed.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;"><div style="font-size:48px;">📸</div><p>No posts from friends yet.<br>Add friends to see their posts!</p></div>';
+    if (allPosts.length === 0) {
+        feed.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;"><div style="font-size:48px;">📸</div><p>No posts yet. Be the first to share!</p></div>';
         return;
     }
     
     let html = '';
-    const sorted = [...filteredPosts].sort((a, b) => new Date(b.time) - new Date(a.time));
+    const sorted = [...allPosts].sort((a, b) => new Date(b.time) - new Date(a.time));
     
     sorted.forEach(p => {
-        // Load author's avatar from Firebase if not in post
-        renderPostWithAvatar(p, (postWithAvatar) => {
-            // This callback approach ensures avatar is loaded
-        });
-        
         const liked = (p.likes || []).includes(S.username);
         const bookmarked = (S.bookmarks || []).some(b => b.id === p.id);
         const timeAgo = timeSince(new Date(p.time));
         const commentCount = (p.comments || []).length;
         const likeCount = (p.likes || []).length;
         const canDelete = p.author === S.username;
+        const isFriend = (S.friends || []).includes(p.author);
+        const isOwn = p.author === S.username;
         
-        // Get avatar - check multiple sources
+        // Get avatar display
         let avatarDisplay = getAvatarDisplay(p.author, p.avatar);
         
         html += `<div class="ig-post">
@@ -44,6 +38,8 @@ function renderSocial() {
                 <div class="profile-bubble" onclick="event.stopPropagation();viewUserProfile('${p.author}')">
                     <div class="pb-avatar" id="avatar-${p.id}">${avatarDisplay}</div>
                     <span class="pb-name">${p.author}</span>
+                    ${isFriend && !isOwn ? '<span style="font-size:9px;color:#22c55e;margin-left:4px;">👥 Friend</span>' : ''}
+                    ${isOwn ? '<span style="font-size:9px;color:#6366f1;margin-left:4px;">⭐ You</span>' : ''}
                 </div>
                 <span class="ig-post-time">${timeAgo}</span>
                 ${canDelete ? `<button class="btn-sm btn-danger" onclick="event.stopPropagation();deletePost('${p.id}')" style="font-size:10px;padding:2px 6px;">🗑️</button>` : ''}
@@ -66,15 +62,17 @@ function renderSocial() {
     
     feed.innerHTML = html;
     
-    // Load avatars asynchronously
+    // Load avatars asynchronously for non-own posts
     sorted.forEach(p => {
-        loadAvatarForPost(p);
+        if (p.author !== S.username) {
+            loadAvatarFromFirebase(p);
+        }
     });
 }
 
 // Get avatar display HTML
 function getAvatarDisplay(username, postAvatar) {
-    // Check current user's avatar
+    // For current user
     if (username === S.username && S.avatar) {
         return `<img src="${S.avatar}" alt="${username}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.parentNode.textContent='${username.charAt(0).toUpperCase()}';" />`;
     }
@@ -84,44 +82,37 @@ function getAvatarDisplay(username, postAvatar) {
         return `<img src="${postAvatar}" alt="${username}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.parentNode.textContent='${username.charAt(0).toUpperCase()}';" />`;
     }
     
-    // Default - show first letter
+    // Default - colored initial
     const color = getColor(username);
     return `<div style="width:100%;height:100%;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;">${username.charAt(0).toUpperCase()}</div>`;
 }
 
-// Load avatar from Firebase for a post
-function loadAvatarForPost(post) {
-    if (post.author === S.username) {
-        // Use current user's avatar
-        if (S.avatar) {
-            updatePostAvatar(post.id, S.avatar);
-        }
-        return;
-    }
+// Load avatar from Firebase for a post's author
+function loadAvatarFromFirebase(post) {
+    if (!post || !post.author) return;
+    if (post.author === S.username) return;
     
-    // Load from Firebase
     getRef('users/' + post.author + '/avatar').once('value', (snapshot) => {
         const avatar = snapshot.val();
-        if (avatar) {
-            updatePostAvatar(post.id, avatar);
-            // Also update the post's avatar field for future use
+        if (avatar && (avatar.startsWith('data:') || avatar.includes('http'))) {
+            updatePostAvatarInDOM(post.id, avatar);
+            // Cache in post for future
             if (post.avatar !== avatar) {
                 post.avatar = avatar;
-                getRef('posts/' + post.id + '/avatar').set(avatar);
             }
         }
     });
 }
 
-// Update avatar in the DOM
-function updatePostAvatar(postId, avatarUrl) {
+// Update avatar image in the DOM
+function updatePostAvatarInDOM(postId, avatarUrl) {
     const avatarEl = document.getElementById('avatar-' + postId);
     if (avatarEl && avatarUrl) {
         avatarEl.innerHTML = `<img src="${avatarUrl}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.parentNode.textContent='?';" />`;
     }
 }
 
-// Create post
+// Create post - always includes current avatar
 function createPost() {
     if (!S.username) { toast('Please log in'); return; }
     
@@ -130,7 +121,6 @@ function createPost() {
     
     if (!text && !selectedFileData) { toast('Write something or add media'); return; }
     
-    // ALWAYS include the current avatar in the post
     const avatar = S.avatar || null;
     
     const post = {
@@ -167,39 +157,49 @@ function addStatus() {
     showDialog({
         emoji: '📸',
         title: 'Add Status',
-        subtitle: 'Share a photo or text status (expires in 24 hours)',
+        subtitle: 'Share a photo or text (expires in 24 hours)',
         placeholder: 'What\'s on your mind?',
-        confirmText: 'Next →'
+        confirmText: 'Add Photo (Optional)'
     }).then(text => {
         if (text === null) return;
         
+        // Create file input for optional photo
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = 'image/*';
+        
+        let resolved = false;
+        
         fileInput.onchange = function(e) {
+            if (resolved) return;
+            resolved = true;
+            
             const file = e.target.files[0];
             if (file) {
                 if (file.size > 5 * 1024 * 1024) {
                     toast('Image too large (max 5MB)');
+                    saveStatus(text.trim() || '', null);
                     return;
                 }
                 const reader = new FileReader();
                 reader.onload = function(ev) {
-                    saveStatus(text.trim(), ev.target.result);
+                    saveStatus(text.trim() || '', ev.target.result);
                 };
                 reader.readAsDataURL(file);
             } else {
-                saveStatus(text.trim(), null);
+                saveStatus(text.trim() || '', null);
             }
         };
+        
         fileInput.click();
         
-        // If no file selected within 5 seconds, save text-only status
+        // If no file selected after 8 seconds, save text-only
         setTimeout(() => {
-            if (!fileInput.files.length && text !== null) {
-                saveStatus(text.trim(), null);
+            if (!resolved) {
+                resolved = true;
+                saveStatus(text.trim() || '', null);
             }
-        }, 5000);
+        }, 8000);
     });
 }
 
@@ -210,7 +210,7 @@ function saveStatus(text, imageData) {
         text: text || '',
         image: imageData || null,
         time: new Date().toISOString(),
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         views: []
     };
     
@@ -222,34 +222,33 @@ function saveStatus(text, imageData) {
     });
 }
 
-// Render stories with actual statuses
+// Render stories
 function renderStories() {
     const row = document.getElementById('storyRow');
     if (!row) return;
     
-    // Load statuses from Firebase
-    getRef('statuses').orderByChild('time').limitToLast(20).once('value', (snapshot) => {
+    getRef('statuses').orderByChild('time').limitToLast(30).once('value', (snapshot) => {
         const statuses = [];
         if (snapshot.val()) {
             Object.keys(snapshot.val()).forEach(key => {
                 const s = snapshot.val()[key];
                 s.id = key;
-                // Only show non-expired statuses from friends
                 const isExpired = new Date(s.expires) < new Date();
-                const isFriend = (S.friends || []).includes(s.author);
-                const isMine = s.author === S.username;
-                
-                if (!isExpired && (isFriend || isMine)) {
+                if (!isExpired) {
                     statuses.push(s);
                 }
             });
         }
         
-        // Get unique authors
         const authors = [...new Set(statuses.map(s => s.author))];
         
         // Always show "My Status" first
         if (!authors.includes(S.username)) {
+            authors.unshift(S.username);
+        } else {
+            // Move current user to front
+            const idx = authors.indexOf(S.username);
+            authors.splice(idx, 1);
             authors.unshift(S.username);
         }
         
@@ -303,11 +302,10 @@ function viewStatus(username) {
             return;
         }
         
-        // Show the latest status
         const status = statuses[statuses.length - 1];
         
         let html = `<div style="text-align:center;">
-            <div class="profile-bubble" style="margin-bottom:12px;" onclick="viewUserProfile('${status.author}')">
+            <div class="profile-bubble" style="margin-bottom:12px;justify-content:center;" onclick="viewUserProfile('${status.author}')">
                 <div class="pb-avatar">${getAvatarDisplay(status.author, status.avatar)}</div>
                 <span class="pb-name">${status.author}</span>
             </div>
@@ -331,7 +329,6 @@ function viewStatus(username) {
         overlay.classList.add('active');
         document.body.style.overflow = 'hidden';
         
-        // Mark as viewed
         if (!status.views) status.views = [];
         if (!status.views.includes(S.username)) {
             status.views.push(S.username);
@@ -340,7 +337,6 @@ function viewStatus(username) {
     });
 }
 
-// Handle file select
 function handleFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -360,7 +356,6 @@ function handleFileSelect(event) {
     }
     
     selectedFile = file;
-    
     const reader = new FileReader();
     reader.onload = function(e) {
         selectedFileData = e.target.result;
@@ -404,11 +399,8 @@ function likePost(postId) {
         let likes = post.likes || [];
         const idx = likes.indexOf(S.username);
         
-        if (idx > -1) {
-            likes.splice(idx, 1);
-        } else {
-            likes.push(S.username);
-        }
+        if (idx > -1) likes.splice(idx, 1);
+        else likes.push(S.username);
         
         getRef('posts/' + postId + '/likes').set(likes).then(() => {
             const localPost = S.socialPosts.find(p => p.id === postId);
@@ -580,11 +572,17 @@ function setupPostsListener() {
             renderSocial();
         }
     });
+    
+    postsListener.on('child_removed', (snapshot) => {
+        S.socialPosts = S.socialPosts.filter(p => p.id !== snapshot.key);
+        renderSocial();
+        renderProfile();
+    });
 }
 
-// Expose addStatus globally
+// Expose functions globally
 window.addStatus = addStatus;
 window.viewStatus = viewStatus;
 window.clearFileSelection = clearFileSelection;
 
-console.log('📱 Social module loaded - friends feed, status, avatars fixed');
+console.log('📱 Social module loaded - showing ALL posts on platform');
