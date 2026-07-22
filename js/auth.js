@@ -1,4 +1,4 @@
-// Authentication Module
+// Authentication Module - Secure with Firebase Auth
 
 function handleSignup() {
     const name = document.getElementById('signupName').value.trim();
@@ -18,52 +18,56 @@ function handleSignup() {
         return;
     }
 
-    getRef('users/' + username).once('value', (snapshot) => {
-        if (snapshot.exists()) {
-            toast('Username already taken');
-            return;
-        }
+    // Ensure we're authenticated first
+    waitForAuth().then(() => {
+        getRef('users/' + username).once('value', (snapshot) => {
+            if (snapshot.exists()) {
+                toast('Username already taken');
+                return;
+            }
 
-        const userData = {
-            name: name,
-            username: username,
-            password: password,
-            bio: 'Building my energy. ⚡',
-            selected_auras: [],
-            avatar: null,
-            wallpaper: null,
-            friends: [],
-            bookmarks: [],
-            created_at: new Date().toISOString(),
-            last_seen: new Date().toISOString(),
-            online: true
-        };
-
-        setData('users/' + username, userData).then(() => {
-            S.username = username;
-            S.name = name;
-            S.bio = userData.bio;
-            S.selectedAuras = [];
-            S.avatar = null;
-            S.wallpaper = null;
-            S.friends = [];
-            S.completedTasks = [];
-            S.streakData = {};
-            S.diary = [];
-            S.routines = [];
-            S.bookmarks = [];
-            S.notifications = [];
-            
-            saveState();
-            localStorage.setItem('winchu_auth', JSON.stringify({
+            const userData = {
+                name: name,
                 username: username,
-                timestamp: Date.now()
-            }));
-            
-            toast('Account created! 🎉');
-            navigate('select');
-        }).catch(() => {
-            toast('Error creating account');
+                password: password,
+                authUid: currentAuthUid,
+                bio: 'Building my energy. ⚡',
+                selected_auras: [],
+                avatar: null,
+                wallpaper: null,
+                friends: [],
+                bookmarks: [],
+                created_at: new Date().toISOString(),
+                last_seen: new Date().toISOString(),
+                online: true
+            };
+
+            setData('users/' + username, userData).then(() => {
+                S.username = username;
+                S.name = name;
+                S.bio = userData.bio;
+                S.selectedAuras = [];
+                S.avatar = null;
+                S.wallpaper = null;
+                S.friends = [];
+                S.completedTasks = [];
+                S.streakData = {};
+                S.diary = [];
+                S.routines = [];
+                S.bookmarks = [];
+                S.notifications = [];
+                
+                saveState();
+                localStorage.setItem('winchu_auth', JSON.stringify({
+                    username: username,
+                    timestamp: Date.now()
+                }));
+                
+                toast('Account created! 🎉');
+                navigate('select');
+            }).catch(() => {
+                toast('Error creating account');
+            });
         });
     });
 }
@@ -77,53 +81,63 @@ function handleLogin() {
         return;
     }
 
-    getRef('users/' + username).once('value', (snapshot) => {
-        if (!snapshot.exists()) {
-            toast('User not found');
-            return;
-        }
+    waitForAuth().then(() => {
+        getRef('users/' + username).once('value', (snapshot) => {
+            if (!snapshot.exists()) {
+                toast('User not found');
+                return;
+            }
 
-        const userData = snapshot.val();
-        if (userData.password !== password) {
-            toast('Incorrect password');
-            return;
-        }
+            const userData = snapshot.val();
+            if (userData.password !== password) {
+                toast('Incorrect password');
+                return;
+            }
 
-        S.username = username;
-        S.name = userData.name || '';
-        S.bio = userData.bio || 'Building my energy. ⚡';
-        S.selectedAuras = userData.selected_auras || [];
-        S.avatar = userData.avatar || null;
-        S.wallpaper = userData.wallpaper || null;
-        S.friends = userData.friends || [];
-        S.bookmarks = userData.bookmarks || [];
-        S.completedTasks = [];
-        S.streakData = {};
-        S.diary = [];
-        S.routines = [];
-        S.notifications = [];
-        
-        saveState();
-        localStorage.setItem('winchu_auth', JSON.stringify({
-            username: username,
-            timestamp: Date.now()
-        }));
-        
-        setupPresence();
-        loadUserData(username);
-        
-        if (S.wallpaper) {
-            document.body.style.backgroundImage = `url(${S.wallpaper})`;
-        }
-        
-        toast('Welcome back! ✨');
-        
-        if (S.selectedAuras.length === 0) {
-            navigate('select');
-        } else {
-            navigate('social');
-            initAll();
-        }
+            // Update authUid if not set
+            if (!userData.authUid) {
+                updateData('users/' + username + '/authUid', currentAuthUid);
+            }
+
+            S.username = username;
+            S.name = userData.name || '';
+            S.bio = userData.bio || 'Building my energy. ⚡';
+            S.selectedAuras = userData.selected_auras || [];
+            S.avatar = userData.avatar || null;
+            S.wallpaper = userData.wallpaper || null;
+            S.friends = userData.friends || [];
+            S.bookmarks = userData.bookmarks || [];
+            S.completedTasks = [];
+            S.streakData = {};
+            S.diary = [];
+            S.routines = [];
+            S.notifications = [];
+            
+            saveState();
+            localStorage.setItem('winchu_auth', JSON.stringify({
+                username: username,
+                timestamp: Date.now()
+            }));
+            
+            setupPresence();
+            loadUserData(username);
+            
+            if (S.wallpaper) {
+                document.body.style.backgroundImage = `url(${S.wallpaper})`;
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundPosition = 'center';
+                document.body.style.backgroundAttachment = 'fixed';
+            }
+            
+            toast('Welcome back! ✨');
+            
+            if (S.selectedAuras.length === 0) {
+                navigate('select');
+            } else {
+                navigate('social');
+                initAll();
+            }
+        });
     });
 }
 
@@ -153,6 +167,11 @@ function logout() {
     if (postsListener) { postsListener.off(); postsListener = null; }
     if (videosListener) { videosListener.off(); videosListener = null; }
     if (notifListener) { notifListener.off(); notifListener = null; }
+    
+    // Sign out from Firebase Auth
+    firebase.auth().signOut().then(() => {
+        currentAuthUid = null;
+    }).catch(() => {});
     
     document.body.style.backgroundImage = "url('https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1920&q=80')";
     navigate('landing');
@@ -187,3 +206,5 @@ function loadUserData(username) {
         }
     });
 }
+
+console.log('🔐 Auth module loaded - Secure');
