@@ -1,35 +1,47 @@
-// Authentication Module - Simple secure auth
+// Authentication Module
 
 function handleSignup() {
-    const name = document.getElementById('signupName').value.trim();
-    const username = document.getElementById('signupUser').value.trim();
-    const password = document.getElementById('signupPass').value.trim();
-
+    console.log('Signup function called');
+    
+    const name = document.getElementById('signupName');
+    const username = document.getElementById('signupUser');
+    const password = document.getElementById('signupPass');
+    
     if (!name || !username || !password) {
         toast('Please fill all fields');
         return;
     }
-    if (username.length < 3) {
+    
+    const nameVal = name.value.trim();
+    const usernameVal = username.value.trim();
+    const passwordVal = password.value.trim();
+    
+    if (!nameVal || !usernameVal || !passwordVal) {
+        toast('Please fill all fields');
+        return;
+    }
+    if (usernameVal.length < 3) {
         toast('Username must be at least 3 characters');
         return;
     }
-    if (password.length < 6) {
+    if (passwordVal.length < 6) {
         toast('Password must be at least 6 characters');
         return;
     }
     
-    // Simple password hashing (for demo - use proper hashing in production)
-    const hashedPassword = btoa(password);
-
-    getRef('users/' + username).once('value', (snapshot) => {
+    // Simple password encoding
+    const hashedPassword = btoa(passwordVal);
+    
+    // Check if username exists
+    getRef('users/' + usernameVal).once('value').then(function(snapshot) {
         if (snapshot.exists()) {
             toast('Username already taken');
             return;
         }
-
+        
         const userData = {
-            name: name,
-            username: username,
+            name: nameVal,
+            username: usernameVal,
             password: hashedPassword,
             bio: 'Building my energy. ⚡',
             selected_auras: [],
@@ -41,61 +53,73 @@ function handleSignup() {
             last_seen: new Date().toISOString(),
             online: true
         };
-
-        setData('users/' + username, userData).then(() => {
-            S.username = username;
-            S.name = name;
-            S.bio = userData.bio;
-            S.selectedAuras = [];
-            S.avatar = null;
-            S.wallpaper = null;
-            S.friends = [];
-            S.completedTasks = [];
-            S.streakData = {};
-            S.diary = [];
-            S.routines = [];
-            S.bookmarks = [];
-            S.notifications = [];
-            
-            saveState();
-            localStorage.setItem('winchu_auth', JSON.stringify({
-                username: username,
-                timestamp: Date.now()
-            }));
-            
-            setupPresence();
-            toast('Account created! 🎉');
-            navigate('select');
-        }).catch(() => {
-            toast('Error creating account');
-        });
+        
+        return setData('users/' + usernameVal, userData);
+    }).then(function() {
+        S.username = usernameVal;
+        S.name = nameVal;
+        S.bio = 'Building my energy. ⚡';
+        S.selectedAuras = [];
+        S.avatar = null;
+        S.wallpaper = null;
+        S.friends = [];
+        S.completedTasks = [];
+        S.streakData = {};
+        S.diary = [];
+        S.routines = [];
+        S.bookmarks = [];
+        S.notifications = [];
+        
+        saveState();
+        localStorage.setItem('winchu_auth', JSON.stringify({
+            username: usernameVal,
+            timestamp: Date.now()
+        }));
+        
+        setupPresence();
+        toast('Account created! 🎉');
+        navigate('select');
+    }).catch(function(error) {
+        console.error('Signup error:', error);
+        toast('Error creating account. Please try again.');
     });
 }
 
 function handleLogin() {
-    const username = document.getElementById('loginUser').value.trim();
-    const password = document.getElementById('loginPass').value.trim();
-
+    console.log('Login function called');
+    
+    const username = document.getElementById('loginUser');
+    const password = document.getElementById('loginPass');
+    
     if (!username || !password) {
         toast('Please fill all fields');
         return;
     }
-
-    getRef('users/' + username).once('value', (snapshot) => {
+    
+    const usernameVal = username.value.trim();
+    const passwordVal = password.value.trim();
+    
+    if (!usernameVal || !passwordVal) {
+        toast('Please fill all fields');
+        return;
+    }
+    
+    const hashedPassword = btoa(passwordVal);
+    
+    getRef('users/' + usernameVal).once('value').then(function(snapshot) {
         if (!snapshot.exists()) {
             toast('User not found');
             return;
         }
-
+        
         const userData = snapshot.val();
-        const hashedPassword = btoa(password);
         
         if (userData.password !== hashedPassword) {
             toast('Incorrect password');
             return;
         }
-
-        S.username = username;
+        
+        S.username = usernameVal;
         S.name = userData.name || '';
         S.bio = userData.bio || 'Building my energy. ⚡';
         S.selectedAuras = userData.selected_auras || [];
@@ -111,15 +135,15 @@ function handleLogin() {
         
         saveState();
         localStorage.setItem('winchu_auth', JSON.stringify({
-            username: username,
+            username: usernameVal,
             timestamp: Date.now()
         }));
         
         setupPresence();
-        loadUserData(username);
+        loadUserData(usernameVal);
         
         if (S.wallpaper) {
-            document.body.style.backgroundImage = `url(${S.wallpaper})`;
+            document.body.style.backgroundImage = 'url(' + S.wallpaper + ')';
             document.body.style.backgroundSize = 'cover';
             document.body.style.backgroundPosition = 'center';
             document.body.style.backgroundAttachment = 'fixed';
@@ -133,6 +157,9 @@ function handleLogin() {
             navigate('social');
             initAll();
         }
+    }).catch(function(error) {
+        console.error('Login error:', error);
+        toast('Error logging in. Please try again.');
     });
 }
 
@@ -169,7 +196,7 @@ function logout() {
 }
 
 function loadUserData(username) {
-    getRef('users/' + username).once('value', (snapshot) => {
+    getRef('users/' + username).once('value').then(function(snapshot) {
         if (snapshot.exists()) {
             const data = snapshot.val();
             S.name = data.name || '';
@@ -182,19 +209,24 @@ function loadUserData(username) {
         }
     });
     
-    getRef('diary/' + username).orderByKey().limitToLast(100).once('value', (snapshot) => {
+    getRef('diary/' + username).orderByKey().limitToLast(100).once('value').then(function(snapshot) {
         if (snapshot.exists()) {
             S.diary = Object.values(snapshot.val()).reverse();
             if (typeof renderDiary === 'function') renderDiary();
         }
     });
     
-    getRef('routines/' + username).orderByKey().limitToLast(100).once('value', (snapshot) => {
+    getRef('routines/' + username).orderByKey().limitToLast(100).once('value').then(function(snapshot) {
         if (snapshot.exists()) {
             S.routines = Object.values(snapshot.val()).reverse();
             if (typeof renderRoutines === 'function') renderRoutines();
         }
     });
 }
+
+// Expose functions globally
+window.handleSignup = handleSignup;
+window.handleLogin = handleLogin;
+window.logout = logout;
 
 console.log('🔐 Auth module loaded');

@@ -1,4 +1,4 @@
-// Firebase Configuration - Secure without anonymous auth
+// Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyBxRC99vpLBRpkhXmUiYVXi0lFaN5ayXj8",
     authDomain: "nexus-wegem.firebaseapp.com",
@@ -10,11 +10,16 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
-console.log('🔥 Firebase initialized');
+try {
+    firebase.initializeApp(firebaseConfig);
+    console.log('🔥 Firebase initialized');
+} catch (e) {
+    console.error('Firebase init error:', e);
+}
 
-// Firebase helper functions
+const database = firebase.database();
+
+// Helper functions
 function getRef(path) {
     return database.ref(path);
 }
@@ -35,12 +40,12 @@ function removeData(path) {
     return database.ref(path).remove();
 }
 
-// Initialize online presence
+// Online presence
 function setupPresence() {
     if (!S || !S.username) return;
     
     const connectedRef = database.ref('.info/connected');
-    connectedRef.on('value', (snap) => {
+    connectedRef.on('value', function(snap) {
         if (snap.val() === true) {
             const userRef = database.ref('users/' + S.username);
             userRef.onDisconnect().update({
@@ -56,12 +61,10 @@ function setupPresence() {
 }
 
 // Test connection
-database.ref('.info/connected').on('value', (snap) => {
+database.ref('.info/connected').on('value', function(snap) {
     if (snap.val() === true) {
         console.log('✅ Connected to Firebase');
     } else {
-        console.log('❌ Disconnected');
+        console.log('❌ Disconnected from Firebase');
     }
 });
-
-console.log('🔒 Firebase loaded');
