@@ -1,22 +1,22 @@
 {
-  "name": "Winchu · Nexus",
-  "short_name": "Winchu",
-  "description": "Shape your presence. Manifest your energy.",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#f1f5f9",
-  "theme_color": "#0f172a",
-  "orientation": "portrait-primary",
-  "icons": [
-    {
-      "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=192&q=80",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=512&q=80",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
+    "name": "Winchu · Nexus",
+    "short_name": "Winchu",
+    "description": "Shape your presence. Manifest your energy.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#f1f5f9",
+    "theme_color": "#0f172a",
+    "orientation": "portrait-primary",
+    "icons": [
+        {
+            "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=192&q=80",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=512&q=80",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
 }

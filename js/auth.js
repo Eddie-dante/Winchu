@@ -1,236 +1,189 @@
 // Authentication Module
-window.auth = {
-    login: null,
-    signup: null,
-    logout: null,
-    checkAuth: null
-};
 
-// Sign Up Function
-window.handleSignup = function() {
+function handleSignup() {
     const name = document.getElementById('signupName').value.trim();
     const username = document.getElementById('signupUser').value.trim();
     const password = document.getElementById('signupPass').value.trim();
 
     if (!name || !username || !password) {
-        window.toast('Please fill all fields');
+        toast('Please fill all fields');
         return;
     }
-
     if (username.length < 3) {
-        window.toast('Username must be at least 3 characters');
+        toast('Username must be at least 3 characters');
         return;
     }
-
     if (password.length < 6) {
-        window.toast('Password must be at least 6 characters');
+        toast('Password must be at least 6 characters');
         return;
     }
 
-    // Check if username exists
-    const userRef = getRef('users/' + username);
-    userRef.once('value', (snapshot) => {
+    getRef('users/' + username).once('value', (snapshot) => {
         if (snapshot.exists()) {
-            window.toast('Username already taken');
+            toast('Username already taken');
             return;
         }
 
-        // Create user
         const userData = {
             name: name,
             username: username,
-            password: password, // In production, hash this!
-            bio: 'Building my energy. One aura at a time. ⚡',
+            password: password,
+            bio: 'Building my energy. ⚡',
             selected_auras: [],
             avatar: null,
             wallpaper: null,
             friends: [],
+            bookmarks: [],
             created_at: new Date().toISOString(),
             last_seen: new Date().toISOString(),
             online: true
         };
 
-        userRef.set(userData)
-            .then(() => {
-                window.S.username = username;
-                window.S.bio = userData.bio;
-                window.S.selectedAuras = [];
-                window.S.avatar = null;
-                window.S.wallpaper = null;
-                window.S.friends = [];
-                window.S.completedTasks = [];
-                window.S.streakData = {};
-                window.S.diary = [];
-                window.S.routines = [];
-                
-                saveUserState();
-                saveAuthState();
-                setupPresence();
-                
-                window.toast('Account created! 🎉');
-                window.navigate('select');
-            })
-            .catch((error) => {
-                window.toast('Error creating account');
-                console.error(error);
-            });
+        setData('users/' + username, userData).then(() => {
+            S.username = username;
+            S.name = name;
+            S.bio = userData.bio;
+            S.selectedAuras = [];
+            S.avatar = null;
+            S.wallpaper = null;
+            S.friends = [];
+            S.completedTasks = [];
+            S.streakData = {};
+            S.diary = [];
+            S.routines = [];
+            S.bookmarks = [];
+            S.notifications = [];
+            
+            saveState();
+            localStorage.setItem('winchu_auth', JSON.stringify({
+                username: username,
+                timestamp: Date.now()
+            }));
+            
+            toast('Account created! 🎉');
+            navigate('select');
+        }).catch(() => {
+            toast('Error creating account');
+        });
     });
-};
+}
 
-// Login Function
-window.handleLogin = function() {
+function handleLogin() {
     const username = document.getElementById('loginUser').value.trim();
     const password = document.getElementById('loginPass').value.trim();
 
     if (!username || !password) {
-        window.toast('Please fill all fields');
+        toast('Please fill all fields');
         return;
     }
 
-    const userRef = getRef('users/' + username);
-    userRef.once('value', (snapshot) => {
+    getRef('users/' + username).once('value', (snapshot) => {
         if (!snapshot.exists()) {
-            window.toast('User not found');
+            toast('User not found');
             return;
         }
 
         const userData = snapshot.val();
         if (userData.password !== password) {
-            window.toast('Incorrect password');
+            toast('Incorrect password');
             return;
         }
 
-        // Login successful
-        window.S.username = username;
-        window.S.bio = userData.bio || 'Building my energy. One aura at a time. ⚡';
-        window.S.selectedAuras = userData.selected_auras || [];
-        window.S.avatar = userData.avatar || null;
-        window.S.wallpaper = userData.wallpaper || null;
-        window.S.friends = userData.friends || [];
-        window.S.completedTasks = [];
-        window.S.streakData = {};
-        window.S.diary = [];
-        window.S.routines = [];
+        S.username = username;
+        S.name = userData.name || '';
+        S.bio = userData.bio || 'Building my energy. ⚡';
+        S.selectedAuras = userData.selected_auras || [];
+        S.avatar = userData.avatar || null;
+        S.wallpaper = userData.wallpaper || null;
+        S.friends = userData.friends || [];
+        S.bookmarks = userData.bookmarks || [];
+        S.completedTasks = [];
+        S.streakData = {};
+        S.diary = [];
+        S.routines = [];
+        S.notifications = [];
         
-        saveUserState();
-        saveAuthState();
+        saveState();
+        localStorage.setItem('winchu_auth', JSON.stringify({
+            username: username,
+            timestamp: Date.now()
+        }));
+        
         setupPresence();
-        
-        // Load user data from Firebase
         loadUserData(username);
         
-        window.toast('Welcome back! ✨');
+        if (S.wallpaper) {
+            document.body.style.backgroundImage = `url(${S.wallpaper})`;
+        }
         
-        if (window.S.selectedAuras.length === 0) {
-            window.navigate('select');
+        toast('Welcome back! ✨');
+        
+        if (S.selectedAuras.length === 0) {
+            navigate('select');
         } else {
-            window.navigate('social');
-            initAllFeatures();
+            navigate('social');
+            initAll();
         }
     });
-};
+}
 
-// Logout Function
-window.logout = function() {
-    if (window.S.username) {
-        getRef('users/' + window.S.username).update({
+function logout() {
+    if (S.username) {
+        updateData('users/' + S.username, {
             online: false,
             last_seen: new Date().toISOString()
         });
     }
     
-    window.S.username = null;
-    window.S.bio = 'Building my energy. One aura at a time. ⚡';
-    window.S.selectedAuras = [];
-    window.S.avatar = null;
-    window.S.wallpaper = null;
-    window.S.friends = [];
-    window.S.completedTasks = [];
-    window.S.streakData = {};
-    window.S.diary = [];
-    window.S.routines = [];
-    window.S.socialPosts = [];
-    window.currentChat = null;
-    window.chatMessages = [];
-    window.videoData = [];
+    S = {
+        username: null, name: '', bio: 'Building my energy. ⚡', wallpaper: null,
+        selectedAuras: [], avatar: null, friends: [], completedTasks: [],
+        streakData: {}, socialPosts: [], diary: [], routines: [],
+        videoData: [], bookmarks: [], notifications: [], groups: []
+    };
     
-    localStorage.removeItem('winchu_user_state');
+    currentChat = null;
+    chatMessages = [];
+    viewingProfile = null;
+    
+    localStorage.removeItem('winchu_state');
     localStorage.removeItem('winchu_auth');
     
-    if (window.chatListener) {
-        window.chatListener.off();
-        window.chatListener = null;
-    }
-    if (window.postsListener) {
-        window.postsListener.off();
-        window.postsListener = null;
-    }
+    if (chatListener) { chatListener.off(); chatListener = null; }
+    if (postsListener) { postsListener.off(); postsListener = null; }
+    if (videosListener) { videosListener.off(); videosListener = null; }
+    if (notifListener) { notifListener.off(); notifListener = null; }
     
-    window.navigate('landing');
-    window.toast('Logged out');
-};
-
-// Save auth state
-function saveAuthState() {
-    localStorage.setItem('winchu_auth', JSON.stringify({
-        username: window.S.username,
-        timestamp: Date.now()
-    }));
+    document.body.style.backgroundImage = "url('https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1920&q=80')";
+    navigate('landing');
+    toast('Logged out');
 }
 
-// Load auth state
-function loadAuthState() {
-    const auth = localStorage.getItem('winchu_auth');
-    if (auth) {
-        try {
-            const data = JSON.parse(auth);
-            if (data.username && (Date.now() - data.timestamp < 7 * 24 * 60 * 60 * 1000)) {
-                return data.username;
-            }
-        } catch (e) {}
-    }
-    return null;
-}
-
-// Load user data from Firebase
 function loadUserData(username) {
-    const userRef = getRef('users/' + username);
-    userRef.once('value', (snapshot) => {
+    getRef('users/' + username).once('value', (snapshot) => {
         if (snapshot.exists()) {
             const data = snapshot.val();
-            window.S.bio = data.bio || window.S.bio;
-            window.S.selectedAuras = data.selected_auras || [];
-            window.S.avatar = data.avatar || null;
-            window.S.wallpaper = data.wallpaper || null;
-            window.S.friends = data.friends || [];
-            saveUserState();
+            S.name = data.name || '';
+            S.bio = data.bio || S.bio;
+            S.avatar = data.avatar || null;
+            S.wallpaper = data.wallpaper || null;
+            S.friends = data.friends || [];
+            S.bookmarks = data.bookmarks || [];
+            saveState();
         }
     });
     
-    // Load diary
-    const diaryRef = getRef('diary/' + username);
-    diaryRef.orderByKey().limitToLast(100).once('value', (snapshot) => {
+    getRef('diary/' + username).orderByKey().limitToLast(100).once('value', (snapshot) => {
         if (snapshot.exists()) {
-            const data = snapshot.val();
-            window.S.diary = Object.values(data).reverse();
-            if (window.renderDiary) window.renderDiary();
+            S.diary = Object.values(snapshot.val()).reverse();
+            if (typeof renderDiary === 'function') renderDiary();
         }
     });
     
-    // Load routines
-    const routinesRef = getRef('routines/' + username);
-    routinesRef.orderByKey().limitToLast(100).once('value', (snapshot) => {
+    getRef('routines/' + username).orderByKey().limitToLast(100).once('value', (snapshot) => {
         if (snapshot.exists()) {
-            const data = snapshot.val();
-            window.S.routines = Object.values(data).reverse();
-            if (window.renderRoutines) window.renderRoutines();
+            S.routines = Object.values(snapshot.val()).reverse();
+            if (typeof renderRoutines === 'function') renderRoutines();
         }
     });
-    
-    // Set wallpaper
-    if (window.S.wallpaper) {
-        window.setBg(window.S.wallpaper);
-    }
 }
-
-console.log('🔐 Auth module loaded');

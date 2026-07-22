@@ -1,477 +1,367 @@
 // Profile Module
-window.renderProfile = function() {
-    if (!window.S.username) return;
+
+function renderProfile() {
+    if (!S.username) return;
     
-    // Update profile info
-    const nameEl = document.getElementById('profileName');
-    if (nameEl) nameEl.textContent = window.S.username;
+    document.getElementById('profileName').textContent = S.name || S.username;
+    document.getElementById('profileUsername').textContent = '@' + S.username;
+    document.getElementById('profileBio').textContent = S.bio || 'Building my energy. ⚡';
     
-    const usernameEl = document.getElementById('profileUsername');
-    if (usernameEl) usernameEl.textContent = '@' + window.S.username;
+    const userPosts = S.socialPosts.filter(p => p.author === S.username);
+    document.getElementById('profilePosts').textContent = userPosts.length;
+    document.getElementById('profileFriends').textContent = (S.friends || []).length;
+    document.getElementById('profileBookmarks').textContent = (S.bookmarks || []).length;
     
-    const bioEl = document.getElementById('profileBio');
-    if (bioEl) bioEl.textContent = window.S.bio || 'Building my energy. One aura at a time. ⚡';
+    if (S.avatar) updateAvatarUI(S.avatar);
     
-    // Update stats
-    const userPosts = window.S.socialPosts.filter(p => p.author === window.S.username);
-    const postsEl = document.getElementById('profilePosts');
-    if (postsEl) postsEl.textContent = userPosts.length;
+    renderProfileRequests();
+    updateNotifBadge();
     
-    const friendsEl = document.getElementById('profileFriends');
-    if (friendsEl) friendsEl.textContent = (window.S.friends || []).length;
-    
-    // Update avatar
-    if (window.S.avatar) {
-        updateAvatarUI(window.S.avatar);
-    }
-    
-    // Render posts grid
     const grid = document.getElementById('profilePostsGrid');
     if (!grid) return;
     
     if (userPosts.length === 0) {
-        grid.innerHTML = '<p style="color:#94a3b8;text-align:center;grid-column:1/-1;padding:16px 0;">No posts yet. Share your first post! 📸</p>';
+        grid.innerHTML = '<p style="color:#94a3b8;text-align:center;grid-column:1/-1;padding:16px;">No posts yet. Share your first post! 📸</p>';
         return;
     }
     
-    let html = '';
-    userPosts.forEach(p => {
+    grid.innerHTML = userPosts.map(p => {
         const img = p.image || 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=400&q=80';
-        html += `
-            <div style="aspect-ratio:1;background-image:url(${img});background-size:cover;background-position:center;border-radius:4px;cursor:pointer;" 
-                 onclick="window.viewPostDetail('${p.id}')">
-            </div>`;
-    });
-    
-    grid.innerHTML = html;
-};
+        return `<div style="aspect-ratio:1;background-image:url(${img});background-size:cover;background-position:center;border-radius:4px;cursor:pointer;" onclick="viewPostDetail('${p.id}')"></div>`;
+    }).join('');
+}
 
-window.editProfile = function() {
+function renderProfileRequests() {
+    const section = document.getElementById('profileRequestsSection');
+    if (!section) return;
+    
+    getRef('friendRequests/' + S.username).once('value', (snapshot) => {
+        const requests = snapshot.val() || [];
+        
+        if (requests.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+        
+        section.style.display = 'block';
+        let html = '<div style="background:rgba(99,102,241,0.1);border-radius:12px;padding:10px;"><strong style="font-size:12px;">🔔 Friend Requests (' + requests.length + ')</strong>';
+        
+        requests.forEach(requester => {
+            const color = getColor(requester);
+            html += `<div class="request-card">
+                <div class="req-avatar" style="background:${color};">${requester.charAt(0).toUpperCase()}</div>
+                <div class="req-info"><div class="req-name">@${requester}</div></div>
+                <div class="req-actions">
+                    <button class="btn-sm btn-success" onclick="acceptFriendRequest('${requester}')">✅ Accept</button>
+                    <button class="btn-sm btn-danger" onclick="declineFriendRequest('${requester}')">❌ Decline</button>
+                </div>
+            </div>`;
+        });
+        
+        html += '</div>';
+        section.innerHTML = html;
+    });
+}
+
+function editName() {
+    showDialog({
+        emoji: '✏️',
+        title: 'Edit Name',
+        subtitle: 'Change your display name',
+        placeholder: 'Your name...',
+        defaultValue: S.name || '',
+        confirmText: 'Save'
+    }).then(result => {
+        if (result !== null) {
+            S.name = result.trim();
+            if (S.username) {
+                setData('users/' + S.username + '/name', S.name);
+                updateAllPostsAuthorName(S.name);
+            }
+            saveState();
+            renderProfile();
+            toast('Name updated!');
+        }
+    });
+}
+
+function editProfile() {
     showDialog({
         emoji: '📝',
         title: 'Edit Bio',
         subtitle: 'Tell us about yourself',
         placeholder: 'Your bio...',
-        defaultValue: window.S.bio || '',
+        defaultValue: S.bio || '',
         confirmText: 'Save'
     }).then(result => {
         if (result !== null) {
-            window.S.bio = result.trim() || 'Building my energy. One aura at a time. ⚡';
-            if (window.S.username) {
-                setData('users/' + window.S.username + '/bio', window.S.bio);
-            }
-            saveUserState();
-            window.renderProfile();
-            window.toast('Bio updated');
+            S.bio = result.trim() || 'Building my energy. ⚡';
+            if (S.username) setData('users/' + S.username + '/bio', S.bio);
+            saveState();
+            renderProfile();
+            toast('Bio updated!');
         }
     });
-};
+}
 
-window.handleAvatarSelect = function(event) {
+function handleAvatarSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    // Check file type
-    if (!file.type.startsWith('image/')) {
-        window.toast('Please select an image file');
-        return;
-    }
-    
-    // Check file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-        window.toast('Image too large (max 2MB)');
+    if (file.size > 10 * 1024 * 1024) {
+        toast('Image too large (max 10MB)');
         return;
     }
     
     const reader = new FileReader();
     reader.onload = function(e) {
-        const dataUrl = e.target.result;
-        window.S.avatar = dataUrl;
-        
-        if (window.S.username) {
-            setData('users/' + window.S.username + '/avatar', dataUrl);
-        }
-        
-        updateAvatarUI(dataUrl);
-        saveUserState();
-        window.toast('✅ Avatar updated!');
+        S.avatar = e.target.result;
+        if (S.username) setData('users/' + S.username + '/avatar', S.avatar);
+        updateAvatarUI(S.avatar);
+        saveState();
+        toast('✅ Avatar updated!');
     };
     reader.readAsDataURL(file);
-};
+}
 
 function updateAvatarUI(dataUrl) {
-    const avatarContainer = document.getElementById('profileAvatarEmoji');
-    if (avatarContainer) {
-        avatarContainer.innerHTML = `<img src="${dataUrl}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    const avatarEl = document.getElementById('profileAvatarEmoji');
+    if (avatarEl) {
+        avatarEl.innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="Avatar" />`;
     }
     
     const postAvatar = document.getElementById('postAvatarEmoji');
     if (postAvatar) {
-        postAvatar.innerHTML = `<img src="${dataUrl}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        postAvatar.innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="Avatar" />`;
     }
 }
 
-// Friend System
-window.sendFriendRequest = function(username) {
-    if (!window.S.username) {
-        window.toast('Please log in');
-        return;
-    }
-    if (username === window.S.username) {
-        window.toast('Cannot add yourself');
-        return;
-    }
-    if ((window.S.friends || []).includes(username)) {
-        window.toast('Already friends');
-        return;
-    }
-    
-    const requestsRef = getRef('friendRequests/' + username);
-    requestsRef.once('value', (snapshot) => {
-        let requests = snapshot.val() || [];
-        if (requests.includes(window.S.username)) {
-            window.toast('Request already sent');
-            return;
-        }
-        
-        requests.push(window.S.username);
-        requestsRef.set(requests);
-        window.toast('Friend request sent to ' + username + ' 📨');
-    });
-};
-
-window.acceptFriendRequest = function(username) {
-    if (!window.S.username) return;
-    
-    if (!window.S.friends.includes(username)) {
-        window.S.friends.push(username);
-    }
-    
-    // Remove from requests
-    const requestsRef = getRef('friendRequests/' + window.S.username);
-    requestsRef.once('value', (snapshot) => {
-        let requests = snapshot.val() || [];
-        requests = requests.filter(r => r !== username);
-        requestsRef.set(requests);
-    });
-    
-    setData('users/' + window.S.username + '/friends', window.S.friends);
-    saveUserState();
-    window.renderChatList();
-    window.renderProfile();
-    window.toast('Friend added! 🎉');
-};
-
-window.loadFriends = function() {
-    if (!window.S.username) return;
-    
-    const friendsRef = getRef('users/' + window.S.username + '/friends');
-    friendsRef.once('value', (snapshot) => {
+function updateAllPostsAuthorName(newName) {
+    getRef('posts').once('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
-            window.S.friends = data;
+            Object.keys(data).forEach(key => {
+                if (data[key].author === S.username) {
+                    getRef('posts/' + key + '/author').set(newName);
+                }
+            });
         }
-        saveUserState();
-        window.renderChatList();
-        window.renderProfile();
     });
     
-    // Listen for friend requests
-    const requestsRef = getRef('friendRequests/' + window.S.username);
-    requestsRef.on('value', (snapshot) => {
+    getRef('videos').once('value', (snapshot) => {
         const data = snapshot.val();
-        if (data && data.length > 0) {
-            window.toast(`You have ${data.length} friend request(s)! 📨`);
+        if (data) {
+            Object.keys(data).forEach(key => {
+                if (data[key].author === S.username) {
+                    getRef('videos/' + key + '/author').set(newName);
+                }
+            });
         }
     });
-};
+    
+    // Update local posts
+    S.socialPosts.forEach(p => {
+        if (p.author === S.username) p.author = newName;
+    });
+    
+    // Update local videos
+    S.videoData.forEach(v => {
+        if (v.author === S.username) v.author = newName;
+    });
+}
 
-// Users List
-window.renderUsers = function() {
+function renderUsers() {
     const container = document.getElementById('usersList');
     if (!container) return;
     
-    if (!window.S.username) {
+    if (!S.username) {
         container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">Please log in</p>';
         return;
     }
     
-    const usersRef = getRef('users');
-    usersRef.once('value', (snapshot) => {
-        const users = snapshot.val() || {};
-        const usernames = Object.keys(users);
+    getRef('friendRequests/' + S.username).once('value', (reqSnapshot) => {
+        const pendingRequests = reqSnapshot.val() || [];
         
-        if (usernames.length === 0) {
-            container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">No users yet.</p>';
-            return;
-        }
-        
-        let html = '';
-        usernames.forEach(u => {
-            const isMe = u === window.S.username;
-            const userData = users[u] || {};
-            const isOnline = userData.online || false;
-            const isFriend = (window.S.friends || []).includes(u);
+        getRef('users').once('value', (snapshot) => {
+            const users = snapshot.val() || {};
+            const usernames = Object.keys(users);
             
-            const colors = ['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD',
-                          '#98D8C8','#F7B787','#FF8A80','#B388FF','#82B1FF','#B9F6CA',
-                          '#FFE57F','#FF80AB','#EA80FC','#8C9EFF'];
-            const color = colors[u.length % colors.length];
-            
-            let avatarHTML = `<div style="width:40px;height:40px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:16px;">${u.charAt(0).toUpperCase()}</div>`;
-            
-            if (userData.avatar) {
-                avatarHTML = `<img src="${userData.avatar}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;" alt="${u}" />`;
+            if (usernames.length === 0) {
+                container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">No users yet.</p>';
+                return;
             }
             
-            html += `
-                <div class="user-card">
-                    <div class="user-avatar">${avatarHTML}</div>
+            let html = '';
+            
+            if (pendingRequests.length > 0) {
+                html += '<div style="margin-bottom:12px;padding:10px;background:rgba(99,102,241,0.1);border-radius:12px;"><strong style="font-size:13px;">🔔 Pending Requests (' + pendingRequests.length + ')</strong>';
+                
+                pendingRequests.forEach(requester => {
+                    const color = getColor(requester);
+                    html += `<div class="request-card">
+                        <div class="req-avatar" style="background:${color};">${requester.charAt(0).toUpperCase()}</div>
+                        <div class="req-info"><div class="req-name">@${requester}</div></div>
+                        <div class="req-actions">
+                            <button class="btn-sm btn-success" onclick="acceptFriendRequest('${requester}')">✅</button>
+                            <button class="btn-sm btn-danger" onclick="declineFriendRequest('${requester}')">❌</button>
+                        </div>
+                    </div>`;
+                });
+                
+                html += '<div style="margin:12px 0;border-top:1px solid rgba(0,0,0,0.1);"></div>';
+            }
+            
+            html += '<strong style="font-size:13px;">👥 All Users</strong><br><br>';
+            
+            usernames.forEach(u => {
+                if (pendingRequests.includes(u)) return;
+                
+                const isMe = u === S.username;
+                const userData = users[u] || {};
+                const isFriend = (S.friends || []).includes(u);
+                const color = getColor(u);
+                
+                let avatarHTML = userData.avatar ?
+                    `<img src="${userData.avatar}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;" alt="${u}" />` :
+                    `<div style="width:40px;height:40px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:16px;">${u.charAt(0).toUpperCase()}</div>`;
+                
+                html += `<div class="user-card">
+                    <div class="user-avatar" onclick="viewUserProfile('${u}')">${avatarHTML}</div>
                     <div class="user-info">
-                        <div class="name">
+                        <div class="name" onclick="viewUserProfile('${u}')">
                             ${isMe ? '⭐ ' : ''}${u}
-                            <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span>
+                            <span class="status-dot ${userData.online ? 'online' : 'offline'}"></span>
                         </div>
                         <div class="bio">${userData.bio || 'No bio yet'}</div>
                     </div>
                     <div class="actions">
-                        ${!isMe ? (
-                            isFriend ? 
-                            '<button class="btn-sm btn-success">✓ Friend</button>' :
-                            `<button class="btn-sm" onclick="window.sendFriendRequest('${u}')">➕ Add</button>`
-                        ) : ''}
+                        ${!isMe ? (isFriend ? '<button class="btn-sm btn-success">✓ Friends</button>' : `<button class="btn-sm" onclick="sendFriendRequest('${u}')">➕ Add</button>`) : ''}
                     </div>
                 </div>`;
-        });
-        
-        container.innerHTML = html;
-    });
-};
-
-// Initialize Wallpapers
-window.initWallpapers = function() {
-    const PORTRAIT_WALLPAPERS = [
-        'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1080&q=80',
-        'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1080&q=80',
-        'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1080&q=80',
-        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1080&q=80',
-        'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1080&q=80',
-        'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=1080&q=80',
-        'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=1080&q=80',
-        'https://images.unsplash.com/photo-1470071459606-3b5ec3a7fe05?w=1080&q=80',
-        'https://images.unsplash.com/photo-1440589473619-3cde28941638?w=1080&q=80',
-        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1080&q=80'
-    ];
-    
-    const LANDSCAPE_WALLPAPERS = [
-        'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1920&q=80',
-        'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1920&q=80',
-        'https://images.unsplash.com/photo-1470071459606-3b5ec3a7fe05?w=1920&q=80',
-        'https://images.unsplash.com/photo-1440589473619-3cde28941638?w=1920&q=80',
-        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80',
-        'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1920&q=80',
-        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80',
-        'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=80'
-    ];
-    
-    window.ALL_WALLPAPERS = [];
-    PORTRAIT_WALLPAPERS.forEach(url => {
-        window.ALL_WALLPAPERS.push({ url, type: 'portrait' });
-    });
-    LANDSCAPE_WALLPAPERS.forEach(url => {
-        window.ALL_WALLPAPERS.push({ url, type: 'landscape' });
-    });
-    
-    window.currentWallpaperFilter = 'all';
-    window.renderWallpapers();
-};
-
-// Video Module
-window.loadVideos = function() {
-    const videosRef = getRef('videos');
-    videosRef.orderByKey().limitToLast(50).on('child_added', (snapshot) => {
-        const data = snapshot.val();
-        data.id = snapshot.key;
-        
-        if (!window.videoData.find(v => v.id === data.id)) {
-            window.videoData.unshift(data);
-            if (window.videoData.length > 50) window.videoData.pop();
-            window.renderVideos();
-        }
-    });
-};
-
-window.renderVideos = function() {
-    const container = document.getElementById('videoFeed');
-    if (!container) return;
-    
-    if (!window.S.username) {
-        container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:40px 0;">Please log in</p>';
-        return;
-    }
-    
-    if (!window.videoData || window.videoData.length === 0) {
-        container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:40px 0;">No videos yet. Tap 📹 to upload!</p>';
-        return;
-    }
-    
-    let html = '';
-    window.videoData.forEach(v => {
-        const isLiked = (v.likes || []).includes(window.S.username);
-        const likeCount = (v.likes || []).length;
-        const commentCount = (v.comments || []).length;
-        const avatarDisplay = v.avatar || '😊';
-        
-        html += `
-            <div class="tiktok-video">
-                ${v.url ? `<video src="${v.url}" loop muted playsinline></video>` : 
-                  '<div style="background:#0f172a;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;">Video</div>'}
-                <div class="overlay">
-                    <div class="user">
-                        <div class="avatar">${avatarDisplay}</div>
-                        @${v.author}
-                    </div>
-                    <div class="desc">${v.text || ''}</div>
-                    <div class="side-actions">
-                        <button class="${isLiked ? 'liked' : ''}" onclick="window.likeVideo('${v.id}')">
-                            ❤️<span>${likeCount}</span>
-                        </button>
-                        <button onclick="window.commentVideo('${v.id}')">
-                            💬<span>${commentCount}</span>
-                        </button>
-                        <button onclick="window.downloadMedia('${v.url}', 'winchu-video.mp4')">
-                            ⬇️<span>Save</span>
-                        </button>
-                        ${v.author === window.S.username ? 
-                            `<button onclick="window.deleteVideo('${v.id}')" style="color:#ef4444;">🗑️<span>Delete</span></button>` : ''}
-                    </div>
-                </div>
-            </div>`;
-    });
-    
-    container.innerHTML = html;
-    
-    // Video autoplay with Intersection Observer
-    const videos = container.querySelectorAll('video');
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.play().catch(() => {});
-            } else {
-                entry.target.pause();
-            }
-        });
-    }, { threshold: 0.5 });
-    
-    videos.forEach(video => observer.observe(video));
-};
-
-window.likeVideo = function(id) {
-    if (!window.S.username) {
-        window.toast('Please log in');
-        return;
-    }
-    
-    const video = window.videoData.find(v => v.id === id);
-    if (!video) return;
-    
-    let likes = video.likes || [];
-    const index = likes.indexOf(window.S.username);
-    
-    if (index > -1) {
-        likes.splice(index, 1);
-    } else {
-        likes.push(window.S.username);
-    }
-    
-    video.likes = likes;
-    getRef('videos/' + id + '/likes').set(likes);
-    window.renderVideos();
-    saveUserState();
-};
-
-window.commentVideo = function(id) {
-    if (!window.S.username) {
-        window.toast('Please log in');
-        return;
-    }
-    
-    showDialog({
-        emoji: '💬',
-        title: 'Add Comment',
-        subtitle: 'Write your comment',
-        placeholder: 'Type your comment...',
-        confirmText: 'Post'
-    }).then(result => {
-        if (result && result.trim()) {
-            const video = window.videoData.find(v => v.id === id);
-            if (!video) return;
-            
-            const comments = video.comments || [];
-            comments.push({
-                username: window.S.username,
-                text: result.trim(),
-                time: new Date().toISOString()
             });
             
-            video.comments = comments;
-            getRef('videos/' + id + '/comments').set(comments);
-            window.renderVideos();
-            window.toast('Comment added! 💬');
-            saveUserState();
-        }
+            container.innerHTML = html;
+        });
     });
-};
+}
 
-window.deleteVideo = function(id) {
-    showDialog({
-        emoji: '🗑️',
-        title: 'Delete Video',
-        subtitle: 'Are you sure you want to delete this video?',
-        confirmText: 'Delete',
-        danger: true
-    }).then(result => {
-        if (result !== null) {
-            getRef('videos/' + id).remove();
-            window.videoData = window.videoData.filter(v => v.id !== id);
-            window.renderVideos();
-            window.toast('Video deleted');
-            saveUserState();
+function sendFriendRequest(username) {
+    if (!S.username) { toast('Please log in'); return; }
+    if (username === S.username) { toast('Cannot add yourself'); return; }
+    if ((S.friends || []).includes(username)) { toast('Already friends'); return; }
+    
+    getRef('friendRequests/' + username).once('value', (snapshot) => {
+        let requests = snapshot.val() || [];
+        if (requests.includes(S.username)) {
+            toast('Request already sent');
+            return;
         }
-    });
-};
-
-window.handleVideoUpload = function(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    if (!file.type.startsWith('video/')) {
-        window.toast('Please select a video file');
-        return;
-    }
-    
-    if (file.size > 10 * 1024 * 1024) {
-        window.toast('Video too large (max 10MB)');
-        return;
-    }
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const videoPost = {
-            author: window.S.username || 'Anonymous',
-            avatar: window.S.avatar || '😊',
-            text: '',
-            url: e.target.result,
-            time: new Date().toISOString(),
-            likes: [],
-            comments: []
-        };
         
-        pushData('videos', videoPost);
-        window.toast('📹 Video uploaded!');
-        saveUserState();
-    };
-    reader.readAsDataURL(file);
-};
+        requests.push(S.username);
+        setData('friendRequests/' + username, requests);
+        toast('Friend request sent to @' + username + '! 📨');
+        addNotification(username, `${S.username} sent you a friend request`, 'friend_request', '');
+    });
+}
 
-console.log('👤 Profile module loaded');
+function acceptFriendRequest(username) {
+    if (!S.username) return;
+    
+    // Add to current user's friends
+    if (!S.friends.includes(username)) {
+        S.friends.push(username);
+    }
+    
+    // Add current user to other person's friends
+    getRef('users/' + username + '/friends').once('value', (snapshot) => {
+        let theirFriends = snapshot.val() || [];
+        if (!theirFriends.includes(S.username)) {
+            theirFriends.push(S.username);
+            setData('users/' + username + '/friends', theirFriends);
+        }
+    });
+    
+    // Remove the friend request
+    getRef('friendRequests/' + S.username).once('value', (snapshot) => {
+        let requests = snapshot.val() || [];
+        requests = requests.filter(r => r !== username);
+        setData('friendRequests/' + S.username, requests);
+    });
+    
+    // Save current user's friends
+    setData('users/' + S.username + '/friends', S.friends);
+    saveState();
+    
+    // Update UI
+    renderChatList();
+    renderProfile();
+    renderUsers();
+    
+    // Send notification
+    addNotification(username, `${S.username} accepted your friend request`, 'friend_accept', '');
+    
+    toast('✅ You and @' + username + ' are now friends!');
+}
+
+function declineFriendRequest(username) {
+    if (!S.username) return;
+    
+    getRef('friendRequests/' + S.username).once('value', (snapshot) => {
+        let requests = snapshot.val() || [];
+        requests = requests.filter(r => r !== username);
+        setData('friendRequests/' + S.username, requests);
+        
+        toast('Request declined');
+        renderProfile();
+        renderUsers();
+    });
+}
+
+function viewUserProfile(username) {
+    viewingProfile = username;
+    navigate('userprofile', username);
+}
+
+function renderUserProfile(username) {
+    if (!username) return;
+    
+    getRef('users/' + username).once('value', (snapshot) => {
+        if (!snapshot.exists()) {
+            toast('User not found');
+            return;
+        }
+        
+        const data = snapshot.val();
+        
+        document.getElementById('viewProfileAvatar').innerHTML = data.avatar ?
+            `<img src="${data.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />` :
+            (data.name || username).charAt(0).toUpperCase();
+        
+        document.getElementById('viewProfileName').textContent = data.name || username;
+        document.getElementById('viewProfileUsername').textContent = '@' + username;
+        document.getElementById('viewProfileBio').textContent = data.bio || '';
+        
+        const userPosts = S.socialPosts.filter(p => p.author === username);
+        document.getElementById('viewProfilePosts').textContent = userPosts.length;
+        
+        const actionsDiv = document.getElementById('viewProfileActions');
+        if (username === S.username) {
+            actionsDiv.innerHTML = '';
+        } else if ((S.friends || []).includes(username)) {
+            actionsDiv.innerHTML = '<button class="btn-sm btn-success">✓ Friends</button>';
+        } else {
+            actionsDiv.innerHTML = `<button class="btn-sm" onclick="sendFriendRequest('${username}')">➕ Add Friend</button>`;
+        }
+        
+        const grid = document.getElementById('viewProfilePostsGrid');
+        if (userPosts.length === 0) {
+            grid.innerHTML = '<p style="color:#94a3b8;text-align:center;grid-column:1/-1;padding:16px;">No posts yet.</p>';
+            return;
+        }
+        
+        grid.innerHTML = userPosts.map(p => {
+            const img = p.image || 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=400&q=80';
+            return `<div style="aspect-ratio:1;background-image:url(${img});background-size:cover;background-position:center;border-radius:4px;cursor:pointer;" onclick="viewPostDetail('${p.id}')"></div>`;
+        }).join('');
+    });
+}

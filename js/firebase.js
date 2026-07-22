@@ -1,4 +1,4 @@
-// Firebase Configuration for Nexus Project
+// Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyBxRC99vpLBRpkhXmUiYVXi0lFaN5ayXj8",
     authDomain: "nexus-wegem.firebaseapp.com",
@@ -9,41 +9,23 @@ const firebaseConfig = {
     appId: "1:383870608188:web:043f97e81bcb6dbb68b439"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-console.log('🔥 Firebase initialized!');
-
 // Firebase helper functions
-function getRef(path) {
-    return database.ref(path);
-}
-
-function setData(path, data) {
-    return database.ref(path).set(data);
-}
-
-function pushData(path, data) {
-    return database.ref(path).push(data);
-}
-
-function updateData(path, data) {
-    return database.ref(path).update(data);
-}
-
-function removeData(path) {
-    return database.ref(path).remove();
-}
+function getRef(path) { return database.ref(path); }
+function setData(path, data) { return database.ref(path).set(data); }
+function pushData(path, data) { return database.ref(path).push(data); }
+function updateData(path, data) { return database.ref(path).update(data); }
+function removeData(path) { return database.ref(path).remove(); }
 
 // Initialize online presence
 function setupPresence() {
-    if (!window.S || !window.S.username) return;
-    
+    if (!S || !S.username) return;
     const connectedRef = database.ref('.info/connected');
     connectedRef.on('value', (snap) => {
         if (snap.val() === true) {
-            const userRef = database.ref('users/' + window.S.username);
+            const userRef = database.ref('users/' + S.username);
             userRef.onDisconnect().update({
                 online: false,
                 last_seen: firebase.database.ServerValue.TIMESTAMP
@@ -55,3 +37,5 @@ function setupPresence() {
         }
     });
 }
+
+console.log('🔥 Firebase initialized');

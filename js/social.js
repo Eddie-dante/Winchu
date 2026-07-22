@@ -1,198 +1,146 @@
-// Social Feed Module - Fix duplicate declaration
-window.postsListener = null;
-window.selectedFile = null;
-window.selectedFileData = null;
+// Social Feed Module
 
-// Setup Posts Listener
-window.setupPostsListener = function() {
-    // Remove old listener if exists
-    if (window.postsListener) {
-        window.postsListener.off();
-        window.postsListener = null;
-    }
+function setupPostsListener() {
+    if (postsListener) postsListener.off();
     
-    const postsRef = getRef('posts');
-    window.postsListener = postsRef.orderByChild('time').limitToLast(50);
+    postsListener = getRef('posts').orderByChild('time').limitToLast(50);
     
-    window.postsListener.on('child_added', (snapshot) => {
+    postsListener.on('child_added', (snapshot) => {
         const post = snapshot.val();
         post.id = snapshot.key;
         
-        if (!window.S.socialPosts.find(p => p.id === post.id)) {
-            window.S.socialPosts.unshift(post);
-            if (window.S.socialPosts.length > 50) {
-                window.S.socialPosts.pop();
-            }
-            
-            // Sort by time
-            window.S.socialPosts.sort((a, b) => new Date(b.time) - new Date(a.time));
-            
-            if (window.renderSocial) window.renderSocial();
-            if (window.renderProfile) window.renderProfile();
-            if (window.renderStories) window.renderStories();
-            saveUserState();
+        if (!S.socialPosts.find(p => p.id === post.id)) {
+            S.socialPosts.unshift(post);
+            if (S.socialPosts.length > 50) S.socialPosts.pop();
+            S.socialPosts.sort((a, b) => new Date(b.time) - new Date(a.time));
+            renderSocial();
+            renderProfile();
+            renderStories();
+            saveState();
         }
     });
     
-    window.postsListener.on('child_changed', (snapshot) => {
+    postsListener.on('child_changed', (snapshot) => {
         const post = snapshot.val();
         post.id = snapshot.key;
-        
-        const index = window.S.socialPosts.findIndex(p => p.id === post.id);
-        if (index > -1) {
-            window.S.socialPosts[index] = post;
-            if (window.renderSocial) window.renderSocial();
-            saveUserState();
+        const idx = S.socialPosts.findIndex(p => p.id === post.id);
+        if (idx > -1) {
+            S.socialPosts[idx] = post;
+            renderSocial();
         }
     });
     
-    window.postsListener.on('child_removed', (snapshot) => {
-        window.S.socialPosts = window.S.socialPosts.filter(p => p.id !== snapshot.key);
-        if (window.renderSocial) window.renderSocial();
-        if (window.renderProfile) window.renderProfile();
-        saveUserState();
+    postsListener.on('child_removed', (snapshot) => {
+        S.socialPosts = S.socialPosts.filter(p => p.id !== snapshot.key);
+        renderSocial();
+        renderProfile();
     });
-};
+}
 
-// Render Social Feed
-window.renderSocial = function() {
+function renderSocial() {
     const feed = document.getElementById('socialFeed');
     if (!feed) return;
     
-    if (!window.S.username) {
-        feed.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:30px 0;">Please log in to see posts</p>';
+    if (!S.username) {
+        feed.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:30px;">Please log in</p>';
         return;
     }
     
-    if (!window.S.socialPosts || window.S.socialPosts.length === 0) {
-        feed.innerHTML = `
-            <div style="text-align:center;padding:40px 0;color:#94a3b8;">
-                <div style="font-size:48px;margin-bottom:12px;">📸</div>
-                <p>No posts yet. Share something!</p>
-            </div>`;
+    if (!S.socialPosts || S.socialPosts.length === 0) {
+        feed.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;"><div style="font-size:48px;">📸</div><p>No posts yet.</p></div>';
         return;
     }
     
     let html = '';
-    window.S.socialPosts.forEach(p => {
-        const liked = (p.likes || []).includes(window.S.username);
-        const timeAgo = window.timeSince ? window.timeSince(new Date(p.time)) : 'recent';
-        const avatarDisplay = p.avatar || '😊';
+    const sorted = [...S.socialPosts].sort((a, b) => new Date(b.time) - new Date(a.time));
+    
+    sorted.forEach(p => {
+        const liked = (p.likes || []).includes(S.username);
+        const bookmarked = (S.bookmarks || []).some(b => b.id === p.id);
+        const timeAgo = timeSince(new Date(p.time));
         const commentCount = (p.comments || []).length;
-        const canDelete = p.author === window.S.username;
         const likeCount = (p.likes || []).length;
+        const canDelete = p.author === S.username;
         
-        html += `
-            <div class="ig-post" onclick="window.viewPostDetail('${p.id}')">
-                <div class="ig-post-header">
-                    <div class="ig-post-avatar">${avatarDisplay}</div>
-                    <span class="ig-post-user">${p.author}</span>
-                    <span class="ig-post-time">${timeAgo}</span>
-                    ${canDelete ? `<button class="btn-sm btn-danger" onclick="event.stopPropagation(); window.deletePost('${p.id}')" style="font-size:11px;padding:2px 8px;">🗑️</button>` : ''}
+        html += `<div class="ig-post" onclick="viewPostDetail('${p.id}')">
+            <div class="ig-post-header">
+                <div class="profile-bubble" onclick="event.stopPropagation();viewUserProfile('${p.author}')">
+                    <div class="pb-avatar">${p.avatar || '😊'}</div>
+                    <span class="pb-name">${p.author}</span>
                 </div>
-                ${p.image ? `<img src="${p.image}" class="post-image" alt="Post" />` : ''}
-                <div style="padding:0 12px 4px;">
-                    <p style="font-size:13px;margin:4px 0;">${escapeHtml(p.text || '')}</p>
-                </div>
-                <div class="ig-post-actions" onclick="event.stopPropagation();">
-                    <button class="ig-post-action ${liked ? 'liked' : ''}" onclick="window.likePost('${p.id}')">
-                        ${liked ? '❤️' : '🤍'}
-                    </button>
-                    <span style="font-size:13px;font-weight:600;color:#94a3b8;">${likeCount}</span>
-                    <button class="ig-post-action" onclick="window.commentOnPost('${p.id}')">💬</button>
-                    <span style="font-size:13px;font-weight:600;color:#94a3b8;">${commentCount}</span>
-                    ${p.image ? `<button class="ig-post-action" onclick="window.downloadMedia('${p.image}', 'winchu-post.jpg')">⬇️</button>` : ''}
-                </div>
-                ${commentCount > 0 ? `
-                    <div class="ig-post-comments" onclick="event.stopPropagation(); window.viewPostDetail('${p.id}')">
-                        View ${commentCount} comment${commentCount > 1 ? 's' : ''}
-                    </div>` : ''}
-            </div>`;
+                <span class="ig-post-time">${timeAgo}</span>
+                ${canDelete ? `<button class="btn-sm btn-danger" onclick="event.stopPropagation();deletePost('${p.id}')" style="font-size:10px;padding:2px 6px;">🗑️</button>` : ''}
+            </div>
+            ${p.image ? `<img src="${p.image}" class="ig-post-image" onclick="event.stopPropagation();" />` : ''}
+            <div style="padding:0 12px 4px;"><p style="font-size:13px;margin:4px 0;">${escapeHtml(p.text || '')}</p></div>
+            <div class="ig-post-actions" onclick="event.stopPropagation();">
+                <button class="ig-post-action${liked ? ' liked' : ''}" onclick="likePost('${p.id}')">${liked ? '❤️' : '🤍'}</button>
+                <span style="font-size:12px;font-weight:600;color:#94a3b8;">${likeCount}</span>
+                <button class="ig-post-action" onclick="commentOnPost('${p.id}')">💬</button>
+                <span style="font-size:12px;font-weight:600;color:#94a3b8;">${commentCount}</span>
+                <button class="ig-post-action${bookmarked ? ' bookmarked' : ''}" onclick="bookmarkItem('${p.id}','post')">🔖</button>
+                ${p.image ? `<button class="ig-post-action" onclick="downloadMedia('${p.image}','post.jpg')">⬇️</button>` : ''}
+            </div>
+            ${commentCount > 0 ? `<div class="ig-post-comments" onclick="event.stopPropagation();viewPostDetail('${p.id}')">View ${commentCount} comment${commentCount > 1 ? 's' : ''}</div>` : ''}
+        </div>`;
     });
     
     feed.innerHTML = html;
-};
+}
 
-// Create Post
-window.createPost = function() {
-    if (!window.S.username) {
-        window.toast('Please log in');
-        return;
-    }
+function createPost() {
+    if (!S.username) { toast('Please log in'); return; }
     
     const input = document.getElementById('postInput');
     const text = input.value.trim();
     
-    if (!text && !window.selectedFileData) {
-        window.toast('Write something or add media');
-        return;
-    }
+    if (!text && !selectedFileData) { toast('Write something or add media'); return; }
     
-    const avatar = window.S.avatar || 
-        (window.S.selectedAuras.length > 0 ? 
-            window.S.selectedAuras.map(k => AURAS[k].emoji).join('') : '😊');
+    const avatar = S.avatar || (S.selectedAuras.length > 0 ? S.selectedAuras.map(k => AURAS[k].emoji).join('') : '😊');
     
     const post = {
-        author: window.S.username,
+        author: S.username,
         avatar: avatar,
         text: text || '',
-        image: window.selectedFileData || null,
+        image: selectedFileData || null,
         time: new Date().toISOString(),
         likes: [],
         comments: []
     };
     
-    // Push to Firebase
-    const newPostRef = getRef('posts').push();
-    newPostRef.set(post)
-        .then(() => {
-            window.toast('📝 Posted!');
-        })
-        .catch((err) => {
-            console.error('Post error:', err);
-            window.toast('Failed to post. Check permissions.');
-        });
+    pushData('posts', post).then(() => {
+        toast('📝 Posted!');
+    }).catch(() => {
+        toast('Failed to post');
+    });
     
-    // Clear input
     input.value = '';
-    window.selectedFile = null;
-    window.selectedFileData = null;
-    
-    const preview = document.getElementById('filePreview');
-    if (preview) {
-        preview.style.display = 'none';
-        preview.innerHTML = '';
-    }
-    
-    saveUserState();
-};
+    selectedFile = null;
+    selectedFileData = null;
+    document.getElementById('filePreview').style.display = 'none';
+    document.getElementById('filePreview').innerHTML = '';
+    saveState();
+}
 
-// Handle File Select
-window.handleFileSelect = function(event) {
+function handleFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    // Check file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-        window.toast('File too large (max 5MB)');
+    const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+        toast(`File too large (max ${maxSize / (1024 * 1024)}MB)`);
         return;
     }
     
-    // Check file type
-    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-        window.toast('Please select an image or video');
-        return;
-    }
-    
-    window.selectedFile = file;
+    selectedFile = file;
     const reader = new FileReader();
     
     reader.onload = function(e) {
-        window.selectedFileData = e.target.result;
+        selectedFileData = e.target.result;
         const preview = document.getElementById('filePreview');
         
         if (file.type.startsWith('image/')) {
-            preview.innerHTML = `<img src="${e.target.result}" style="max-height:150px;border-radius:8px;max-width:100%;" alt="Preview" />`;
+            preview.innerHTML = `<img src="${e.target.result}" style="max-height:150px;border-radius:8px;max-width:100%;" />`;
         } else if (file.type.startsWith('video/')) {
             preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:150px;border-radius:8px;max-width:100%;"></video>`;
         }
@@ -201,148 +149,157 @@ window.handleFileSelect = function(event) {
     };
     
     reader.readAsDataURL(file);
-};
+}
 
-// Like Post
-window.likePost = function(postId) {
-    if (!window.S.username) {
-        window.toast('Please log in');
-        return;
-    }
+function likePost(postId) {
+    if (!S.username) return;
     
-    const post = window.S.socialPosts.find(p => p.id === postId);
-    if (!post) return;
-    
-    let likes = post.likes || [];
-    const index = likes.indexOf(window.S.username);
-    
-    if (index > -1) {
-        likes.splice(index, 1);
-    } else {
-        likes.push(window.S.username);
-    }
-    
-    post.likes = likes;
-    getRef('posts/' + postId + '/likes').set(likes)
-        .then(() => {
-            window.renderSocial();
-            saveUserState();
-        })
-        .catch(err => {
-            console.error('Like error:', err);
+    getRef('posts/' + postId).once('value', (snapshot) => {
+        const post = snapshot.val();
+        if (!post) return;
+        
+        let likes = post.likes || [];
+        const idx = likes.indexOf(S.username);
+        
+        if (idx > -1) likes.splice(idx, 1);
+        else likes.push(S.username);
+        
+        getRef('posts/' + postId + '/likes').set(likes).then(() => {
+            const localPost = S.socialPosts.find(p => p.id === postId);
+            if (localPost) localPost.likes = likes;
+            renderSocial();
+            addNotification(post.author, `${S.username} liked your post`, 'like', postId);
         });
-};
+    });
+}
 
-// Comment on Post
-window.commentOnPost = function(postId) {
-    if (!window.S.username) {
-        window.toast('Please log in');
-        return;
-    }
+function commentOnPost(postId) {
+    if (!S.username) return;
     
-    window.showDialog({
+    showDialog({
         emoji: '💬',
         title: 'Add Comment',
-        subtitle: 'Write your comment',
-        placeholder: 'Type your comment...',
+        placeholder: 'Write your comment...',
         confirmText: 'Post'
     }).then(result => {
         if (result && result.trim()) {
-            const post = window.S.socialPosts.find(p => p.id === postId);
-            if (!post) return;
-            
-            const comments = post.comments || [];
-            comments.push({
-                username: window.S.username,
-                text: result.trim(),
-                time: new Date().toISOString()
-            });
-            
-            post.comments = comments;
-            getRef('posts/' + postId + '/comments').set(comments)
-                .then(() => {
-                    window.renderSocial();
-                    window.toast('Comment added! 💬');
-                    saveUserState();
-                })
-                .catch(err => {
-                    console.error('Comment error:', err);
+            getRef('posts/' + postId).once('value', (snapshot) => {
+                const post = snapshot.val();
+                if (!post) return;
+                
+                const comments = post.comments || [];
+                comments.push({
+                    username: S.username,
+                    text: result.trim(),
+                    time: new Date().toISOString()
                 });
+                
+                getRef('posts/' + postId + '/comments').set(comments).then(() => {
+                    const localPost = S.socialPosts.find(p => p.id === postId);
+                    if (localPost) localPost.comments = comments;
+                    renderSocial();
+                    toast('Comment added! 💬');
+                    addNotification(post.author, `${S.username} commented on your post`, 'comment', postId);
+                });
+            });
         }
     });
-};
+}
 
-// Delete Post
-window.deletePost = function(postId) {
-    window.showDialog({
+function deletePost(postId) {
+    showDialog({
         emoji: '🗑️',
         title: 'Delete Post',
-        subtitle: 'Are you sure?',
+        subtitle: 'Are you sure you want to delete this post?',
         confirmText: 'Delete',
         danger: true
     }).then(result => {
         if (result !== null) {
-            getRef('posts/' + postId).remove()
-                .then(() => {
-                    window.S.socialPosts = window.S.socialPosts.filter(p => p.id !== postId);
-                    window.renderSocial();
-                    window.renderProfile();
-                    window.toast('Post deleted');
-                    saveUserState();
-                })
-                .catch(err => {
-                    console.error('Delete error:', err);
-                    window.toast('Failed to delete');
-                });
+            getRef('posts/' + postId).remove().then(() => {
+                S.socialPosts = S.socialPosts.filter(p => p.id !== postId);
+                renderSocial();
+                renderProfile();
+                toast('Post deleted');
+                saveState();
+            });
         }
     });
-};
+}
 
-// Download Media
-window.downloadMedia = function(url, filename) {
-    if (!url) {
-        window.toast('No media to download');
-        return;
-    }
-    
+function downloadMedia(url, filename) {
+    if (!url) return;
     const a = document.createElement('a');
     a.href = url;
-    a.download = filename || 'winchu-media.jpg';
+    a.download = filename || 'media.jpg';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-};
+}
 
-// Render Stories
-window.renderStories = function() {
+function renderStories() {
     const row = document.getElementById('storyRow');
     if (!row) return;
     
-    const users = [...new Set(window.S.socialPosts.map(p => p.author))];
+    const users = [...new Set(S.socialPosts.map(p => p.author))];
     
     if (users.length === 0) {
-        row.innerHTML = '<div style="font-size:12px;color:#94a3b8;padding:8px 0;">No stories yet</div>';
+        row.innerHTML = '<div style="font-size:12px;color:#94a3b8;padding:8px;">No stories yet</div>';
         return;
     }
     
-    row.innerHTML = users.slice(0, 10).map(u => {
-        const post = window.S.socialPosts.find(p => p.author === u);
-        const avatar = post ? (post.avatar || '😊') : '😊';
-        return `
-            <div class="ig-story">
-                <div class="ig-story-avatar">
-                    <div class="inner">${avatar}</div>
-                </div>
-                <span class="ig-story-name">${u}</span>
-            </div>`;
+    row.innerHTML = users.slice(0, 12).map(u => {
+        const post = S.socialPosts.find(p => p.author === u);
+        return `<div class="ig-story" onclick="viewUserProfile('${u}')">
+            <div class="ig-story-avatar"><div class="inner">${post?.avatar || '😊'}</div></div>
+            <span class="ig-story-name">${u}</span>
+        </div>`;
     }).join('');
-};
-
-// Escape HTML helper
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
-console.log('📱 Social module loaded');
+function viewPostDetail(postId) {
+    const post = S.socialPosts.find(p => p.id === postId);
+    if (!post) { toast('Post not found'); return; }
+    
+    const overlay = document.getElementById('postDetailOverlay');
+    const body = document.getElementById('postDetailBody');
+    const liked = (post.likes || []).includes(S.username);
+    const bookmarked = (S.bookmarks || []).some(b => b.id === postId);
+    
+    let html = `<div class="ig-post-header">
+        <div class="profile-bubble" onclick="closePostDetail();viewUserProfile('${post.author}')">
+            <div class="pb-avatar">${post.avatar || '😊'}</div>
+            <span class="pb-name">${post.author}</span>
+        </div>
+        <span class="ig-post-time">${timeSince(new Date(post.time))}</span>
+        ${post.author === S.username ? `<button class="btn-sm btn-danger" onclick="deletePost('${post.id}');closePostDetail();">🗑️</button>` : ''}
+    </div>`;
+    
+    if (post.image) html += `<img src="${post.image}" class="post-detail-image" />`;
+    
+    html += `<div style="padding:8px 0;"><p style="font-size:15px;">${escapeHtml(post.text || '')}</p></div>`;
+    
+    html += `<div class="ig-post-actions">
+        <button class="ig-post-action${liked ? ' liked' : ''}" onclick="likePost('${post.id}');setTimeout(()=>viewPostDetail('${post.id}'),300);">${liked ? '❤️' : '🤍'}</button>
+        <span style="margin-right:8px;">${(post.likes || []).length}</span>
+        <button class="ig-post-action" onclick="commentOnPost('${post.id}');setTimeout(()=>viewPostDetail('${post.id}'),500);">💬</button>
+        <span>${(post.comments || []).length}</span>
+        <button class="ig-post-action${bookmarked ? ' bookmarked' : ''}" onclick="bookmarkItem('${post.id}','post');closePostDetail();">🔖</button>
+    </div>`;
+    
+    html += '<div style="margin-top:12px;border-top:1px solid rgba(0,0,0,0.05);padding-top:8px;"><strong>Comments</strong></div>';
+    
+    if (post.comments && post.comments.length > 0) {
+        post.comments.forEach(c => {
+            html += `<div class="post-detail-comment">
+                <strong onclick="closePostDetail();viewUserProfile('${c.username}')">${c.username}</strong>
+                <span class="time">${new Date(c.time).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</span><br>${c.text}
+            </div>`;
+        });
+    } else {
+        html += '<div style="color:#94a3b8;text-align:center;padding:12px;">No comments yet.</div>';
+    }
+    
+    body.innerHTML = html;
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
