@@ -1,4 +1,4 @@
-// Social Feed Module - Shows ALL posts on platform, fixed avatars, status/stories
+// Social Feed Module - Shows ALL posts from everyone
 
 function renderSocial() {
     const feed = document.getElementById('socialFeed');
@@ -9,37 +9,42 @@ function renderSocial() {
         return;
     }
     
-    // Show ALL posts (not just friends)
+    // SHOW ALL POSTS - no filtering by friends
     const allPosts = S.socialPosts || [];
     
     if (allPosts.length === 0) {
-        feed.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;"><div style="font-size:48px;">📸</div><p>No posts yet. Be the first to share!</p></div>';
+        feed.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;"><div style="font-size:48px;">📸</div><p>No posts yet. Be the first to share something!</p></div>';
         return;
     }
     
     let html = '';
+    // Sort by newest first
     const sorted = [...allPosts].sort((a, b) => new Date(b.time) - new Date(a.time));
     
     sorted.forEach(p => {
+        if (!p || !p.author) return; // Skip invalid posts
+        
         const liked = (p.likes || []).includes(S.username);
         const bookmarked = (S.bookmarks || []).some(b => b.id === p.id);
         const timeAgo = timeSince(new Date(p.time));
         const commentCount = (p.comments || []).length;
         const likeCount = (p.likes || []).length;
         const canDelete = p.author === S.username;
-        const isFriend = (S.friends || []).includes(p.author);
-        const isOwn = p.author === S.username;
         
         // Get avatar display
-        let avatarDisplay = getAvatarDisplay(p.author, p.avatar);
+        let avatarDisplay = '';
+        if (p.avatar && (p.avatar.startsWith('data:') || p.avatar.includes('http'))) {
+            avatarDisplay = `<img src="${p.avatar}" alt="${p.author}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentNode.innerHTML='${p.author.charAt(0).toUpperCase()}';" />`;
+        } else {
+            const color = getColor(p.author);
+            avatarDisplay = `<div style="width:100%;height:100%;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;">${p.author.charAt(0).toUpperCase()}</div>`;
+        }
         
-        html += `<div class="ig-post">
+        html += `<div class="ig-post" onclick="viewPostDetail('${p.id}')">
             <div class="ig-post-header">
                 <div class="profile-bubble" onclick="event.stopPropagation();viewUserProfile('${p.author}')">
                     <div class="pb-avatar" id="avatar-${p.id}">${avatarDisplay}</div>
                     <span class="pb-name">${p.author}</span>
-                    ${isFriend && !isOwn ? '<span style="font-size:9px;color:#22c55e;margin-left:4px;">👥 Friend</span>' : ''}
-                    ${isOwn ? '<span style="font-size:9px;color:#6366f1;margin-left:4px;">⭐ You</span>' : ''}
                 </div>
                 <span class="ig-post-time">${timeAgo}</span>
                 ${canDelete ? `<button class="btn-sm btn-danger" onclick="event.stopPropagation();deletePost('${p.id}')" style="font-size:10px;padding:2px 6px;">🗑️</button>` : ''}
@@ -48,13 +53,13 @@ function renderSocial() {
             <div style="padding:0 12px 4px;">
                 <p style="font-size:13px;margin:4px 0;">${escapeHtml(p.text || '')}</p>
             </div>
-            <div class="ig-post-actions">
-                <button class="ig-post-action${liked ? ' liked' : ''}" onclick="event.stopPropagation();likePost('${p.id}')">${liked ? '❤️' : '🤍'}</button>
+            <div class="ig-post-actions" onclick="event.stopPropagation();">
+                <button class="ig-post-action${liked ? ' liked' : ''}" onclick="likePost('${p.id}')">${liked ? '❤️' : '🤍'}</button>
                 <span style="font-size:12px;font-weight:600;color:#94a3b8;">${likeCount}</span>
-                <button class="ig-post-action" onclick="event.stopPropagation();commentOnPost('${p.id}')">💬</button>
+                <button class="ig-post-action" onclick="commentOnPost('${p.id}')">💬</button>
                 <span style="font-size:12px;font-weight:600;color:#94a3b8;">${commentCount}</span>
-                <button class="ig-post-action${bookmarked ? ' bookmarked' : ''}" onclick="event.stopPropagation();bookmarkItem('${p.id}','post')">🔖</button>
-                ${p.image ? `<button class="ig-post-action" onclick="event.stopPropagation();downloadMedia('${p.image}','winchu-post.jpg')">⬇️</button>` : ''}
+                <button class="ig-post-action${bookmarked ? ' bookmarked' : ''}" onclick="bookmarkItem('${p.id}','post')">🔖</button>
+                ${p.image ? `<button class="ig-post-action" onclick="downloadMedia('${p.image}','winchu-post.jpg')">⬇️</button>` : ''}
             </div>
             ${commentCount > 0 ? `<div class="ig-post-comments" onclick="event.stopPropagation();viewPostDetail('${p.id}')">View ${commentCount} comment${commentCount > 1 ? 's' : ''}</div>` : ''}
         </div>`;
@@ -62,57 +67,41 @@ function renderSocial() {
     
     feed.innerHTML = html;
     
-    // Load avatars asynchronously for non-own posts
+    // Load avatars asynchronously for posts that don't have them
     sorted.forEach(p => {
-        if (p.author !== S.username) {
-            loadAvatarFromFirebase(p);
+        if (!p.avatar || (!p.avatar.startsWith('data:') && !p.avatar.includes('http'))) {
+            loadAvatarForPost(p);
         }
     });
 }
 
-// Get avatar display HTML
-function getAvatarDisplay(username, postAvatar) {
-    // For current user
-    if (username === S.username && S.avatar) {
-        return `<img src="${S.avatar}" alt="${username}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.parentNode.textContent='${username.charAt(0).toUpperCase()}';" />`;
-    }
-    
-    // Check if post has a valid avatar
-    if (postAvatar && (postAvatar.startsWith('data:') || postAvatar.includes('http'))) {
-        return `<img src="${postAvatar}" alt="${username}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.parentNode.textContent='${username.charAt(0).toUpperCase()}';" />`;
-    }
-    
-    // Default - colored initial
-    const color = getColor(username);
-    return `<div style="width:100%;height:100%;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;">${username.charAt(0).toUpperCase()}</div>`;
-}
-
-// Load avatar from Firebase for a post's author
-function loadAvatarFromFirebase(post) {
+// Load avatar from Firebase for a post
+function loadAvatarForPost(post) {
     if (!post || !post.author) return;
-    if (post.author === S.username) return;
+    
+    if (post.author === S.username && S.avatar) {
+        updatePostAvatarInDOM(post.id, S.avatar);
+        return;
+    }
     
     getRef('users/' + post.author + '/avatar').once('value', (snapshot) => {
         const avatar = snapshot.val();
-        if (avatar && (avatar.startsWith('data:') || avatar.includes('http'))) {
+        if (avatar) {
             updatePostAvatarInDOM(post.id, avatar);
-            // Cache in post for future
-            if (post.avatar !== avatar) {
-                post.avatar = avatar;
-            }
+            // Update the post object for future use
+            post.avatar = avatar;
         }
     });
 }
 
-// Update avatar image in the DOM
 function updatePostAvatarInDOM(postId, avatarUrl) {
     const avatarEl = document.getElementById('avatar-' + postId);
     if (avatarEl && avatarUrl) {
-        avatarEl.innerHTML = `<img src="${avatarUrl}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.parentNode.textContent='?';" />`;
+        avatarEl.innerHTML = `<img src="${avatarUrl}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentNode.innerHTML='?';" />`;
     }
 }
 
-// Create post - always includes current avatar
+// Create post with avatar
 function createPost() {
     if (!S.username) { toast('Please log in'); return; }
     
@@ -121,11 +110,9 @@ function createPost() {
     
     if (!text && !selectedFileData) { toast('Write something or add media'); return; }
     
-    const avatar = S.avatar || null;
-    
     const post = {
         author: S.username,
-        avatar: avatar,
+        avatar: S.avatar || null,
         text: text || '',
         image: selectedFileData || null,
         time: new Date().toISOString(),
@@ -146,195 +133,8 @@ function createPost() {
         })
         .catch((err) => {
             console.error('Post error:', err);
-            toast('Failed to post. Please try again.');
+            toast('Failed to post. Try again.');
         });
-}
-
-// Add Status/Story
-function addStatus() {
-    if (!S.username) { toast('Please log in'); return; }
-    
-    showDialog({
-        emoji: '📸',
-        title: 'Add Status',
-        subtitle: 'Share a photo or text (expires in 24 hours)',
-        placeholder: 'What\'s on your mind?',
-        confirmText: 'Add Photo (Optional)'
-    }).then(text => {
-        if (text === null) return;
-        
-        // Create file input for optional photo
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = 'image/*';
-        
-        let resolved = false;
-        
-        fileInput.onchange = function(e) {
-            if (resolved) return;
-            resolved = true;
-            
-            const file = e.target.files[0];
-            if (file) {
-                if (file.size > 5 * 1024 * 1024) {
-                    toast('Image too large (max 5MB)');
-                    saveStatus(text.trim() || '', null);
-                    return;
-                }
-                const reader = new FileReader();
-                reader.onload = function(ev) {
-                    saveStatus(text.trim() || '', ev.target.result);
-                };
-                reader.readAsDataURL(file);
-            } else {
-                saveStatus(text.trim() || '', null);
-            }
-        };
-        
-        fileInput.click();
-        
-        // If no file selected after 8 seconds, save text-only
-        setTimeout(() => {
-            if (!resolved) {
-                resolved = true;
-                saveStatus(text.trim() || '', null);
-            }
-        }, 8000);
-    });
-}
-
-function saveStatus(text, imageData) {
-    const status = {
-        author: S.username,
-        avatar: S.avatar || null,
-        text: text || '',
-        image: imageData || null,
-        time: new Date().toISOString(),
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        views: []
-    };
-    
-    pushData('statuses', status).then(() => {
-        toast('Status added! 📸');
-        renderStories();
-    }).catch(() => {
-        toast('Failed to add status');
-    });
-}
-
-// Render stories
-function renderStories() {
-    const row = document.getElementById('storyRow');
-    if (!row) return;
-    
-    getRef('statuses').orderByChild('time').limitToLast(30).once('value', (snapshot) => {
-        const statuses = [];
-        if (snapshot.val()) {
-            Object.keys(snapshot.val()).forEach(key => {
-                const s = snapshot.val()[key];
-                s.id = key;
-                const isExpired = new Date(s.expires) < new Date();
-                if (!isExpired) {
-                    statuses.push(s);
-                }
-            });
-        }
-        
-        const authors = [...new Set(statuses.map(s => s.author))];
-        
-        // Always show "My Status" first
-        if (!authors.includes(S.username)) {
-            authors.unshift(S.username);
-        } else {
-            // Move current user to front
-            const idx = authors.indexOf(S.username);
-            authors.splice(idx, 1);
-            authors.unshift(S.username);
-        }
-        
-        if (authors.length === 0) {
-            row.innerHTML = '<div style="font-size:12px;color:#94a3b8;padding:8px;">No stories yet</div>';
-            return;
-        }
-        
-        row.innerHTML = authors.map(author => {
-            const authorStatus = statuses.find(s => s.author === author);
-            const isMyStatus = author === S.username;
-            
-            let avatarDisplay = '';
-            if (author === S.username && S.avatar) {
-                avatarDisplay = `<img src="${S.avatar}" alt="Me" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
-            } else if (authorStatus && authorStatus.avatar && (authorStatus.avatar.startsWith('data:') || authorStatus.avatar.includes('http'))) {
-                avatarDisplay = `<img src="${authorStatus.avatar}" alt="${author}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
-            } else {
-                const color = getColor(author);
-                avatarDisplay = `<div style="width:100%;height:100%;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px;">${author.charAt(0).toUpperCase()}</div>`;
-            }
-            
-            const ringColor = isMyStatus ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)';
-            
-            return `<div class="ig-story" onclick="${isMyStatus ? 'addStatus()' : `viewStatus('${author}')`}">
-                <div class="ig-story-avatar" style="background:${ringColor};">
-                    <div class="inner">${avatarDisplay}</div>
-                </div>
-                <span class="ig-story-name">${isMyStatus ? 'My Status' : author}</span>
-                ${isMyStatus ? '<span style="font-size:8px;color:#6366f1;">+ Add</span>' : ''}
-            </div>`;
-        }).join('');
-    });
-}
-
-// View a user's status
-function viewStatus(username) {
-    getRef('statuses').orderByChild('time').limitToLast(10).once('value', (snapshot) => {
-        const statuses = [];
-        if (snapshot.val()) {
-            Object.keys(snapshot.val()).forEach(key => {
-                const s = snapshot.val()[key];
-                if (s.author === username && new Date(s.expires) > new Date()) {
-                    statuses.push(s);
-                }
-            });
-        }
-        
-        if (statuses.length === 0) {
-            toast('No active status from @' + username);
-            return;
-        }
-        
-        const status = statuses[statuses.length - 1];
-        
-        let html = `<div style="text-align:center;">
-            <div class="profile-bubble" style="margin-bottom:12px;justify-content:center;" onclick="viewUserProfile('${status.author}')">
-                <div class="pb-avatar">${getAvatarDisplay(status.author, status.avatar)}</div>
-                <span class="pb-name">${status.author}</span>
-            </div>
-            <small style="color:#94a3b8;">${timeSince(new Date(status.time))}</small>
-        </div>`;
-        
-        if (status.image) {
-            html += `<img src="${status.image}" style="width:100%;max-height:400px;object-fit:cover;border-radius:12px;margin:8px 0;" />`;
-        }
-        
-        if (status.text) {
-            html += `<p style="font-size:15px;text-align:center;padding:10px;">${escapeHtml(status.text)}</p>`;
-        }
-        
-        html += `<p style="font-size:10px;color:#94a3b8;text-align:center;margin-top:8px;">Expires in 24 hours · ${(status.views || []).length} views</p>`;
-        
-        const overlay = document.getElementById('postDetailOverlay');
-        const body = document.getElementById('postDetailBody');
-        
-        body.innerHTML = `<button class="post-detail-back" onclick="closePostDetail()">← <span>Close</span></button>${html}`;
-        overlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
-        
-        if (!status.views) status.views = [];
-        if (!status.views.includes(S.username)) {
-            status.views.push(S.username);
-            getRef('statuses/' + status.id + '/views').set(status.views);
-        }
-    });
 }
 
 function handleFileSelect(event) {
@@ -356,6 +156,7 @@ function handleFileSelect(event) {
     }
     
     selectedFile = file;
+    
     const reader = new FileReader();
     reader.onload = function(e) {
         selectedFileData = e.target.result;
@@ -399,14 +200,19 @@ function likePost(postId) {
         let likes = post.likes || [];
         const idx = likes.indexOf(S.username);
         
-        if (idx > -1) likes.splice(idx, 1);
-        else likes.push(S.username);
+        if (idx > -1) {
+            likes.splice(idx, 1);
+        } else {
+            likes.push(S.username);
+        }
         
         getRef('posts/' + postId + '/likes').set(likes).then(() => {
             const localPost = S.socialPosts.find(p => p.id === postId);
             if (localPost) localPost.likes = likes;
             renderSocial();
             saveState();
+        }).catch(err => {
+            console.error('Like error:', err);
         });
     });
 }
@@ -442,6 +248,26 @@ function commentOnPost(postId) {
             });
         }
     });
+}
+
+function bookmarkItem(id, type) {
+    if (!S.username) { toast('Please log in'); return; }
+    
+    S.bookmarks = S.bookmarks || [];
+    const idx = S.bookmarks.findIndex(b => b.id === id);
+    
+    if (idx > -1) {
+        S.bookmarks.splice(idx, 1);
+        toast('Removed from saved');
+    } else {
+        S.bookmarks.push({ id, type, time: new Date().toISOString() });
+        toast('Saved! 🔖');
+    }
+    
+    setData('users/' + S.username + '/bookmarks', S.bookmarks);
+    saveState();
+    renderSocial();
+    renderProfile();
 }
 
 function downloadMedia(url, filename) {
@@ -494,7 +320,13 @@ function viewPostDetail(postId) {
     const liked = (post.likes || []).includes(S.username);
     const bookmarked = (S.bookmarks || []).some(b => b.id === postId);
     
-    let avatarDisplay = getAvatarDisplay(post.author, post.avatar);
+    let avatarDisplay = '';
+    if (post.avatar && (post.avatar.startsWith('data:') || post.avatar.includes('http'))) {
+        avatarDisplay = `<img src="${post.avatar}" alt="${post.author}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+    } else {
+        const color = getColor(post.author);
+        avatarDisplay = `<div style="width:100%;height:100%;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;">${post.author.charAt(0).toUpperCase()}</div>`;
+    }
     
     let html = `<div class="ig-post-header">
         <div class="profile-bubble" onclick="closePostDetail();viewUserProfile('${post.author}')">
@@ -541,9 +373,187 @@ function closePostDetail() {
     document.body.style.overflow = '';
 }
 
+// Status/Stories
+function addStatus() {
+    if (!S.username) { toast('Please log in'); return; }
+    
+    showDialog({
+        emoji: '📸',
+        title: 'Add Status',
+        subtitle: 'Share a photo or text (expires in 24h)',
+        placeholder: 'What\'s on your mind?',
+        confirmText: 'Post Status'
+    }).then(text => {
+        if (text === null) return;
+        
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.onchange = function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) {
+                    toast('Image too large (max 5MB)');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    saveStatus(text.trim(), ev.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+        fileInput.click();
+        
+        // Save text-only status after 3 seconds if no file selected
+        setTimeout(() => {
+            if (!fileInput.files.length && text !== null) {
+                saveStatus(text.trim(), null);
+            }
+        }, 3000);
+    });
+}
+
+function saveStatus(text, imageData) {
+    if (!text && !imageData) return;
+    
+    const status = {
+        author: S.username,
+        avatar: S.avatar || null,
+        text: text || '',
+        image: imageData || null,
+        time: new Date().toISOString(),
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        views: []
+    };
+    
+    pushData('statuses', status).then(() => {
+        toast('Status added! 📸');
+        renderStories();
+    });
+}
+
+function renderStories() {
+    const row = document.getElementById('storyRow');
+    if (!row) return;
+    
+    getRef('statuses').orderByChild('time').limitToLast(30).once('value', (snapshot) => {
+        const statuses = [];
+        if (snapshot.val()) {
+            Object.keys(snapshot.val()).forEach(key => {
+                const s = snapshot.val()[key];
+                s.id = key;
+                const isExpired = new Date(s.expires) < new Date();
+                if (!isExpired) statuses.push(s);
+            });
+        }
+        
+        const authors = [...new Set(statuses.map(s => s.author))];
+        
+        if (!authors.includes(S.username)) {
+            authors.unshift(S.username);
+        }
+        
+        if (authors.length === 0) {
+            row.innerHTML = '<div style="font-size:12px;color:#94a3b8;padding:8px;">No stories yet</div>';
+            return;
+        }
+        
+        row.innerHTML = authors.map(author => {
+            const authorStatus = statuses.find(s => s.author === author);
+            const isMyStatus = author === S.username;
+            
+            let avatarDisplay = '';
+            if (isMyStatus && S.avatar) {
+                avatarDisplay = `<img src="${S.avatar}" alt="Me" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+            } else if (authorStatus && authorStatus.avatar) {
+                avatarDisplay = `<img src="${authorStatus.avatar}" alt="${author}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+            } else {
+                const color = getColor(author);
+                avatarDisplay = `<div style="width:100%;height:100%;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px;">${author.charAt(0).toUpperCase()}</div>`;
+            }
+            
+            return `<div class="ig-story" onclick="${isMyStatus ? 'addStatus()' : `viewStatus('${author}')`}">
+                <div class="ig-story-avatar"><div class="inner">${avatarDisplay}</div></div>
+                <span class="ig-story-name">${isMyStatus ? 'My Status' : author}</span>
+                ${isMyStatus ? '<span style="font-size:8px;color:#6366f1;">+ Add</span>' : ''}
+            </div>`;
+        }).join('');
+    });
+}
+
+function viewStatus(username) {
+    getRef('statuses').orderByChild('time').limitToLast(20).once('value', (snapshot) => {
+        const statuses = [];
+        if (snapshot.val()) {
+            Object.keys(snapshot.val()).forEach(key => {
+                const s = snapshot.val()[key];
+                if (s.author === username && new Date(s.expires) > new Date()) {
+                    statuses.push(s);
+                }
+            });
+        }
+        
+        if (statuses.length === 0) {
+            toast('No active status from @' + username);
+            return;
+        }
+        
+        const status = statuses[statuses.length - 1];
+        
+        let html = `<div style="text-align:center;">
+            <span style="font-weight:600;">${status.author}</span>
+            <br><small style="color:#94a3b8;">${timeSince(new Date(status.time))}</small>
+        </div>`;
+        
+        if (status.image) {
+            html += `<img src="${status.image}" style="width:100%;max-height:400px;object-fit:cover;border-radius:12px;margin:8px 0;" />`;
+        }
+        
+        if (status.text) {
+            html += `<p style="font-size:15px;text-align:center;padding:10px;">${escapeHtml(status.text)}</p>`;
+        }
+        
+        const overlay = document.getElementById('postDetailOverlay');
+        const body = document.getElementById('postDetailBody');
+        
+        body.innerHTML = `<button class="post-detail-back" onclick="closePostDetail()">← <span>Close</span></button>${html}`;
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        
+        if (!status.views) status.views = [];
+        if (!status.views.includes(S.username)) {
+            status.views.push(S.username);
+            getRef('statuses/' + status.id + '/views').set(status.views);
+        }
+    });
+}
+
+// Setup posts listener - load all posts
 function setupPostsListener() {
     if (postsListener) postsListener.off();
     
+    // Load all posts from Firebase
+    getRef('posts').orderByChild('time').limitToLast(100).once('value', (snapshot) => {
+        const data = snapshot.val();
+        S.socialPosts = [];
+        if (data) {
+            Object.keys(data).forEach(key => {
+                const post = data[key];
+                post.id = key;
+                if (post.author) {
+                    S.socialPosts.push(post);
+                }
+            });
+        }
+        S.socialPosts.sort((a, b) => new Date(b.time) - new Date(a.time));
+        renderSocial();
+        renderProfile();
+        renderStories();
+        saveState();
+    });
+    
+    // Listen for new posts
     postsListener = getRef('posts').orderByChild('time').limitToLast(100);
     
     postsListener.on('child_added', (snapshot) => {
@@ -552,8 +562,8 @@ function setupPostsListener() {
         post.id = snapshot.key;
         
         if (!S.socialPosts.find(p => p.id === post.id)) {
-            S.socialPosts.push(post);
-            if (S.socialPosts.length > 100) S.socialPosts.shift();
+            S.socialPosts.unshift(post);
+            if (S.socialPosts.length > 100) S.socialPosts.pop();
             S.socialPosts.sort((a, b) => new Date(b.time) - new Date(a.time));
             renderSocial();
             renderProfile();
@@ -578,6 +588,8 @@ function setupPostsListener() {
         renderSocial();
         renderProfile();
     });
+    
+    console.log('📱 Posts listener active - showing ALL posts');
 }
 
 // Expose functions globally
@@ -585,4 +597,4 @@ window.addStatus = addStatus;
 window.viewStatus = viewStatus;
 window.clearFileSelection = clearFileSelection;
 
-console.log('📱 Social module loaded - showing ALL posts on platform');
+console.log('📱 Social module loaded - ALL posts visible');
