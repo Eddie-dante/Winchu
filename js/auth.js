@@ -1,4 +1,4 @@
-// Authentication Module - With connection check
+// Authentication Module - Fixed to load data for new users
 
 function handleSignup() {
     console.log('Signup function called');
@@ -158,22 +158,25 @@ function handleLogin() {
             
             console.log('Login successful for:', usernameVal);
             
-            S.username = usernameVal;
-            S.name = userData.name || '';
-            S.bio = userData.bio || 'Building my energy. ⚡';
-            S.selectedAuras = userData.selected_auras || [];
-            S.avatar = userData.avatar || null;
-            S.wallpaper = userData.wallpaper || null;
-            S.friends = userData.friends || [];
-            S.bookmarks = userData.bookmarks || [];
-            S.completedTasks = [];
-            S.streakData = {};
-            S.diary = [];
-            S.routines = [];
-            S.notifications = [];
-            S.groups = [];
-            S.videoData = [];
-            S.socialPosts = [];
+            // Clear old state first
+            S = {
+                username: usernameVal,
+                name: userData.name || '',
+                bio: userData.bio || 'Building my energy. ⚡',
+                wallpaper: userData.wallpaper || null,
+                selectedAuras: userData.selected_auras || [],
+                avatar: userData.avatar || null,
+                friends: userData.friends || [],
+                bookmarks: userData.bookmarks || [],
+                completedTasks: [],
+                streakData: {},
+                socialPosts: [],
+                diary: [],
+                routines: [],
+                videoData: [],
+                notifications: [],
+                groups: []
+            };
             
             saveState();
             localStorage.setItem('winchu_auth', JSON.stringify({
@@ -202,6 +205,7 @@ function handleLogin() {
                 navigate('select');
             } else {
                 navigate('social');
+                // Initialize all features - THIS LOADS POSTS AND VIDEOS
                 initAll();
             }
         }).catch(function(error) {
@@ -209,6 +213,21 @@ function handleLogin() {
             toast('Error logging in. Please check your connection.');
         });
     });
+}
+
+function confirmSelection() {
+    if (S.selectedAuras.length === 0) {
+        toast('Select at least one aura');
+        return;
+    }
+    if (S.username) {
+        setData('users/' + S.username + '/selected_auras', S.selectedAuras);
+    }
+    saveState();
+    navigate('social');
+    // Initialize all features after aura selection
+    initAll();
+    toast('Auras activated! ✨');
 }
 
 function logout() {
@@ -302,5 +321,6 @@ window.handleSignup = handleSignup;
 window.handleLogin = handleLogin;
 window.logout = logout;
 window.resetPassword = resetPassword;
+window.confirmSelection = confirmSelection;
 
 console.log('🔐 Auth module loaded');
