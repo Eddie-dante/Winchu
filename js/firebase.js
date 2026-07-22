@@ -1,4 +1,4 @@
-// Firebase Configuration - Secure with Authentication
+// Firebase Configuration - Secure without anonymous auth
 const firebaseConfig = {
     apiKey: "AIzaSyBxRC99vpLBRpkhXmUiYVXi0lFaN5ayXj8",
     authDomain: "nexus-wegem.firebaseapp.com",
@@ -12,69 +12,26 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
+console.log('🔥 Firebase initialized');
 
-// Auth state
-let currentAuthUid = null;
-
-// Sign in anonymously for database access
-function signInAnonymously() {
-    return firebase.auth().signInAnonymously()
-        .then((result) => {
-            currentAuthUid = result.user.uid;
-            console.log('✅ Signed in anonymously:', currentAuthUid);
-            return result.user;
-        })
-        .catch((error) => {
-            console.error('Auth error:', error);
-            return null;
-        });
-}
-
-// Wait for auth before using database
-function waitForAuth() {
-    return new Promise((resolve) => {
-        const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
-            unsubscribe();
-            if (user) {
-                currentAuthUid = user.uid;
-                resolve(user);
-            } else {
-                signInAnonymously().then(resolve);
-            }
-        });
-    });
-}
-
-// Firebase helper functions with auth
+// Firebase helper functions
 function getRef(path) {
     return database.ref(path);
 }
 
 function setData(path, data) {
-    if (!currentAuthUid) {
-        return signInAnonymously().then(() => database.ref(path).set(data));
-    }
     return database.ref(path).set(data);
 }
 
 function pushData(path, data) {
-    if (!currentAuthUid) {
-        return signInAnonymously().then(() => database.ref(path).push(data));
-    }
     return database.ref(path).push(data);
 }
 
 function updateData(path, data) {
-    if (!currentAuthUid) {
-        return signInAnonymously().then(() => database.ref(path).update(data));
-    }
     return database.ref(path).update(data);
 }
 
 function removeData(path) {
-    if (!currentAuthUid) {
-        return signInAnonymously().then(() => database.ref(path).remove());
-    }
     return database.ref(path).remove();
 }
 
@@ -107,4 +64,4 @@ database.ref('.info/connected').on('value', (snap) => {
     }
 });
 
-console.log('🔒 Firebase loaded - Secure mode');
+console.log('🔒 Firebase loaded');
