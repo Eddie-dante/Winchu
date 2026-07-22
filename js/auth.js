@@ -1,5 +1,8 @@
-// Authentication Module - Complete
+// Authentication Module - Complete with signup, login, logout, password reset, and account deletion
 
+// ============================================================
+// HANDLE SIGNUP
+// ============================================================
 function handleSignup() {
     console.log('=== SIGNUP STARTED ===');
     
@@ -34,13 +37,14 @@ function handleSignup() {
         return;
     }
     
+    // Only allow letters, numbers, and underscores
     if (!/^[a-zA-Z0-9_]+$/.test(usernameVal)) {
         toast('Username can only contain letters, numbers, and underscores');
         return;
     }
     
     // Check if username already exists
-    toast('Checking username...');
+    toast('Checking username availability...');
     
     db.ref('users/' + usernameVal).once('value').then(function(snapshot) {
         if (snapshot.exists()) {
@@ -122,6 +126,9 @@ function handleSignup() {
     });
 }
 
+// ============================================================
+// HANDLE LOGIN
+// ============================================================
 function handleLogin() {
     console.log('=== LOGIN STARTED ===');
     
@@ -155,6 +162,7 @@ function handleLogin() {
         var userData = snapshot.val();
         console.log('User found, checking password...');
         
+        // Verify password
         if (userData.password !== passwordVal) {
             console.log('Password incorrect for:', usernameVal);
             toast('Incorrect password. Please try again.');
@@ -209,8 +217,12 @@ function handleLogin() {
             last_seen: new Date().toISOString()
         });
         
+        // Load user data from Firebase
+        loadUserDataFromFirebase(usernameVal);
+        
         // Show welcome toast
-        toast('Welcome back, ' + (S.name || S.username) + '! ✨');
+        var displayName = S.name || S.username;
+        toast('Welcome back, ' + displayName + '! ✨');
         
         // Navigate to appropriate page
         if (S.selectedAuras.length === 0) {
@@ -230,6 +242,9 @@ function handleLogin() {
     });
 }
 
+// ============================================================
+// HANDLE LOGOUT
+// ============================================================
 function logout() {
     console.log('=== LOGOUT STARTED ===');
     
@@ -289,7 +304,7 @@ function logout() {
         notifListener = null;
     }
     
-    // Reset background
+    // Reset background to default
     document.body.style.backgroundImage = "url('https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1920&q=80')";
     document.body.style.backgroundSize = 'cover';
     document.body.style.backgroundPosition = 'center';
@@ -308,6 +323,9 @@ function logout() {
     console.log('✅ Logout complete');
 }
 
+// ============================================================
+// CONFIRM AURA SELECTION
+// ============================================================
 function confirmSelection() {
     console.log('=== CONFIRMING AURA SELECTION ===');
     
@@ -342,6 +360,9 @@ function confirmSelection() {
     }, 500);
 }
 
+// ============================================================
+// RESET PASSWORD
+// ============================================================
 function resetPassword() {
     console.log('=== PASSWORD RESET STARTED ===');
     
@@ -395,6 +416,9 @@ function resetPassword() {
     });
 }
 
+// ============================================================
+// DELETE ACCOUNT
+// ============================================================
 function deleteAccount() {
     console.log('=== ACCOUNT DELETION STARTED ===');
     
@@ -428,20 +452,17 @@ function deleteAccount() {
                 
                 toast('Deleting account...');
                 
-                // Delete user data
-                var deletePromises = [];
-                
                 // Delete user profile
-                deletePromises.push(db.ref('users/' + S.username).remove());
+                db.ref('users/' + S.username).remove();
                 
                 // Delete diary entries
-                deletePromises.push(db.ref('diary/' + S.username).remove());
+                db.ref('diary/' + S.username).remove();
                 
                 // Delete routines
-                deletePromises.push(db.ref('routines/' + S.username).remove());
+                db.ref('routines/' + S.username).remove();
                 
                 // Delete notifications
-                deletePromises.push(db.ref('notifications/' + S.username).remove());
+                db.ref('notifications/' + S.username).remove();
                 
                 // Delete user's posts
                 db.ref('posts').once('value').then(function(postSnapshot) {
@@ -467,62 +488,139 @@ function deleteAccount() {
                     }
                 });
                 
-                // Delete friend requests
-                db.ref('friendRequests').once('value').then(function(reqSnapshot) {
-                    var requests = reqSnapshot.val();
-                    if (requests) {
-                        Object.keys(requests).forEach(function(key) {
-                            if (requests[key] && requests[key].indexOf) {
-                                var filtered = requests[key].filter(function(r) {
-                                    return r !== S.username;
-                                });
-                                if (filtered.length === 0) {
-                                    db.ref('friendRequests/' + key).remove();
-                                } else {
-                                    db.ref('friendRequests/' + key).set(filtered);
-                                }
-                            }
-                        });
-                    }
-                });
-                
                 // Remove from friends lists
                 db.ref('users').once('value').then(function(usersSnapshot) {
                     var users = usersSnapshot.val();
                     if (users) {
                         Object.keys(users).forEach(function(key) {
                             var userFriends = users[key].friends || [];
-                            if (userFriends.indexOf(S.username) > -1) {
-                                var updatedFriends = userFriends.filter(function(f) {
-                                    return f !== S.username;
-                                });
+                            var updatedFriends = userFriends.filter(function(f) {
+                                return f !== S.username;
+                            });
+                            if (updatedFriends.length !== userFriends.length) {
                                 db.ref('users/' + key + '/friends').set(updatedFriends);
                             }
                         });
                     }
                 });
                 
-                // Wait then logout
-                Promise.all(deletePromises).then(function() {
-                    toast('Account deleted. Goodbye! 👋');
-                    setTimeout(function() {
-                        logout();
-                    }, 1500);
-                }).catch(function(error) {
-                    console.error('Delete error:', error);
-                    toast('Error deleting account. Please try again.');
+                // Remove friend requests
+                db.ref('friendRequests').once('value').then(function(reqSnapshot) {
+                    var requests = reqSnapshot.val();
+                    if (requests) {
+                        Object.keys(requests).forEach(function(key) {
+                            var filtered = (requests[key] || []).filter(function(r) {
+                                return r !== S.username;
+                            });
+                            if (filtered.length === 0) {
+                                db.ref('friendRequests/' + key).remove();
+                            } else {
+                                db.ref('friendRequests/' + key).set(filtered);
+                            }
+                        });
+                    }
+                });
+                
+                toast('Account deleted. Goodbye! 👋');
+                setTimeout(function() {
+                    logout();
+                }, 1500);
+                
+            }).catch(function(error) {
+                console.error('Delete error:', error);
+                toast('Error deleting account. Please try again.');
+            });
+        });
+    });
+}
+
+// ============================================================
+// LOAD USER DATA FROM FIREBASE
+// ============================================================
+function loadUserDataFromFirebase(username) {
+    if (!username) return;
+    
+    db.ref('users/' + username).once('value').then(function(snapshot) {
+        if (snapshot.exists()) {
+            var data = snapshot.val();
+            S.name = data.name || '';
+            S.bio = data.bio || S.bio;
+            S.avatar = data.avatar || null;
+            S.wallpaper = data.wallpaper || null;
+            S.friends = data.friends || [];
+            S.bookmarks = data.bookmarks || [];
+            saveState();
+        }
+    }).catch(function(error) {
+        console.error('Load user error:', error);
+    });
+    
+    // Load diary entries
+    db.ref('diary/' + username).orderByKey().limitToLast(100).once('value').then(function(snapshot) {
+        if (snapshot.exists()) {
+            S.diary = Object.values(snapshot.val()).reverse();
+        }
+    });
+    
+    // Load routines
+    db.ref('routines/' + username).orderByKey().limitToLast(100).once('value').then(function(snapshot) {
+        if (snapshot.exists()) {
+            S.routines = Object.values(snapshot.val()).reverse();
+        }
+    });
+}
+
+// ============================================================
+// CHANGE PASSWORD (when logged in)
+// ============================================================
+function changePassword() {
+    showDialog({
+        emoji: '🔐',
+        title: 'Change Password',
+        subtitle: 'Enter your current password',
+        placeholder: 'Current password...',
+        confirmText: 'Next →'
+    }).then(function(currentPass) {
+        if (!currentPass) return;
+        
+        db.ref('users/' + S.username).once('value').then(function(snapshot) {
+            var userData = snapshot.val();
+            
+            if (userData.password !== currentPass) {
+                toast('Incorrect current password');
+                return;
+            }
+            
+            showDialog({
+                emoji: '🔑',
+                title: 'New Password',
+                subtitle: 'Enter your new password (6+ characters)',
+                placeholder: 'New password...',
+                confirmText: 'Save'
+            }).then(function(newPass) {
+                if (!newPass || newPass.trim().length < 6) {
+                    toast('Password must be at least 6 characters');
+                    return;
+                }
+                
+                db.ref('users/' + S.username + '/password').set(newPass.trim()).then(function() {
+                    toast('Password changed successfully! 🔐');
                 });
             });
         });
     });
 }
 
-// Expose all functions globally
+// ============================================================
+// EXPOSE FUNCTIONS GLOBALLY
+// ============================================================
 window.handleSignup = handleSignup;
 window.handleLogin = handleLogin;
 window.logout = logout;
 window.confirmSelection = confirmSelection;
 window.resetPassword = resetPassword;
 window.deleteAccount = deleteAccount;
+window.changePassword = changePassword;
+window.loadUserDataFromFirebase = loadUserDataFromFirebase;
 
 console.log('🔐 Auth module loaded successfully');

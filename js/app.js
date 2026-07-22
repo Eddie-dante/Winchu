@@ -1,5 +1,8 @@
 // App Initialization - Complete
 
+// ============================================================
+// INITIALIZE ALL APP DATA
+// ============================================================
 function initAppData() {
     console.log('=== INITIALIZING APP DATA ===');
     
@@ -7,7 +10,7 @@ function initAppData() {
     toast('Loading your feed...');
     
     // Load all posts from Firebase
-    db.ref('posts').once('value').then(function(snapshot) {
+    db.ref('posts').orderByChild('time').limitToLast(200).once('value').then(function(snapshot) {
         var data = snapshot.val();
         S.socialPosts = [];
         
@@ -39,7 +42,7 @@ function initAppData() {
     });
     
     // Load all videos from Firebase
-    db.ref('videos').once('value').then(function(snapshot) {
+    db.ref('videos').orderByChild('time').limitToLast(100).once('value').then(function(snapshot) {
         var data = snapshot.val();
         S.videoData = [];
         
@@ -96,7 +99,7 @@ function initAppData() {
         if (data) {
             S.diary = Object.values(data).reverse();
         }
-        renderDiary();
+        if (typeof renderDiary === 'function') renderDiary();
     });
     
     // Load routines
@@ -106,7 +109,7 @@ function initAppData() {
         if (data) {
             S.routines = Object.values(data).reverse();
         }
-        renderRoutines();
+        if (typeof renderRoutines === 'function') renderRoutines();
     });
     
     // Load notifications
@@ -116,8 +119,10 @@ function initAppData() {
         if (data) {
             Object.keys(data).forEach(function(key) {
                 var notif = data[key];
-                notif.id = key;
-                S.notifications.push(notif);
+                if (notif) {
+                    notif.id = key;
+                    S.notifications.push(notif);
+                }
             });
             S.notifications.sort(function(a, b) {
                 return new Date(b.time) - new Date(a.time);
@@ -144,7 +149,7 @@ function initAppData() {
     // Update presence and online status
     setupPresence();
     
-    // Periodic online status update
+    // Periodic online status update (every 60 seconds)
     setInterval(function() {
         if (S && S.username) {
             db.ref('users/' + S.username).update({
@@ -157,7 +162,9 @@ function initAppData() {
     console.log('✅ All app data initialized');
 }
 
-// Setup posts real-time listener
+// ============================================================
+// SETUP POSTS REAL-TIME LISTENER
+// ============================================================
 function setupPostsListener() {
     if (postsListener) {
         postsListener.off();
@@ -173,13 +180,12 @@ function setupPostsListener() {
         
         post.id = snapshot.key;
         
-        // Check if already in array
         var existing = S.socialPosts.find(function(p) {
             return p.id === post.id;
         });
         
         if (!existing) {
-            console.log('New post detected via listener:', post.id, 'by', post.author);
+            console.log('New post detected:', post.id, 'by', post.author);
             S.socialPosts.unshift(post);
             
             // Keep array manageable
@@ -228,7 +234,9 @@ function setupPostsListener() {
     console.log('📱 Posts listener active');
 }
 
-// Setup videos real-time listener
+// ============================================================
+// SETUP VIDEOS REAL-TIME LISTENER
+// ============================================================
 function setupVideosListener() {
     if (videosListener) {
         videosListener.off();
@@ -284,7 +292,9 @@ function setupVideosListener() {
     console.log('🎬 Videos listener active');
 }
 
-// Setup notifications real-time listener
+// ============================================================
+// SETUP NOTIFICATIONS REAL-TIME LISTENER
+// ============================================================
 function setupNotifListener() {
     if (notifListener) {
         notifListener.off();
@@ -305,15 +315,24 @@ function setupNotifListener() {
         });
         
         if (!existing) {
+            console.log('New notification:', notif.message);
             S.notifications.unshift(notif);
             updateNotifBadge();
+            
+            // Show toast for new notification
+            if (notif.from && notif.from !== S.username) {
+                var icon = getNotifIcon ? getNotifIcon(notif.type) : '🔔';
+                toast(icon + ' ' + notif.from + ': ' + notif.message);
+            }
         }
     });
     
     console.log('🔔 Notifications listener active');
 }
 
-// Setup groups real-time listener
+// ============================================================
+// SETUP GROUPS REAL-TIME LISTENER
+// ============================================================
 function setupGroupsListener() {
     db.ref('groups').on('child_added', function(snapshot) {
         var group = snapshot.val();
@@ -355,7 +374,9 @@ function setupGroupsListener() {
     console.log('👥 Groups listener active');
 }
 
-// Update notification badge count
+// ============================================================
+// UPDATE NOTIFICATION BADGE
+// ============================================================
 function updateNotifBadge() {
     var unreadCount = (S.notifications || []).filter(function(n) {
         return !n.read;
@@ -365,48 +386,69 @@ function updateNotifBadge() {
     badges.forEach(function(id) {
         var badge = document.getElementById(id);
         if (badge) {
-            badge.textContent = unreadCount;
+            badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
             badge.style.display = unreadCount > 0 ? 'flex' : 'none';
         }
     });
+    
+    // Update page title
+    if (unreadCount > 0) {
+        document.title = '(' + unreadCount + ') Winchu · Nexus';
+    } else {
+        document.title = 'Winchu · Nexus';
+    }
 }
 
-// Mark all notifications as read
+// ============================================================
+// MARK ALL NOTIFICATIONS AS READ
+// ============================================================
 function markAllNotifsRead() {
     if (!S.username) return;
     
-    S.notifications.forEach(function(n) {
-        if (!n.read) {
-            n.read = true;
-            db.ref('notifications/' + S.username + '/' + n.id + '/read').set(true);
-        }
+    var unread = S.notifications.filter(function(n) { return !n.read; });
+    
+    if (unread.length === 0) {
+        toast('All notifications are already read');
+        return;
+    }
+    
+    unread.forEach(function(notif) {
+        notif.read = true;
+        db.ref('notifications/' + S.username + '/' + notif.id + '/read').set(true);
     });
     
     updateNotifBadge();
-    if (typeof renderNotifications === 'function') {
-        renderNotifications();
-    }
-    toast('All notifications marked as read');
+    if (typeof renderNotifications === 'function') renderNotifications();
+    toast('All notifications marked as read ✓');
 }
 
-// Add notification
+// ============================================================
+// ADD NOTIFICATION
+// ============================================================
 function addNotification(to, message, type, refId) {
-    if (to === S.username) return;
+    if (!S.username || !to) return;
+    if (to === S.username) return; // Don't notify yourself
     
     var notification = {
         from: S.username,
         to: to,
         message: message,
-        type: type,
-        refId: refId,
+        type: type || 'general',
+        refId: refId || '',
         time: new Date().toISOString(),
         read: false
     };
     
-    db.ref('notifications/' + to).push(notification);
+    db.ref('notifications/' + to).push(notification).then(function() {
+        console.log('Notification sent to:', to);
+    }).catch(function(error) {
+        console.error('Error sending notification:', error);
+    });
 }
 
-// Initialize app
+// ============================================================
+// INITIALIZE APP
+// ============================================================
 function initApp() {
     console.log('=== INITIALIZING APP ===');
     
@@ -428,7 +470,7 @@ function initApp() {
                         if (snapshot.exists()) {
                             var userData = snapshot.val();
                             S.name = userData.name || '';
-                            S.bio = userData.bio || 'Building my energy.';
+                            S.bio = userData.bio || 'Building my energy. One aura at a time. ⚡';
                             S.avatar = userData.avatar || null;
                             S.wallpaper = userData.wallpaper || null;
                             S.friends = userData.friends || [];
@@ -474,12 +516,16 @@ function initApp() {
     console.log('👋 Welcome to Winchu · Nexus');
 }
 
-// Start the app when DOM is ready
+// ============================================================
+// START APP WHEN DOM IS READY
+// ============================================================
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(initApp, 500);
 });
 
-// Handle keyboard shortcuts
+// ============================================================
+// KEYBOARD SHORTCUTS
+// ============================================================
 document.addEventListener('keydown', function(e) {
     // Ctrl+K for search/find friends
     if (e.ctrlKey && e.key === 'k') {
@@ -494,7 +540,9 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Handle window resize for responsive layout
+// ============================================================
+// WINDOW RESIZE HANDLER
+// ============================================================
 var resizeTimeout;
 window.addEventListener('resize', function() {
     clearTimeout(resizeTimeout);
@@ -508,28 +556,50 @@ window.addEventListener('resize', function() {
     }, 250);
 });
 
-// Handle online/offline status
+// ============================================================
+// ONLINE/OFFLINE HANDLERS
+// ============================================================
 window.addEventListener('online', function() {
     console.log('📶 Back online');
     if (S.username) {
         setupPresence();
-        initAppData();
+        db.ref('users/' + S.username).update({ online: true });
+        toast('📶 Back online');
     }
 });
 
 window.addEventListener('offline', function() {
     console.log('📶 Went offline');
+    if (S.username) {
+        db.ref('users/' + S.username).update({ online: false });
+    }
     toast('⚠️ You are offline. Some features may not work.');
 });
 
-// Expose functions globally
+// ============================================================
+// SERVICE WORKER REGISTRATION
+// ============================================================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
+            console.log('ServiceWorker registered:', registration.scope);
+        }).catch(function(error) {
+            console.log('ServiceWorker registration failed:', error);
+        });
+    });
+}
+
+// ============================================================
+// EXPOSE FUNCTIONS GLOBALLY
+// ============================================================
 window.initApp = initApp;
 window.initAppData = initAppData;
-window.markAllNotifsRead = markAllNotifsRead;
-window.addNotification = addNotification;
-window.updateNotifBadge = updateNotifBadge;
 window.setupPostsListener = setupPostsListener;
 window.setupVideosListener = setupVideosListener;
 window.setupNotifListener = setupNotifListener;
+window.setupGroupsListener = setupGroupsListener;
+window.updateNotifBadge = updateNotifBadge;
+window.markAllNotifsRead = markAllNotifsRead;
+window.addNotification = addNotification;
 
 console.log('⚡ Winchu · Nexus Core Loaded - Version 2.0');

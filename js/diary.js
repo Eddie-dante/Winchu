@@ -1,4 +1,4 @@
-// Diary Module - Book-style with openable cover and PIN protection
+// Diary Module - Shimmering Blue Book with PIN, editable pages, and new page creation
 
 var diaryPin = null;
 var diaryIsLocked = true;
@@ -8,19 +8,11 @@ var diaryUserName = '';
 
 // Initialize diary
 function initDiary() {
-    // Load saved PIN from localStorage
     var savedPin = localStorage.getItem('winchu_diary_pin');
-    if (savedPin) {
-        diaryPin = savedPin;
-    }
+    if (savedPin) diaryPin = savedPin;
     
-    // Load user name
     diaryUserName = S.name || S.username || '';
-    
-    // Load diary entries
     loadDiaryEntries();
-    
-    // Render the diary
     renderDiaryBook();
 }
 
@@ -31,128 +23,106 @@ function loadDiaryEntries() {
     if (S.diary && S.diary.length > 0) {
         S.diary.forEach(function(entry, index) {
             var date = new Date(entry.date);
-            var dateStr = date.toLocaleDateString('en', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-            
-            var timeStr = date.toLocaleTimeString('en', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-            
-            var timeOfDay = 'evening';
-            var hour = date.getHours();
-            if (hour < 12) timeOfDay = 'morning';
-            else if (hour < 17) timeOfDay = 'afternoon';
+            var dateStr = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            var timeOfDay = entry.mood && entry.mood !== '—' ? entry.mood : 'entry';
             
             var contentHTML = '<p>Dear Diary,</p>';
             contentHTML += '<p>' + escapeHtml(entry.content) + '</p>';
             if (entry.mood && entry.mood !== '—') {
-                contentHTML += '<p style="margin-top:0.8rem;">Mood: ' + escapeHtml(entry.mood) + '</p>';
+                contentHTML += '<p style="margin-top:0.6rem; color:#4a6a7a; font-style:italic;">Mood: ' + escapeHtml(entry.mood) + '</p>';
             }
-            contentHTML += '<p style="margin-top:0.8rem;">— ' + (S.name || 'Me') + '</p>';
+            contentHTML += '<p style="margin-top:0.6rem;">— ' + (S.name || 'Me') + '</p>';
             
             diaryPages.push({
                 date: '📅 ' + dateStr,
-                time: '✎ ' + timeOfDay + ' · ' + timeStr,
+                time: timeOfDay,
                 content: contentHTML,
+                editable: true,
                 mood: entry.mood || '—',
                 rawDate: entry.date
             });
         });
     }
     
-    // If no entries, add a welcome page
+    // Add sample page if no entries
     if (diaryPages.length === 0) {
+        var today = new Date();
+        var todayStr = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
         diaryPages.push({
-            date: '📅 ' + new Date().toLocaleDateString('en', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            }),
-            time: '✎ welcome',
-            content: '<p>Dear Diary,</p><p>This is your personal diary. A safe space for your thoughts, dreams, and memories.</p><p>Write something today. Even a single line can become a treasure tomorrow.</p><p style="margin-top:0.8rem;">— Your future self will thank you.</p>',
+            date: '📅 ' + todayStr,
+            time: 'late night',
+            content: '<p>Dear Diary,</p><p>Today I finally opened the lock. The rain outside sounds like an old song, and I\'m sitting at my desk, turning the pages of this book that holds so many nights.</p><p>I\'ve decided to write more often, to capture these small, fleeting thoughts. Because some words are only for you.</p><p style="margin-top:0.6rem;">— Goodnight, world.</p>',
+            editable: false,
             mood: '✨',
-            rawDate: new Date().toISOString()
+            rawDate: today.toISOString()
         });
     }
 }
 
-// Render the complete diary book
+// Render the diary book
 function renderDiaryBook() {
     var container = document.getElementById('diaryEntries');
     if (!container) return;
     
-    // Update cover name
     var coverName = document.getElementById('coverUserName');
-    if (coverName) {
-        coverName.textContent = diaryUserName || '—';
-    }
+    if (coverName) coverName.textContent = diaryUserName || '—';
     
     container.innerHTML = '';
     
-    // Create book wrapper
-    var bookWrapper = document.createElement('div');
-    bookWrapper.className = 'book-wrapper';
-    bookWrapper.style.cssText = 'perspective:2000px;width:100%;max-width:820px;aspect-ratio:3/2;cursor:default;transition:filter 0.3s;margin:0 auto;';
+    // Book wrapper
+    var wrapper = document.createElement('div');
+    wrapper.className = 'book-wrapper';
+    wrapper.style.cssText = 'width:100%;max-width:820px;aspect-ratio:3/2;perspective:2500px;cursor:default;margin:0 auto;';
     
-    // Create book
+    // Book
     var book = document.createElement('div');
-    book.className = 'book ' + (diaryIsLocked ? 'locked' : 'unlocked');
+    book.className = 'book ' + (diaryIsLocked ? 'closed' : 'open');
     book.id = 'diaryBook';
-    book.style.cssText = 'width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform 0.3s cubic-bezier(0.2,0.9,0.3,1.1);box-shadow:0 30px 50px rgba(0,0,0,0.7),0 0 0 2px #5a3f28 inset;border-radius:12px 4px 4px 12px;';
+    book.style.cssText = 'width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform 0.8s cubic-bezier(0.4,0.2,0.2,1);box-shadow:0 30px 60px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.1) inset;border-radius:16px 4px 4px 16px;';
     
     if (diaryIsLocked) {
-        book.style.transform = 'rotateY(-4deg) rotateX(2deg)';
+        book.style.transform = 'rotateY(-2deg) rotateX(1deg)';
     } else {
         book.style.transform = 'rotateY(8deg) rotateX(1deg)';
     }
     
-    // --- COVER FRONT ---
+    // Cover Front
     var coverFront = document.createElement('div');
     coverFront.className = 'book-cover book-cover-front';
-    coverFront.style.cssText = 'position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:12px 4px 4px 12px;background:#5d3e27;background-image:radial-gradient(circle at 30% 40%,#8b6742 1px,transparent 1px),radial-gradient(circle at 70% 80%,#8b6742 1px,transparent 1px);background-size:40px 40px;box-shadow:inset 0 0 0 2px #b48b5a,inset 0 0 20px rgba(0,0,0,0.4);display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2rem;text-align:center;color:#f5e7c8;text-shadow:2px 2px 0 #2d1c0e;border:4px solid #b28b5c;box-sizing:border-box;z-index:10;';
+    coverFront.style.cssText = 'position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:16px 4px 4px 16px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2rem;text-align:center;box-sizing:border-box;border:1px solid rgba(255,255,255,0.08);z-index:10;background:linear-gradient(145deg,#0a1e3a,#0d2a4a,#0a1e3a);background-size:200% 200%;animation:shimmerBlue 4s ease-in-out infinite;box-shadow:inset 0 0 0 1px rgba(100,180,255,0.2),inset 0 0 60px rgba(30,80,150,0.3),0 0 40px rgba(30,80,180,0.15);color:#e8f0f8;position:relative;overflow:hidden;';
+    coverFront.innerHTML = '<div class="shimmer-overlay" style="position:absolute;inset:0;background:linear-gradient(105deg,transparent 0%,transparent 30%,rgba(255,255,255,0.05) 45%,rgba(200,230,255,0.1) 50%,rgba(255,255,255,0.05) 55%,transparent 70%,transparent 100%);background-size:300% 100%;animation:shimmerMove 6s ease-in-out infinite;pointer-events:none;border-radius:16px 4px 4px 16px;"></div>' +
+        '<div style="position:absolute;inset:20px;border:1px solid rgba(100,200,255,0.15);border-radius:12px;pointer-events:none;box-shadow:inset 0 0 30px rgba(60,150,255,0.05);"></div>' +
+        '<div style="font-size:3rem;margin-bottom:0.2rem;filter:drop-shadow(0 0 30px rgba(60,150,255,0.2));z-index:1;">📘</div>' +
+        '<div class="user-name-display" id="coverUserName" style="font-size:2.2rem;font-weight:400;letter-spacing:3px;border-bottom:1px solid rgba(100,200,255,0.15);padding-bottom:6px;margin-bottom:4px;font-family:Playfair Display,serif;text-shadow:0 0 30px rgba(60,150,255,0.2);z-index:1;">' + (diaryUserName || '—') + '</div>' +
+        '<div class="cover-title" style="font-family:Mr De Haviland,Playfair Display,cursive;font-size:3.5rem;color:#c8e4f0;text-shadow:0 0 40px rgba(60,180,255,0.3),0 0 80px rgba(60,150,255,0.1);letter-spacing:2px;margin-bottom:-0.2rem;z-index:1;">diary</div>' +
+        '<div class="cover-sub" style="font-size:0.8rem;opacity:0.4;font-weight:300;letter-spacing:5px;font-family:Playfair Display,serif;text-shadow:0 0 20px rgba(60,150,255,0.1);z-index:1;">· private ·</div>' +
+        '<div style="margin-top:14px;font-size:0.65rem;border-top:1px solid rgba(100,200,255,0.1);padding-top:10px;width:50%;letter-spacing:2px;opacity:0.3;font-family:Playfair Display,serif;z-index:1;">✦ ' + (diaryIsLocked ? 'locked pages' : 'open pages') + ' ✦</div>';
     
-    coverFront.innerHTML = '<div style="font-size:3rem;margin-bottom:0.2rem;">📖</div>' +
-        '<div class="user-name-display" id="coverUserName" style="font-size:1.8rem;letter-spacing:4px;font-weight:300;border-bottom:1px solid #dbbd94;padding-bottom:6px;margin-bottom:6px;font-family:Georgia,serif;">' + (diaryUserName || '—') + '</div>' +
-        '<div style="font-size:1.6rem;letter-spacing:6px;font-weight:400;">diary</div>' +
-        '<div class="cover-sub" style="font-size:0.9rem;opacity:0.7;font-style:italic;">· private ·</div>' +
-        '<div style="margin-top:12px;font-size:0.8rem;border-top:1px solid #b48b5a;padding-top:10px;width:60%;">✨ ' + (diaryIsLocked ? 'locked memories' : 'open book') + ' ✨</div>';
-    
-    // Cover front pseudo-element
-    var coverBefore = document.createElement('div');
-    coverBefore.style.cssText = 'content:\'\';position:absolute;inset:20px;border:3px double #dbbd94;opacity:0.5;border-radius:8px;pointer-events:none;';
-    coverFront.appendChild(coverBefore);
-    
-    // --- COVER BACK ---
+    // Cover Back
     var coverBack = document.createElement('div');
     coverBack.className = 'book-cover book-cover-back';
-    coverBack.style.cssText = 'position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:12px 4px 4px 12px;background:#4d321e;background-image:linear-gradient(135deg,#6b4a2e 25%,#3f2818 80%);box-shadow:inset 0 0 30px #1f1308;display:flex;align-items:center;justify-content:center;transform:rotateY(180deg);';
-    coverBack.innerHTML = '<span style="font-size:2.2rem;letter-spacing:6px;color:#dac29c;opacity:0.3;font-family:Georgia,serif;">✧ diary ✧</span>';
+    coverBack.style.cssText = 'position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:16px 4px 4px 16px;display:flex;align-items:center;justify-content:center;transform:rotateY(180deg);background:linear-gradient(145deg,#06142a,#0a1e3a);box-shadow:inset 0 0 50px rgba(0,0,0,0.7);';
+    coverBack.innerHTML = '<span style="font-size:2rem;letter-spacing:8px;color:#4a8aaa;opacity:0.2;font-weight:300;">✦ diary ✦</span>';
     
-    // --- SPINE ---
+    // Spine
     var spine = document.createElement('div');
     spine.className = 'book-spine';
-    spine.style.cssText = 'position:absolute;left:-10px;top:4px;width:20px;height:96%;background:#3d2817;border-radius:8px 2px 2px 8px;box-shadow:inset -2px 0 8px #1b0f05,inset 2px 0 4px #a77b4e;transform:rotateY(0deg) translateZ(2px);z-index:20;border-left:2px solid #b48b5a;';
+    spine.style.cssText = 'position:absolute;left:-8px;top:6px;width:16px;height:96%;background:#06142a;border-radius:8px 2px 2px 8px;box-shadow:inset -2px 0 10px rgba(0,0,0,0.8),inset 2px 0 4px #4a8aaa;transform:rotateY(0deg) translateZ(2px);z-index:20;border-left:1px solid #4a8aaa;';
     
-    // --- PAGES ---
+    // Pages
     var bookPages = document.createElement('div');
     bookPages.className = 'book-pages';
     bookPages.id = 'bookPages';
-    bookPages.style.cssText = 'position:absolute;width:100%;height:100%;transform-style:preserve-3d;backface-visibility:hidden;border-radius:8px 2px 2px 8px;background:#fcf3e0;box-shadow:inset 0 0 0 2px #dac09a,inset 0 0 30px rgba(90,60,30,0.3);padding:2.5rem 2.8rem;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;font-family:Georgia,Times New Roman,serif;color:#2d1f12;line-height:1.7;';
+    bookPages.style.cssText = 'position:absolute;width:100%;height:100%;transform-style:preserve-3d;backface-visibility:hidden;border-radius:12px 2px 2px 12px;background:#f8f5f0;box-shadow:inset 0 0 0 1px #d0c8b8,inset 0 0 30px rgba(100,80,60,0.06);padding:2rem 2.5rem;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;font-family:Cormorant Garamond,Georgia,serif;color:#2a241e;line-height:1.8;';
     
     if (diaryIsLocked) {
         bookPages.style.transform = 'rotateY(-180deg)';
-        bookPages.style.boxShadow = 'inset 0 0 0 2px #b48b5a,inset 0 0 40px rgba(0,0,0,0.5)';
+        bookPages.style.boxShadow = 'inset 0 0 0 1px #c6b8a4,inset 0 0 40px rgba(0,0,0,0.2)';
     }
     
-    // Ruled lines background
+    // Ruled lines
     var ruledLines = document.createElement('div');
-    ruledLines.style.cssText = 'position:absolute;inset:0;background:repeating-linear-gradient(transparent 0px,transparent 28px,#e8dccc 28px,#e8dccc 29px);opacity:0.2;pointer-events:none;';
+    ruledLines.style.cssText = 'position:absolute;inset:0;background:repeating-linear-gradient(transparent 0px,transparent 27px,#ece6dc 27px,#ece6dc 28px);opacity:0.2;pointer-events:none;';
     bookPages.appendChild(ruledLines);
     
     // Page content
@@ -160,126 +130,146 @@ function renderDiaryBook() {
     pageContent.className = 'page-content';
     pageContent.style.cssText = 'position:relative;z-index:5;height:100%;display:flex;flex-direction:column;justify-content:space-between;';
     
-    // Diary header
-    var diaryHeader = document.createElement('div');
-    diaryHeader.className = 'diary-header';
-    diaryHeader.style.cssText = 'border-bottom:2px dashed #b28a5c;padding-bottom:0.5rem;margin-bottom:1rem;display:flex;justify-content:space-between;font-size:0.9rem;color:#7a5d3a;letter-spacing:1px;';
-    diaryHeader.innerHTML = '<span id="pageDate">📅 —</span><span id="pageTime">✎ —</span>';
+    // Header
+    var header = document.createElement('div');
+    header.className = 'diary-header';
+    header.style.cssText = 'border-bottom:1px solid #d0c8b8;padding-bottom:0.4rem;margin-bottom:0.8rem;display:flex;justify-content:space-between;font-size:0.85rem;font-weight:400;letter-spacing:0.5px;color:#7a6e5e;text-transform:uppercase;font-family:Playfair Display,serif;font-style:italic;';
+    header.innerHTML = '<span id="pageDate">📅 —</span><span id="pageTime">✎ <span contenteditable="false" id="timeInput">entry</span></span>';
     
-    // Diary entry
-    var diaryEntryDiv = document.createElement('div');
-    diaryEntryDiv.className = 'diary-entry';
-    diaryEntryDiv.id = 'diaryEntryContent';
-    diaryEntryDiv.style.cssText = 'flex:1;font-size:1.05rem;background:rgba(255,247,230,0.3);padding:0.8rem 1rem;border-radius:12px;box-shadow:inset 0 2px 6px rgba(90,60,30,0.1);overflow-y:auto;border-left:4px solid #b28a5c;font-style:italic;min-height:100px;';
+    // Entry
+    var entry = document.createElement('div');
+    entry.className = 'diary-entry';
+    entry.id = 'diaryEntryContent';
+    entry.contentEditable = 'false';
+    entry.spellcheck = true;
+    entry.style.cssText = 'flex:1;font-size:1.2rem;font-family:Cormorant Garamond,Georgia,serif;background:rgba(255,250,240,0.3);padding:0.8rem 1rem;border-radius:12px;box-shadow:inset 0 1px 4px rgba(0,0,0,0.02);overflow-y:auto;border-left:3px solid #c6b8a4;font-weight:400;color:#2c241c;min-height:70px;outline:none;cursor:text;user-select:text;white-space:pre-wrap;word-wrap:break-word;line-height:2;';
     
-    // Diary footer
-    var diaryFooter = document.createElement('div');
-    diaryFooter.className = 'diary-footer';
-    diaryFooter.style.cssText = 'margin-top:1rem;display:flex;justify-content:space-between;align-items:center;font-size:0.85rem;color:#997d5a;border-top:1px solid #dac09a;padding-top:0.6rem;font-family:Segoe UI,sans-serif;';
-    diaryFooter.innerHTML = '<span>🔏 just for me</span>' +
-        '<div class="page-nav" style="display:flex;gap:12px;align-items:center;">' +
-        '<button id="prevPage" disabled style="background:#b48b5a;border:none;color:#1f140a;font-weight:bold;font-size:0.9rem;padding:6px 16px;border-radius:30px;cursor:pointer;font-family:Georgia,serif;box-shadow:0 3px 0 #5f3f26;transition:all 0.08s linear;border:1px solid #dbbd94;letter-spacing:0.5px;">◀ prev</button>' +
-        '<span class="page-indicator" id="pageIndicator" style="font-size:0.85rem;color:#5f3f26;font-weight:bold;min-width:60px;text-align:center;">1 / ' + diaryPages.length + '</span>' +
-        '<button id="nextPage" style="background:#b48b5a;border:none;color:#1f140a;font-weight:bold;font-size:0.9rem;padding:6px 16px;border-radius:30px;cursor:pointer;font-family:Georgia,serif;box-shadow:0 3px 0 #5f3f26;transition:all 0.08s linear;border:1px solid #dbbd94;letter-spacing:0.5px;">next ▶</button>' +
+    // Footer
+    var footer = document.createElement('div');
+    footer.className = 'diary-footer';
+    footer.style.cssText = 'margin-top:0.8rem;display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;color:#8f826e;border-top:1px solid #ddd6c8;padding-top:0.5rem;font-weight:400;letter-spacing:0.3px;font-family:Playfair Display,serif;';
+    footer.innerHTML = '<span class="edit-hint" id="editHint" style="font-size:0.7rem;color:#a0907a;font-weight:400;letter-spacing:0.5px;opacity:0.6;font-family:Playfair Display,serif;font-style:italic;">🔒 locked</span>' +
+        '<div class="page-nav" style="display:flex;gap:10px;align-items:center;">' +
+        '<button id="prevPage" disabled style="background:transparent;border:1px solid #c6b8a4;color:#3d342b;font-weight:400;font-size:0.8rem;padding:4px 16px;border-radius:30px;cursor:pointer;font-family:Playfair Display,serif;transition:all 0.15s;letter-spacing:0.3px;background:rgba(255,250,240,0.3);backdrop-filter:blur(2px);">◀ prev</button>' +
+        '<span class="page-indicator" id="pageIndicator" style="font-size:0.8rem;font-weight:400;color:#6a5e4e;min-width:50px;text-align:center;font-family:Playfair Display,serif;">1 / ' + diaryPages.length + '</span>' +
+        '<button id="nextPage" style="background:transparent;border:1px solid #c6b8a4;color:#3d342b;font-weight:400;font-size:0.8rem;padding:4px 16px;border-radius:30px;cursor:pointer;font-family:Playfair Display,serif;transition:all 0.15s;letter-spacing:0.3px;background:rgba(255,250,240,0.3);backdrop-filter:blur(2px);">+ new page ▶</button>' +
         '</div>';
     
-    // Add new entry button
-    var addBtn = document.createElement('button');
-    addBtn.textContent = '+ New Entry';
-    addBtn.style.cssText = 'background:#b48b5a;border:none;color:#1f140a;font-weight:bold;font-size:0.8rem;padding:6px 14px;border-radius:30px;cursor:pointer;font-family:Georgia,serif;box-shadow:0 3px 0 #5f3f26;transition:all 0.08s linear;border:1px solid #dbbd94;margin-left:8px;';
-    addBtn.onclick = function(e) {
-        e.stopPropagation();
-        showNewEntryDialog();
-    };
-    diaryFooter.querySelector('span').after(addBtn);
+    // Save button
+    var saveBtn = document.createElement('button');
+    saveBtn.textContent = '💾 Save';
+    saveBtn.style.cssText = 'background:#1a4a6a;border:none;color:#e8f0f8;font-weight:400;font-size:0.7rem;padding:5px 14px;border-radius:20px;cursor:pointer;font-family:Playfair Display,serif;letter-spacing:1px;transition:0.12s;border:1px solid rgba(100,200,255,0.1);box-shadow:0 2px 0 #0a2a4a;margin-left:8px;';
+    saveBtn.onclick = function(e) { e.stopPropagation(); saveDiaryEntry(); };
+    footer.querySelector('.edit-hint').after(saveBtn);
     
-    pageContent.appendChild(diaryHeader);
-    pageContent.appendChild(diaryEntryDiv);
-    pageContent.appendChild(diaryFooter);
+    pageContent.appendChild(header);
+    pageContent.appendChild(entry);
+    pageContent.appendChild(footer);
     bookPages.appendChild(pageContent);
     
-    // --- LOCK AREA ---
+    // Lock area
     var lockArea = document.createElement('div');
     lockArea.className = 'lock-area';
-    lockArea.style.cssText = 'position:absolute;bottom:25px;right:30px;z-index:30;display:flex;flex-direction:column;align-items:center;gap:6px;background:rgba(40,25,12,0.7);backdrop-filter:blur(4px);padding:12px 18px 14px;border-radius:60px 60px 30px 30px;border:2px solid #b48b5a;box-shadow:0 6px 12px rgba(0,0,0,0.5);';
-    lockArea.innerHTML = '<div class="lock-icon" id="lockIcon" style="font-size:2rem;filter:drop-shadow(0 2px 4px #1f0f05);background:#e3d4b0;padding:4px 12px;border-radius:40px;line-height:1;box-shadow:inset 0 -3px 0 #a7855a;cursor:pointer;transition:transform 0.2s;">' + (diaryIsLocked ? '🔒' : '🔓') + '</div>' +
-        '<button class="lock-btn" id="lockToggle" style="background:#b48b5a;border:none;color:#1f140a;font-weight:bold;font-size:0.9rem;padding:8px 20px;border-radius:40px;cursor:pointer;font-family:Georgia,serif;letter-spacing:1px;box-shadow:0 3px 0 #5f3f26,0 4px 8px rgba(0,0,0,0.3);transition:all 0.08s linear;text-transform:uppercase;border:1px solid #dbbd94;">' + (diaryIsLocked ? 'unlock' : 'lock') + '</button>' +
-        '<span class="lock-status" id="lockStatus" style="font-size:0.65rem;color:#f5e7c8;background:#2d1c0e;padding:2px 12px;border-radius:30px;border:1px solid #b48b5a;letter-spacing:0.5px;">' + (diaryIsLocked ? 'locked' : 'unlocked') + '</span>';
+    lockArea.style.cssText = 'position:absolute;bottom:20px;left:50%;transform:translateX(-50%);z-index:30;display:flex;flex-direction:column;align-items:center;gap:4px;background:rgba(6,20,42,0.9);backdrop-filter:blur(8px);padding:10px 24px 12px;border-radius:40px 40px 28px 28px;border:1px solid rgba(100,200,255,0.15);box-shadow:0 4px 20px rgba(0,0,0,0.4),inset 0 0 20px rgba(60,150,255,0.05);pointer-events:auto;';
+    lockArea.innerHTML = '<div class="lock-icon" id="lockIcon" style="font-size:1.6rem;filter:drop-shadow(0 2px 8px rgba(60,150,255,0.3));background:#1a4a6a;padding:0 14px;border-radius:20px;line-height:1.2;box-shadow:inset 0 -2px 0 #0a2a4a,0 0 20px rgba(60,150,255,0.1);cursor:pointer;transition:0.15s;color:#e8f0f8;">' + (diaryIsLocked ? '🔒' : '🔓') + '</div>' +
+        '<button class="lock-btn" id="lockToggle" style="background:#1a4a6a;border:none;color:#e8f0f8;font-weight:400;font-size:0.7rem;padding:5px 18px;border-radius:20px;cursor:pointer;font-family:Playfair Display,serif;letter-spacing:1px;text-transform:uppercase;transition:0.12s;border:1px solid rgba(100,200,255,0.1);box-shadow:0 2px 0 #0a2a4a,0 0 15px rgba(60,150,255,0.05);">' + (diaryIsLocked ? 'unlock' : 'lock') + '</button>' +
+        '<span class="lock-status" id="lockStatus" style="font-size:0.5rem;font-weight:400;color:#e8f0f8;background:#06142a;padding:2px 12px;border-radius:12px;border:1px solid #4a8aaa;letter-spacing:0.5px;text-transform:uppercase;font-family:Playfair Display,serif;">' + (diaryIsLocked ? 'locked' : 'unlocked') + '</span>';
     
-    // --- PIN MODAL ---
+    // PIN Modal
     var pinModal = document.createElement('div');
     pinModal.className = 'pin-modal';
     pinModal.id = 'pinModal';
-    pinModal.style.cssText = 'position:absolute;inset:0;z-index:50;background:rgba(30,18,8,0.85);backdrop-filter:blur(6px);display:' + (!diaryPin ? 'flex' : 'none') + ';justify-content:center;align-items:center;border-radius:12px 4px 4px 12px;padding:2rem;';
-    pinModal.innerHTML = '<div class="pin-box" style="background:#fcf3e0;padding:2rem 2.5rem;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,0.7),0 0 0 2px #b48b5a;text-align:center;max-width:340px;width:100%;border:3px solid #dbbd94;">' +
-        '<h2 style="color:#3d2817;font-family:Georgia,serif;font-weight:400;letter-spacing:2px;margin-bottom:0.3rem;">🔐 ' + (!diaryPin ? 'set your PIN' : 'enter PIN') + '</h2>' +
-        '<p style="color:#7a5d3a;font-size:0.9rem;margin-bottom:1.2rem;">' + (!diaryPin ? 'enter a 4-digit code to protect your diary' : 'enter your 4-digit code to unlock') + '</p>' +
-        '<div class="pin-input-group" style="display:flex;gap:10px;justify-content:center;margin-bottom:1.2rem;">' +
-        '<input type="password" maxlength="1" class="pin-digit" data-index="0" style="width:50px;height:60px;text-align:center;font-size:1.8rem;font-family:Georgia,serif;border:2px solid #b28a5c;border-radius:12px;background:#fffdf5;color:#2d1f12;outline:none;" />' +
-        '<input type="password" maxlength="1" class="pin-digit" data-index="1" style="width:50px;height:60px;text-align:center;font-size:1.8rem;font-family:Georgia,serif;border:2px solid #b28a5c;border-radius:12px;background:#fffdf5;color:#2d1f12;outline:none;" />' +
-        '<input type="password" maxlength="1" class="pin-digit" data-index="2" style="width:50px;height:60px;text-align:center;font-size:1.8rem;font-family:Georgia,serif;border:2px solid #b28a5c;border-radius:12px;background:#fffdf5;color:#2d1f12;outline:none;" />' +
-        '<input type="password" maxlength="1" class="pin-digit" data-index="3" style="width:50px;height:60px;text-align:center;font-size:1.8rem;font-family:Georgia,serif;border:2px solid #b28a5c;border-radius:12px;background:#fffdf5;color:#2d1f12;outline:none;" />' +
+    pinModal.style.cssText = 'position:absolute;inset:0;z-index:50;background:rgba(6,20,42,0.9);backdrop-filter:blur(8px);display:' + (!diaryPin ? 'flex' : 'none') + ';justify-content:center;align-items:center;border-radius:16px 4px 4px 16px;padding:2rem;';
+    pinModal.innerHTML = '<div class="pin-box" style="background:#f0ece6;padding:2rem 2.2rem;border-radius:24px;box-shadow:0 30px 50px rgba(0,0,0,0.5),0 0 0 1px rgba(100,200,255,0.2);text-align:center;max-width:340px;width:100%;border:1px solid #c6d0dc;">' +
+        '<h2 style="color:#0a1e3a;font-family:Playfair Display,serif;font-weight:400;letter-spacing:1px;margin-bottom:0.2rem;font-size:1.6rem;">🔐 ' + (!diaryPin ? 'set PIN' : 'enter PIN') + '</h2>' +
+        '<p style="color:#5a6a7a;font-size:0.9rem;margin-bottom:1rem;font-weight:400;">4-digit code for your diary</p>' +
+        '<div class="pin-input-group" style="display:flex;gap:10px;justify-content:center;margin-bottom:1rem;">' +
+        '<input type="password" maxlength="1" class="pin-digit" data-index="0" style="width:48px;height:56px;text-align:center;font-size:1.6rem;font-family:Playfair Display,serif;border:1px solid #b0bcc8;border-radius:12px;background:#fff;color:#0a1e3a;outline:none;" />' +
+        '<input type="password" maxlength="1" class="pin-digit" data-index="1" style="width:48px;height:56px;text-align:center;font-size:1.6rem;font-family:Playfair Display,serif;border:1px solid #b0bcc8;border-radius:12px;background:#fff;color:#0a1e3a;outline:none;" />' +
+        '<input type="password" maxlength="1" class="pin-digit" data-index="2" style="width:48px;height:56px;text-align:center;font-size:1.6rem;font-family:Playfair Display,serif;border:1px solid #b0bcc8;border-radius:12px;background:#fff;color:#0a1e3a;outline:none;" />' +
+        '<input type="password" maxlength="1" class="pin-digit" data-index="3" style="width:48px;height:56px;text-align:center;font-size:1.6rem;font-family:Playfair Display,serif;border:1px solid #b0bcc8;border-radius:12px;background:#fff;color:#0a1e3a;outline:none;" />' +
         '</div>' +
-        '<button class="pin-submit" id="pinSubmit" style="background:#b48b5a;border:none;color:#1f140a;font-weight:bold;font-size:1rem;padding:10px 30px;border-radius:40px;cursor:pointer;font-family:Georgia,serif;letter-spacing:2px;box-shadow:0 4px 0 #5f3f26;transition:all 0.08s linear;border:1px solid #dbbd94;width:100%;">' + (!diaryPin ? 'set PIN & open' : 'unlock') + '</button>' +
-        '<div class="pin-error" id="pinError" style="color:#a33;font-size:0.8rem;margin-top:0.5rem;min-height:1.2rem;"></div>' +
+        '<button class="pin-submit" id="pinSubmit" style="background:#1a4a6a;border:none;color:#e8f0f8;font-weight:400;font-size:0.9rem;padding:10px 20px;border-radius:40px;cursor:pointer;font-family:Playfair Display,serif;letter-spacing:1px;transition:0.12s;border:1px solid rgba(255,255,255,0.1);box-shadow:0 3px 0 #0a2a4a;width:100%;">' + (!diaryPin ? 'set PIN & open' : 'unlock') + '</button>' +
+        '<div class="pin-error" id="pinError" style="color:#b55a4a;font-size:0.8rem;margin-top:0.4rem;min-height:1.2rem;font-weight:400;"></div>' +
         '</div>';
     
-    // Assemble book
+    // Assemble
     book.appendChild(coverFront);
     book.appendChild(coverBack);
     book.appendChild(spine);
     book.appendChild(bookPages);
     book.appendChild(lockArea);
     book.appendChild(pinModal);
-    bookWrapper.appendChild(book);
-    container.appendChild(bookWrapper);
+    wrapper.appendChild(book);
+    container.appendChild(wrapper);
     
-    // Render current page
+    // Render page
     renderDiaryPage(diaryCurrentPage);
     
-    // Setup event listeners
-    setupDiaryEvents(book, bookWrapper, pinModal);
+    // Setup events
+    setupDiaryEvents(book, wrapper, pinModal);
 }
 
-// Render a specific diary page
+// Render page
 function renderDiaryPage(index) {
     if (index < 0 || index >= diaryPages.length) return;
-    
     diaryCurrentPage = index;
     var page = diaryPages[index];
     
     var pageDate = document.getElementById('pageDate');
-    var pageTime = document.getElementById('pageTime');
+    var timeInput = document.getElementById('timeInput');
     var diaryEntry = document.getElementById('diaryEntryContent');
     var pageIndicator = document.getElementById('pageIndicator');
     var prevBtn = document.getElementById('prevPage');
     var nextBtn = document.getElementById('nextPage');
+    var editHint = document.getElementById('editHint');
     
     if (pageDate) pageDate.textContent = page.date;
-    if (pageTime) pageTime.textContent = page.time;
+    if (timeInput) timeInput.textContent = page.time || 'entry';
     if (diaryEntry) diaryEntry.innerHTML = page.content;
     if (pageIndicator) pageIndicator.textContent = (index + 1) + ' / ' + diaryPages.length;
     if (prevBtn) prevBtn.disabled = index === 0;
-    if (nextBtn) nextBtn.disabled = index === diaryPages.length - 1;
+    if (nextBtn) nextBtn.textContent = index === diaryPages.length - 1 ? '+ new page ▶' : 'next ▶';
+    
+    // Set editable state
+    if (!diaryIsLocked && page.editable !== false) {
+        if (diaryEntry) {
+            diaryEntry.contentEditable = 'true';
+            diaryEntry.style.borderLeftColor = '#4a7a9a';
+            diaryEntry.style.cursor = 'text';
+        }
+        if (timeInput) timeInput.contentEditable = 'true';
+        if (editHint) editHint.textContent = '✎ click to edit';
+    } else {
+        if (diaryEntry) {
+            diaryEntry.contentEditable = 'false';
+            diaryEntry.style.borderLeftColor = '#c6b8a4';
+            diaryEntry.style.cursor = 'default';
+        }
+        if (timeInput) timeInput.contentEditable = 'false';
+        if (editHint) editHint.textContent = page.editable === false ? '🔒 sample page' : '🔒 locked';
+    }
 }
 
-// Setup all diary event listeners
-function setupDiaryEvents(book, bookWrapper, pinModal) {
-    // Lock toggle
+// Setup events
+function setupDiaryEvents(book, wrapper, pinModal) {
     var lockToggle = document.getElementById('lockToggle');
     var lockIcon = document.getElementById('lockIcon');
     
     function toggleLock() {
         if (diaryIsLocked) {
-            if (!diaryPin) {
-                pinModal.style.display = 'flex';
-                return;
-            }
+            if (!diaryPin) { pinModal.style.display = 'flex'; return; }
             diaryIsLocked = false;
+            openBookWithAnimation(book);
+            setTimeout(function() { showDiaryToast('🔓 Diary unlocked · you can edit'); }, 600);
         } else {
+            saveCurrentDiaryEntry();
             diaryIsLocked = true;
+            book.classList.remove('open'); book.classList.add('closed');
+            book.style.transform = 'rotateY(-2deg) rotateX(1deg)';
+            updateDiaryUI(book);
+            showDiaryToast('🔒 Diary locked');
         }
-        updateDiaryUI(book);
     }
     
     if (lockToggle) lockToggle.addEventListener('click', toggleLock);
@@ -289,77 +279,47 @@ function setupDiaryEvents(book, bookWrapper, pinModal) {
     var prevBtn = document.getElementById('prevPage');
     var nextBtn = document.getElementById('nextPage');
     
-    if (prevBtn) {
-        prevBtn.addEventListener('click', function() {
-            if (diaryIsLocked) return;
-            flipDiaryPage(-1, book);
-        });
-    }
+    if (prevBtn) prevBtn.addEventListener('click', function() { navigateDiaryPage(-1); });
+    if (nextBtn) nextBtn.addEventListener('click', function() { navigateDiaryPage(1); });
     
-    if (nextBtn) {
-        nextBtn.addEventListener('click', function() {
-            if (diaryIsLocked) return;
-            flipDiaryPage(1, book);
-        });
-    }
-    
-    // PIN input handling
+    // PIN
     var pinInputs = pinModal.querySelectorAll('.pin-digit');
     pinInputs.forEach(function(inp, idx) {
         inp.addEventListener('input', function() {
-            if (this.value.length === 1 && idx < 3) {
-                pinInputs[idx + 1].focus();
-            }
+            if (this.value.length === 1 && idx < 3) pinInputs[idx + 1].focus();
         });
         inp.addEventListener('keydown', function(e) {
-            if (e.key === 'Backspace' && this.value === '' && idx > 0) {
-                pinInputs[idx - 1].focus();
-            }
-            if (e.key === 'Enter') {
-                document.getElementById('pinSubmit').click();
-            }
+            if (e.key === 'Backspace' && this.value === '' && idx > 0) pinInputs[idx - 1].focus();
+            if (e.key === 'Enter') document.getElementById('pinSubmit').click();
         });
     });
     
-    // PIN submit
     var pinSubmit = document.getElementById('pinSubmit');
     if (pinSubmit) {
         pinSubmit.addEventListener('click', function() {
             var code = '';
-            pinInputs.forEach(function(inp) {
-                var val = inp.value.trim();
-                if (val.length === 1 && /[0-9]/.test(val)) {
-                    code += val;
-                }
-            });
-            
+            pinInputs.forEach(function(inp) { if (inp.value && /[0-9]/.test(inp.value)) code += inp.value; });
             var pinError = document.getElementById('pinError');
             
-            if (code.length !== 4) {
-                if (pinError) pinError.textContent = '❌ please enter exactly 4 digits';
-                return;
-            }
+            if (code.length !== 4) { if (pinError) pinError.textContent = '❌ enter exactly 4 digits'; return; }
             
             if (!diaryPin) {
-                // Set new PIN
                 diaryPin = code;
                 localStorage.setItem('winchu_diary_pin', diaryPin);
-                
                 if (pinError) pinError.textContent = '';
                 pinModal.style.display = 'none';
                 diaryIsLocked = false;
-                updateDiaryUI(book);
-                
-                // Clear inputs
+                openBookWithAnimation(book);
                 pinInputs.forEach(function(inp) { inp.value = ''; });
+                showDiaryToast('🔓 PIN set · diary open for editing');
             } else {
-                // Verify PIN
                 if (code === diaryPin) {
                     if (pinError) pinError.textContent = '';
                     pinModal.style.display = 'none';
                     diaryIsLocked = false;
-                    updateDiaryUI(book);
+                    openBookWithAnimation(book);
                     pinInputs.forEach(function(inp) { inp.value = ''; });
+                    showDiaryToast('🔓 Diary unlocked');
                 } else {
                     if (pinError) pinError.textContent = '❌ incorrect PIN';
                     pinInputs.forEach(function(inp) { inp.value = ''; });
@@ -369,158 +329,153 @@ function setupDiaryEvents(book, bookWrapper, pinModal) {
         });
     }
     
-    // Mouse movement for book tilt
-    bookWrapper.addEventListener('mousemove', function(e) {
-        var rect = bookWrapper.getBoundingClientRect();
+    // Mouse tilt
+    wrapper.addEventListener('mousemove', function(e) {
+        var rect = wrapper.getBoundingClientRect();
         var x = (e.clientX - rect.left) / rect.width - 0.5;
         var y = (e.clientY - rect.top) / rect.height - 0.5;
         var rotY = 6 + x * 12;
         var rotX = 1 + y * 4;
-        
-        if (diaryIsLocked) {
-            book.style.transform = 'rotateY(' + (rotY - 2) + 'deg) rotateX(' + rotX + 'deg)';
-        } else {
-            book.style.transform = 'rotateY(' + (rotY + 4) + 'deg) rotateX(' + rotX + 'deg)';
-        }
+        if (diaryIsLocked) book.style.transform = 'rotateY(' + (rotY - 2) + 'deg) rotateX(' + rotX + 'deg)';
+        else book.style.transform = 'rotateY(' + (rotY + 4) + 'deg) rotateX(' + rotX + 'deg)';
     });
     
-    bookWrapper.addEventListener('mouseleave', function() {
-        if (diaryIsLocked) {
-            book.style.transform = 'rotateY(-4deg) rotateX(2deg)';
-        } else {
-            book.style.transform = 'rotateY(8deg) rotateX(1deg)';
-        }
+    wrapper.addEventListener('mouseleave', function() {
+        book.style.transform = diaryIsLocked ? 'rotateY(-2deg) rotateX(1deg)' : 'rotateY(8deg) rotateX(1deg)';
     });
+    
+    // Save entry on input
+    var diaryEntry = document.getElementById('diaryEntryContent');
+    if (diaryEntry) {
+        var saveTimeout;
+        diaryEntry.addEventListener('input', function() {
+            if (diaryIsLocked) return;
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(function() { saveCurrentDiaryEntry(); }, 500);
+        });
+    }
 }
 
-// Update diary UI based on lock state
+// Open book animation
+function openBookWithAnimation(book) {
+    book.classList.add('opening');
+    setTimeout(function() {
+        book.classList.remove('opening');
+        book.classList.remove('closed');
+        book.classList.add('open');
+        book.style.transform = 'rotateY(8deg) rotateX(1deg)';
+        updateDiaryUI(book);
+    }, 1000);
+}
+
+// Update UI
 function updateDiaryUI(book) {
     var lockIcon = document.getElementById('lockIcon');
     var lockStatus = document.getElementById('lockStatus');
     var lockToggle = document.getElementById('lockToggle');
     
     if (diaryIsLocked) {
-        book.classList.remove('unlocked');
-        book.classList.add('locked');
-        book.style.transform = 'rotateY(-4deg) rotateX(2deg)';
+        book.classList.remove('open'); book.classList.add('closed');
         if (lockIcon) lockIcon.textContent = '🔒';
         if (lockStatus) lockStatus.textContent = 'locked';
         if (lockToggle) lockToggle.textContent = 'unlock';
-        
-        var bookPages = document.getElementById('bookPages');
-        if (bookPages) {
-            bookPages.style.transform = 'rotateY(-180deg)';
-            bookPages.style.boxShadow = 'inset 0 0 0 2px #b48b5a,inset 0 0 40px rgba(0,0,0,0.5)';
-        }
     } else {
-        book.classList.remove('locked');
-        book.classList.add('unlocked');
-        book.style.transform = 'rotateY(8deg) rotateX(1deg)';
+        book.classList.remove('closed'); book.classList.add('open');
         if (lockIcon) lockIcon.textContent = '🔓';
         if (lockStatus) lockStatus.textContent = 'unlocked';
         if (lockToggle) lockToggle.textContent = 'lock';
-        
-        var bookPages = document.getElementById('bookPages');
-        if (bookPages) {
-            bookPages.style.transform = 'rotateY(0deg)';
-            bookPages.style.boxShadow = 'inset 0 0 0 2px #b48b5a,inset 0 0 30px rgba(150,100,50,0.2)';
-        }
     }
-    
     renderDiaryPage(diaryCurrentPage);
 }
 
-// Flip diary page with animation
-function flipDiaryPage(direction, book) {
+// Navigate
+function navigateDiaryPage(direction) {
     if (diaryIsLocked) return;
-    
+    saveCurrentDiaryEntry();
     var newIndex = diaryCurrentPage + direction;
-    if (newIndex < 0 || newIndex >= diaryPages.length) return;
-    
-    book.classList.add('flipping');
-    
-    setTimeout(function() {
-        diaryCurrentPage = newIndex;
-        renderDiaryPage(diaryCurrentPage);
-        book.classList.remove('flipping');
-    }, 300);
-}
-
-// Show dialog to create new diary entry
-function showNewEntryDialog() {
-    showDialog({
-        emoji: '📝',
-        title: 'New Diary Entry',
-        subtitle: 'Write your thoughts...',
-        placeholder: 'Dear diary...',
-        confirmText: 'Next →'
-    }).then(function(content) {
-        if (!content || !content.trim()) return;
-        
-        showDialog({
-            emoji: '😊',
-            title: 'Your Mood',
-            subtitle: 'How are you feeling?',
-            placeholder: 'e.g., Happy, Thoughtful, Grateful...',
-            confirmText: '💾 Save Entry'
-        }).then(function(mood) {
-            var entry = {
-                content: content.trim(),
-                mood: (mood && mood.trim()) ? mood.trim() : '—',
-                date: new Date().toISOString()
-            };
-            
-            // Save to state
-            S.diary.unshift(entry);
-            
-            // Save to Firebase
-            if (S.username) {
-                db.ref('diary/' + S.username).push(entry);
-            }
-            
-            saveState();
-            
-            // Reload diary
-            loadDiaryEntries();
-            diaryCurrentPage = 0;
-            renderDiaryBook();
-            
-            toast('📝 Entry saved!');
+    if (newIndex >= diaryPages.length) {
+        // Add new page
+        var now = new Date();
+        diaryPages.push({
+            date: '📅 ' + now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+            time: 'entry',
+            content: '<p style="color:#9a8a7a;font-style:italic;">— write your thoughts here —</p>',
+            editable: true,
+            rawDate: now.toISOString()
         });
-    });
+    }
+    if (newIndex < 0) return;
+    diaryCurrentPage = newIndex;
+    renderDiaryPage(diaryCurrentPage);
+    updateDiaryUI(document.getElementById('diaryBook'));
 }
 
-// Save diary (called from main diary page)
-function saveDiary() {
-    showNewEntryDialog();
+// Save entry
+function saveCurrentDiaryEntry() {
+    var entry = document.getElementById('diaryEntryContent');
+    var timeInput = document.getElementById('timeInput');
+    if (!entry || diaryIsLocked) return;
+    if (diaryCurrentPage >= 0 && diaryCurrentPage < diaryPages.length && diaryPages[diaryCurrentPage].editable !== false) {
+        diaryPages[diaryCurrentPage].content = entry.innerHTML;
+        diaryPages[diaryCurrentPage].time = timeInput ? timeInput.textContent.trim() : 'entry';
+        var editHint = document.getElementById('editHint');
+        if (editHint) { editHint.textContent = '✓ saved'; setTimeout(function() { if (editHint && !diaryIsLocked) editHint.textContent = '✎ click to edit'; }, 800); }
+    }
 }
 
-// Initialize diary when page loads
+// Save to Firebase
+function saveDiaryEntry() {
+    saveCurrentDiaryEntry();
+    if (!S.username || diaryIsLocked) return;
+    var entry = diaryPages[diaryCurrentPage];
+    if (!entry || entry.editable === false) return;
+    
+    var tempDiv = document.createElement('div');
+    tempDiv.innerHTML = entry.content;
+    var textContent = tempDiv.textContent || tempDiv.innerText || '';
+    
+    var diaryEntry = {
+        content: textContent.trim(),
+        mood: entry.time || '—',
+        date: entry.rawDate || new Date().toISOString()
+    };
+    
+    S.diary.unshift(diaryEntry);
+    db.ref('diary/' + S.username).push(diaryEntry);
+    saveState();
+    showDiaryToast('📝 Entry saved to cloud');
+}
+
+// Toast
+function showDiaryToast(msg) {
+    var t = document.getElementById('diaryToast');
+    if (!t) {
+        t = document.createElement('div');
+        t.id = 'diaryToast';
+        t.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#06142a;color:#e8f0f8;padding:10px 28px;border-radius:40px;font-size:0.9rem;box-shadow:0 6px 20px rgba(0,0,0,0.3),0 0 30px rgba(60,150,255,0.05);border:1px solid #4a8aaa;opacity:0;transition:opacity 0.3s;z-index:9999;pointer-events:none;white-space:nowrap;';
+        document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = '1';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function() { t.style.opacity = '0'; }, 2200);
+}
+
+// Init on DOM ready
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize when navigating to diary page
     var diaryPage = document.getElementById('page-diary');
     if (diaryPage) {
         var observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
-                if (mutation.target.classList.contains('active')) {
-                    initDiary();
-                }
+                if (mutation.target.classList.contains('active')) initDiary();
             });
         });
-        
-        observer.observe(diaryPage, {
-            attributes: true,
-            attributeFilter: ['class']
-        });
+        observer.observe(diaryPage, { attributes: true, attributeFilter: ['class'] });
     }
 });
 
-// Expose functions globally
-window.renderDiary = function() {
-    loadDiaryEntries();
-    renderDiaryBook();
-};
-window.saveDiary = saveDiary;
+window.renderDiary = function() { loadDiaryEntries(); renderDiaryBook(); };
+window.saveDiary = saveDiaryEntry;
 window.initDiary = initDiary;
 
-console.log('📖 Diary module loaded - Book style with PIN protection');
+console.log('📖 Diary module loaded - Shimmering Blue Book');
