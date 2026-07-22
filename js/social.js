@@ -1,73 +1,51 @@
-// Social Feed Module - Fixed posting
+// Social Feed Module - Fixed preview and posting
 
 let postsListener = null;
 let selectedFile = null;
 let selectedFileData = null;
 
-// Setup posts listener
 function setupPostsListener() {
-    console.log('Setting up posts listener...');
+    console.log('Setting up posts...');
     
     if (postsListener) {
         postsListener.off();
         postsListener = null;
     }
     
-    // Load ALL existing posts
-    var postsRef = getRef('posts');
-    if (!postsRef) {
-        console.error('Cannot access posts reference');
-        return;
-    }
-    
-    postsRef.once('value').then(function(snapshot) {
+    // Load all posts
+    database.ref('posts').once('value').then(function(snapshot) {
         var data = snapshot.val();
         S.socialPosts = [];
         
         if (data) {
-            var keys = Object.keys(data);
-            console.log('Found ' + keys.length + ' posts');
-            
-            keys.forEach(function(key) {
+            Object.keys(data).forEach(function(key) {
                 var post = data[key];
                 if (post && post.author) {
                     post.id = key;
                     S.socialPosts.push(post);
                 }
             });
-            
-            S.socialPosts.sort(function(a, b) {
-                return new Date(b.time) - new Date(a.time);
-            });
+            S.socialPosts.sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
         }
         
-        console.log('Loaded ' + S.socialPosts.length + ' posts');
+        console.log('Posts loaded:', S.socialPosts.length);
         renderSocial();
         renderProfile();
         renderStories();
         saveState();
-    }).catch(function(error) {
-        console.error('Error loading posts:', error);
     });
     
     // Listen for new posts
-    postsListener = postsRef;
+    postsListener = database.ref('posts');
     postsListener.on('child_added', function(snapshot) {
         var post = snapshot.val();
         if (!post || !post.author) return;
-        
         post.id = snapshot.key;
         
-        var exists = S.socialPosts.find(function(p) { return p.id === post.id; });
-        if (!exists) {
-            console.log('New post:', post.id);
+        if (!S.socialPosts.find(function(p) { return p.id === post.id; })) {
             S.socialPosts.unshift(post);
-            S.socialPosts.sort(function(a, b) {
-                return new Date(b.time) - new Date(a.time);
-            });
             renderSocial();
             renderProfile();
-            renderStories();
             saveState();
         }
     });
@@ -79,7 +57,6 @@ function setupPostsListener() {
     });
 }
 
-// Render feed
 function renderSocial() {
     var feed = document.getElementById('socialFeed');
     if (!feed) return;
@@ -92,7 +69,7 @@ function renderSocial() {
     var posts = S.socialPosts || [];
     
     if (posts.length === 0) {
-        feed.innerHTML = '<div style="text-align:center;padding:50px;color:#94a3b8;"><div style="font-size:48px;">📸</div><p>No posts yet. Be the first!</p></div>';
+        feed.innerHTML = '<div style="text-align:center;padding:50px;color:#94a3b8;"><div style="font-size:48px;">📸</div><p>No posts yet!</p></div>';
         return;
     }
     
@@ -105,7 +82,6 @@ function renderSocial() {
         var likeCount = (post.likes || []).length;
         var commentCount = (post.comments || []).length;
         var timeAgo = timeSince(new Date(post.time));
-        var canDelete = post.author === S.username;
         var color = getColor(post.author);
         
         var avatarHTML = post.avatar && (post.avatar.startsWith('data:') || post.avatar.includes('http'))
@@ -119,7 +95,7 @@ function renderSocial() {
         html += '<span class="pb-name">' + escapeHtml(post.author) + '</span>';
         html += '</div>';
         html += '<span class="ig-post-time">' + timeAgo + '</span>';
-        if (canDelete) {
+        if (post.author === S.username) {
             html += '<button class="btn-sm btn-danger" onclick="event.stopPropagation();deletePost(\'' + post.id + '\')" style="font-size:10px;padding:2px 6px;">🗑️</button>';
         }
         html += '</div>';
@@ -134,17 +110,15 @@ function renderSocial() {
         
         html += '<div class="ig-post-actions" onclick="event.stopPropagation();" style="padding:8px 12px;">';
         html += '<button class="ig-post-action' + (liked ? ' liked' : '') + '" onclick="likePost(\'' + post.id + '\')">' + (liked ? '❤️' : '🤍') + '</button>';
-        html += '<span style="font-size:12px;font-weight:600;margin:0 12px 0 4px;">' + likeCount + '</span>';
+        html += '<span style="margin:0 12px 0 4px;">' + likeCount + '</span>';
         html += '<button class="ig-post-action" onclick="commentOnPost(\'' + post.id + '\')">💬</button>';
-        html += '<span style="font-size:12px;font-weight:600;margin:0 12px 0 4px;">' + commentCount + '</span>';
+        html += '<span style="margin:0 12px 0 4px;">' + commentCount + '</span>';
         html += '<button class="ig-post-action" onclick="bookmarkItem(\'' + post.id + '\',\'post\')">🔖</button>';
-        if (post.image) {
-            html += '<button class="ig-post-action" onclick="downloadMedia(\'' + post.image + '\')">⬇️</button>';
-        }
+        if (post.image) html += '<button class="ig-post-action" onclick="downloadMedia(\'' + post.image + '\')">⬇️</button>';
         html += '</div>';
         
         if (commentCount > 0) {
-            html += '<div style="padding:4px 12px 8px;font-size:12px;color:#64748b;" onclick="event.stopPropagation();viewPostDetail(\'' + post.id + '\')">View ' + commentCount + ' comment' + (commentCount > 1 ? 's' : '') + '</div>';
+            html += '<div style="padding:4px 12px 8px;font-size:12px;color:#64748b;" onclick="event.stopPropagation();viewPostDetail(\'' + post.id + '\')">View ' + commentCount + ' comments</div>';
         }
         
         html += '</div>';
@@ -153,22 +127,15 @@ function renderSocial() {
     feed.innerHTML = html;
 }
 
-// CREATE POST - Fixed
+// CREATE POST
 function createPost() {
-    if (!S.username) {
-        toast('Please log in');
-        return;
-    }
+    if (!S.username) { toast('Please log in'); return; }
     
     var input = document.getElementById('postInput');
     var text = input ? input.value.trim() : '';
     
-    if (!text && !selectedFileData) {
-        toast('Write something or attach media');
-        return;
-    }
+    if (!text && !selectedFileData) { toast('Write something or attach media'); return; }
     
-    console.log('Creating post...');
     toast('Posting...');
     
     var postData = {
@@ -181,12 +148,9 @@ function createPost() {
         comments: []
     };
     
-    // Save to Firebase
-    pushData('posts', postData).then(function(result) {
-        console.log('Post saved! ID:', result.key);
-        
-        // Add to local state immediately
-        postData.id = result.key;
+    var newRef = database.ref('posts').push();
+    newRef.set(postData).then(function() {
+        postData.id = newRef.key;
         S.socialPosts.unshift(postData);
         
         // Clear form
@@ -203,17 +167,19 @@ function createPost() {
         renderSocial();
         renderProfile();
         saveState();
-        toast('📝 Posted!');
-    }).catch(function(error) {
-        console.error('Post error:', error);
-        toast('Failed to post. Check connection.');
+        toast('Posted!');
+    }).catch(function(err) {
+        console.error(err);
+        toast('Failed to post');
     });
 }
 
-// Handle file select
+// HANDLE FILE SELECT - Fixed preview
 function handleFileSelect(event) {
     var file = event.target.files[0];
     if (!file) return;
+    
+    console.log('File selected:', file.name, file.type);
     
     var maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
     if (file.size > maxSize) {
@@ -227,11 +193,27 @@ function handleFileSelect(event) {
     var reader = new FileReader();
     reader.onload = function(e) {
         selectedFileData = e.target.result;
+        console.log('File loaded, size:', selectedFileData.length);
+        
         var preview = document.getElementById('filePreview');
-        if (preview) {
-            preview.innerHTML = '<div style="position:relative;display:inline-block;"><img src="' + e.target.result + '" style="max-height:150px;border-radius:8px;max-width:100%;" /><button onclick="clearFileSelection()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;">✕</button></div>';
-            preview.style.display = 'block';
+        if (!preview) return;
+        
+        if (file.type.startsWith('image/')) {
+            preview.innerHTML = '<div style="position:relative;display:inline-block;margin-top:4px;">' +
+                '<img src="' + e.target.result + '" style="max-height:120px;max-width:100%;border-radius:8px;" />' +
+                '<button onclick="clearFileSelection()" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:10px;cursor:pointer;">✕</button>' +
+                '</div>';
+        } else if (file.type.startsWith('video/')) {
+            preview.innerHTML = '<div style="position:relative;display:inline-block;margin-top:4px;">' +
+                '<video src="' + e.target.result + '" controls style="max-height:120px;max-width:100%;border-radius:8px;"></video>' +
+                '<button onclick="clearFileSelection()" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:10px;cursor:pointer;">✕</button>' +
+                '</div>';
         }
+        preview.style.display = 'block';
+    };
+    reader.onerror = function() {
+        toast('Error reading file');
+        event.target.value = '';
     };
     reader.readAsDataURL(file);
 }
@@ -247,12 +229,12 @@ function clearFileSelection() {
 
 function likePost(postId) {
     if (!S.username) return;
-    getRef('posts/' + postId + '/likes').once('value').then(function(snap) {
+    database.ref('posts/' + postId + '/likes').once('value').then(function(snap) {
         var likes = snap.val() || [];
         var idx = likes.indexOf(S.username);
         if (idx > -1) likes.splice(idx, 1);
         else likes.push(S.username);
-        getRef('posts/' + postId + '/likes').set(likes).then(function() { renderSocial(); });
+        database.ref('posts/' + postId + '/likes').set(likes).then(function() { renderSocial(); });
     });
 }
 
@@ -260,34 +242,33 @@ function commentOnPost(postId) {
     if (!S.username) return;
     showDialog({ emoji: '💬', title: 'Comment', placeholder: 'Write...', confirmText: 'Post' }).then(function(text) {
         if (text && text.trim()) {
-            getRef('posts/' + postId + '/comments').once('value').then(function(snap) {
+            database.ref('posts/' + postId + '/comments').once('value').then(function(snap) {
                 var comments = snap.val() || [];
                 comments.push({ username: S.username, text: text.trim(), time: new Date().toISOString() });
-                getRef('posts/' + postId + '/comments').set(comments).then(function() {
-                    renderSocial();
-                    toast('Comment added!');
-                });
+                database.ref('posts/' + postId + '/comments').set(comments).then(function() { renderSocial(); toast('Done!'); });
             });
         }
     });
 }
 
 function deletePost(postId) {
-    showDialog({ emoji: '🗑️', title: 'Delete', subtitle: 'Delete this post?', confirmText: 'Delete', danger: true }).then(function(result) {
+    showDialog({ emoji: '🗑️', title: 'Delete', confirmText: 'Delete', danger: true }).then(function(result) {
         if (result !== null) {
-            getRef('posts/' + postId).remove().then(function() { toast('Deleted'); });
+            database.ref('posts/' + postId).remove();
+            S.socialPosts = S.socialPosts.filter(function(p) { return p.id !== postId; });
+            renderSocial();
+            renderProfile();
+            toast('Deleted');
         }
     });
 }
 
 function viewPostDetail(postId) {
     var post = S.socialPosts.find(function(p) { return p.id === postId; });
-    if (!post) { toast('Post not found'); return; }
+    if (!post) { toast('Not found'); return; }
     
     var overlay = document.getElementById('postDetailOverlay');
     var body = document.getElementById('postDetailBody');
-    if (!overlay || !body) return;
-    
     var liked = (post.likes || []).indexOf(S.username) > -1;
     
     var html = '<button class="post-detail-back" onclick="closePostDetail()">← Back</button>';
@@ -296,9 +277,9 @@ function viewPostDetail(postId) {
     if (post.text) html += '<p style="padding:10px 0;">' + escapeHtml(post.text) + '</p>';
     
     html += '<div style="padding:8px 0;">';
-    html += '<button class="ig-post-action' + (liked ? ' liked' : '') + '" onclick="likePost(\'' + post.id + '\');setTimeout(function(){viewPostDetail(\'' + post.id + '\');},300);">' + (liked ? '❤️' : '🤍') + '</button> ';
+    html += '<button class="ig-post-action' + (liked ? ' liked' : '') + '" onclick="likePost(\'' + post.id + '\')">' + (liked ? '❤️' : '🤍') + '</button> ';
     html += '<span>' + (post.likes||[]).length + '</span> ';
-    html += '<button class="ig-post-action" onclick="commentOnPost(\'' + post.id + '\');setTimeout(function(){viewPostDetail(\'' + post.id + '\');},500);">💬</button> ';
+    html += '<button class="ig-post-action" onclick="commentOnPost(\'' + post.id + '\')">💬</button> ';
     html += '<span>' + (post.comments||[]).length + '</span>';
     html += '</div>';
     
@@ -317,8 +298,7 @@ function viewPostDetail(postId) {
 }
 
 function closePostDetail() {
-    var overlay = document.getElementById('postDetailOverlay');
-    if (overlay) overlay.classList.remove('active');
+    document.getElementById('postDetailOverlay').classList.remove('active');
     document.body.style.overflow = '';
 }
 
@@ -329,8 +309,6 @@ function downloadMedia(url) {
         a.href = url;
         a.download = 'media.jpg';
         a.click();
-    } else {
-        window.open(url, '_blank');
     }
 }
 
@@ -340,7 +318,7 @@ function bookmarkItem(id, type) {
     var idx = S.bookmarks.findIndex(function(b) { return b.id === id; });
     if (idx > -1) { S.bookmarks.splice(idx, 1); toast('Removed'); }
     else { S.bookmarks.push({id:id, type:type, time:new Date().toISOString()}); toast('Saved!'); }
-    setData('users/' + S.username + '/bookmarks', S.bookmarks);
+    database.ref('users/' + S.username + '/bookmarks').set(S.bookmarks);
     saveState();
     renderSocial();
 }
@@ -353,15 +331,14 @@ function renderStories() {
 
 function addStatus() {
     if (!S.username) return;
-    showDialog({ emoji: '📸', title: 'Add Status', placeholder: 'What\'s on your mind?', confirmText: 'Post' }).then(function(text) {
-        if (text !== null && text.trim()) {
-            pushData('statuses', { author: S.username, text: text.trim(), time: new Date().toISOString(), expires: new Date(Date.now()+86400000).toISOString() });
+    showDialog({ emoji: '📸', title: 'Status', placeholder: 'What\'s on your mind?', confirmText: 'Post' }).then(function(text) {
+        if (text && text.trim()) {
+            database.ref('statuses').push({ author: S.username, text: text.trim(), time: new Date().toISOString(), expires: new Date(Date.now()+86400000).toISOString() });
             toast('Status added!');
         }
     });
 }
 
-// Expose globally
 window.addStatus = addStatus;
 window.clearFileSelection = clearFileSelection;
 window.createPost = createPost;
@@ -374,4 +351,4 @@ window.closePostDetail = closePostDetail;
 window.downloadMedia = downloadMedia;
 window.bookmarkItem = bookmarkItem;
 
-console.log('📱 Social module ready');
+console.log('📱 Social ready');
