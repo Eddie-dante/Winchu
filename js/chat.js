@@ -1,65 +1,45 @@
-// Chat Module - Complete with private DMs, group chats, attachments, and location sharing
+// Chat Module - Fixed message order and duplicates
 
 var currentChat = null;
 var chatMessages = [];
 var chatListener = null;
 var currentChatType = 'dm';
 var currentChatParticipants = [];
+var processedMsgIds = {};
 
-// Render chat list
+// ============================================================
+// RENDER CHAT LIST
+// ============================================================
 function renderChatList() {
     var container = document.getElementById('chatList');
     if (!container) return;
     
     if (!S.username) {
-        container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">Please log in to see your chats.</p>';
+        container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">Please log in</p>';
         return;
     }
     
     var friends = S.friends || [];
     var groups = S.groups || [];
     
-    // Build chat list
     var allChats = [];
     
     // Global chat
-    allChats.push({
-        name: 'Winchu Global',
-        type: 'global',
-        id: 'Winchu_Global',
-        icon: '🌐',
-        subtitle: 'Community chat for everyone'
-    });
+    allChats.push({ name: 'Winchu Global', type: 'global', id: 'Winchu_Global', icon: '🌐', subtitle: 'Community chat' });
     
-    // Private DMs (one-on-one with friends)
+    // Private DMs
     friends.forEach(function(friend) {
         var dmId = [S.username, friend].sort().join('_dm_');
-        allChats.push({
-            name: friend,
-            type: 'dm',
-            id: dmId,
-            icon: '👤',
-            subtitle: 'Direct message'
-        });
+        allChats.push({ name: friend, type: 'dm', id: dmId, icon: '👤', subtitle: 'Direct message' });
     });
     
     // Group chats
     groups.forEach(function(group) {
-        allChats.push({
-            name: group.name || 'Group',
-            type: 'group',
-            id: group.id,
-            icon: '👥',
-            subtitle: (group.members || []).length + ' members'
-        });
+        allChats.push({ name: group.name || 'Group', type: 'group', id: group.id, icon: '👥', subtitle: (group.members || []).length + ' members' });
     });
     
     if (allChats.length === 0) {
-        container.innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;">' +
-            '<p>No chats yet.</p>' +
-            '<p style="font-size:12px;">Add friends or create groups to start chatting!</p>' +
-            '<button class="btn-sm" onclick="navigate(\'users\')" style="margin-top:10px;">👥 Find Friends</button>' +
-            '</div>';
+        container.innerHTML = '<div style="text-align:center;padding:30px;"><p>No chats yet.</p><button class="btn-sm" onclick="navigate(\'users\')" style="margin-top:10px;">👥 Find Friends</button></div>';
         return;
     }
     
@@ -67,104 +47,84 @@ function renderChatList() {
     allChats.forEach(function(chat) {
         html += '<div class="chat-list-item" onclick="openChat(\'' + chat.id + '\', \'' + chat.type + '\')">';
         html += '<div class="avatar">' + chat.icon + '</div>';
-        html += '<div class="info">';
-        html += '<div class="name">' + escapeHtml(chat.name) + '</div>';
-        html += '<div class="last-msg">' + chat.subtitle + '</div>';
-        html += '</div>';
+        html += '<div class="info"><div class="name">' + escapeHtml(chat.name) + '</div><div class="last-msg">' + chat.subtitle + '</div></div>';
         html += '</div>';
     });
     
     container.innerHTML = html;
-    
-    // Show chat list, hide chat window
-    var chatWindow = document.getElementById('chatWindow');
-    if (chatWindow) chatWindow.style.display = 'none';
+    document.getElementById('chatWindow').style.display = 'none';
     container.style.display = 'block';
 }
 
-// Open a chat
+// ============================================================
+// OPEN CHAT
+// ============================================================
 function openChat(chatId, type) {
-    if (!S.username) {
-        toast('Please log in to chat');
-        return;
-    }
-    
-    console.log('Opening chat:', chatId, 'Type:', type);
+    if (!S.username) { toast('Please log in'); return; }
     
     currentChat = chatId;
     currentChatType = type;
+    chatMessages = [];
+    processedMsgIds = {};
     
-    // Set chat name in header
     var chatWithEl = document.getElementById('chatWith');
     if (chatWithEl) {
-        if (type === 'global') {
-            chatWithEl.textContent = '🌐 Winchu Global';
-        } else if (type === 'group') {
-            var group = S.groups.find(function(g) { return g.id === chatId; });
-            chatWithEl.textContent = '👥 ' + (group ? group.name : 'Group');
-        } else {
-            var friendName = chatId.replace(S.username + '_dm_', '').replace('_dm_' + S.username, '');
-            chatWithEl.textContent = '👤 @' + friendName;
-        }
+        if (type === 'global') chatWithEl.textContent = '🌐 Winchu Global';
+        else if (type === 'group') { var g = S.groups.find(function(x) { return x.id === chatId; }); chatWithEl.textContent = '👥 ' + (g ? g.name : 'Group'); }
+        else { var fn = chatId.replace(S.username + '_dm_', '').replace('_dm_' + S.username, ''); chatWithEl.textContent = '👤 @' + fn; }
     }
     
-    // Show chat window, hide chat list
     document.getElementById('chatWindow').style.display = 'block';
     document.getElementById('chatList').style.display = 'none';
     
-    // Show attachment buttons for DMs and groups
     var attachRow = document.getElementById('chatAttachRow');
-    if (attachRow) {
-        attachRow.style.display = (type === 'dm' || type === 'group') ? 'flex' : 'none';
-    }
+    if (attachRow) attachRow.style.display = (type === 'dm' || type === 'group') ? 'flex' : 'none';
     
-    // Load messages
     loadChatMessages(chatId);
-    
-    // Setup real-time listener
     setupChatListener(chatId);
     
-    // Focus input
-    setTimeout(function() {
-        var chatInput = document.getElementById('chatInput');
-        if (chatInput) chatInput.focus();
-    }, 300);
+    setTimeout(function() { var ci = document.getElementById('chatInput'); if (ci) ci.focus(); }, 300);
 }
 
-// Close chat
+// ============================================================
+// CLOSE CHAT
+// ============================================================
 function closeChat() {
     currentChat = null;
-    currentChatType = 'dm';
     chatMessages = [];
-    
+    processedMsgIds = {};
     document.getElementById('chatWindow').style.display = 'none';
     document.getElementById('chatList').style.display = 'block';
-    
-    if (chatListener) {
-        chatListener.off();
-        chatListener = null;
-    }
+    if (chatListener) { chatListener.off(); chatListener = null; }
 }
 
-// Load chat messages from Firebase
+// ============================================================
+// LOAD CHAT MESSAGES - Ordered by time (oldest first for display, newest at bottom)
+// ============================================================
 function loadChatMessages(chatId) {
     var container = document.getElementById('chatMessages');
     if (!container) return;
+    container.innerHTML = '<p style="color:#94a3b8;text-align:center;">Loading...</p>';
     
-    container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">Loading messages...</p>';
+    chatMessages = [];
+    processedMsgIds = {};
     
     db.ref('chats/' + chatId).orderByChild('time').limitToLast(100).once('value').then(function(snapshot) {
         var data = snapshot.val();
         chatMessages = [];
+        processedMsgIds = {};
         
         if (data) {
             Object.keys(data).forEach(function(key) {
                 var msg = data[key];
-                msg.id = key;
-                chatMessages.push(msg);
+                if (msg && !processedMsgIds[key]) {
+                    msg.id = key;
+                    processedMsgIds[key] = true;
+                    chatMessages.push(msg);
+                }
             });
             
-            // Sort by time
+            // Sort by time ASCENDING (oldest first)
             chatMessages.sort(function(a, b) {
                 return new Date(a.time) - new Date(b.time);
             });
@@ -172,52 +132,45 @@ function loadChatMessages(chatId) {
         
         console.log('Loaded ' + chatMessages.length + ' messages');
         renderChatMessages();
-    }).catch(function(error) {
-        console.error('Error loading messages:', error);
-        container.innerHTML = '<p style="color:#ef4444;text-align:center;padding:20px;">Error loading messages. Please try again.</p>';
     });
 }
 
-// Setup real-time chat listener
+// ============================================================
+// SETUP CHAT LISTENER - No duplicates
+// ============================================================
 function setupChatListener(chatId) {
-    if (chatListener) {
-        chatListener.off();
-        chatListener = null;
-    }
+    if (chatListener) { chatListener.off(); chatListener = null; }
     
     chatListener = db.ref('chats/' + chatId).orderByChild('time').limitToLast(100);
     
     chatListener.on('child_added', function(snapshot) {
         var msg = snapshot.val();
+        var key = snapshot.key;
         if (!msg) return;
-        msg.id = snapshot.key;
+        if (processedMsgIds[key]) return;
         
-        // Check if message already exists in array
-        var existing = chatMessages.find(function(m) {
-            return m.id === msg.id;
-        });
+        msg.id = key;
+        processedMsgIds[key] = true;
         
+        var existing = chatMessages.find(function(m) { return m.id === key; });
         if (!existing) {
             chatMessages.push(msg);
             // Keep sorted by time
-            chatMessages.sort(function(a, b) {
-                return new Date(a.time) - new Date(b.time);
-            });
+            chatMessages.sort(function(a, b) { return new Date(a.time) - new Date(b.time); });
             renderChatMessages();
         }
     });
 }
 
-// Render chat messages
+// ============================================================
+// RENDER CHAT MESSAGES
+// ============================================================
 function renderChatMessages() {
     var container = document.getElementById('chatMessages');
     if (!container) return;
     
     if (chatMessages.length === 0) {
-        container.innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;">' +
-            '<p>No messages yet.</p>' +
-            '<p style="font-size:12px;">Say hello! 👋</p>' +
-            '</div>';
+        container.innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;"><p>No messages yet.</p><p style="font-size:12px;">Say hello! 👋</p></div>';
         return;
     }
     
@@ -229,270 +182,111 @@ function renderChatMessages() {
         var msgDate = new Date(msg.time).toLocaleDateString();
         var msgTime = new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
-        // Show date separator if date changes
+        // Date separator
         if (msgDate !== lastDate) {
-            html += '<div style="text-align:center;margin:12px 0;">' +
-                '<span style="background:rgba(0,0,0,0.05);padding:4px 12px;border-radius:10px;font-size:10px;color:#94a3b8;">' + msgDate + '</span>' +
-                '</div>';
+            html += '<div style="text-align:center;margin:12px 0;"><span style="background:rgba(0,0,0,0.05);padding:4px 12px;border-radius:10px;font-size:10px;color:#94a3b8;">' + msgDate + '</span></div>';
             lastDate = msgDate;
         }
         
         html += '<div class="chat-row ' + (isMe ? 'sent' : 'received') + '">';
         html += '<div class="bubble-wrap">';
         
-        // Message bubble
         if (msg.type === 'image') {
-            // Image message
             html += '<div class="chat-bubble ' + (isMe ? 'chat-sent' : 'chat-received') + '" style="padding:4px;">';
-            if (!isMe) {
-                html += '<div style="font-size:10px;font-weight:600;opacity:0.8;margin-bottom:4px;padding:0 6px;cursor:pointer;" onclick="viewUserProfile(\'' + msg.username + '\')">' + msg.username + '</div>';
-            }
-            html += '<img src="' + msg.fileData + '" style="max-width:200px;max-height:200px;border-radius:8px;cursor:pointer;" onclick="window.open(\'' + msg.fileData + '\')" />';
-            if (msg.text) {
-                html += '<div style="padding:4px 6px;font-size:12px;">' + escapeHtml(msg.text) + '</div>';
-            }
+            if (!isMe) html += '<div style="font-size:10px;font-weight:600;opacity:0.8;margin-bottom:4px;padding:0 6px;">' + msg.username + '</div>';
+            html += '<img src="' + msg.fileData + '" style="max-width:200px;max-height:200px;border-radius:8px;cursor:pointer;" />';
+            if (msg.text) html += '<div style="padding:4px 6px;font-size:12px;">' + escapeHtml(msg.text) + '</div>';
             html += '<div style="font-size:9px;opacity:0.6;text-align:' + (isMe ? 'right' : 'left') + ';padding:2px 6px;">' + msgTime + '</div>';
             html += '</div>';
-            
         } else if (msg.type === 'video') {
-            // Video message
             html += '<div class="chat-bubble ' + (isMe ? 'chat-sent' : 'chat-received') + '" style="padding:4px;">';
-            if (!isMe) {
-                html += '<div style="font-size:10px;font-weight:600;opacity:0.8;margin-bottom:4px;padding:0 6px;cursor:pointer;" onclick="viewUserProfile(\'' + msg.username + '\')">' + msg.username + '</div>';
-            }
+            if (!isMe) html += '<div style="font-size:10px;font-weight:600;opacity:0.8;margin-bottom:4px;padding:0 6px;">' + msg.username + '</div>';
             html += '<video src="' + msg.fileData + '" controls style="max-width:200px;max-height:200px;border-radius:8px;"></video>';
-            if (msg.text) {
-                html += '<div style="padding:4px 6px;font-size:12px;">' + escapeHtml(msg.text) + '</div>';
-            }
             html += '<div style="font-size:9px;opacity:0.6;text-align:' + (isMe ? 'right' : 'left') + ';padding:2px 6px;">' + msgTime + '</div>';
             html += '</div>';
-            
         } else if (msg.type === 'location') {
-            // Location message
-            html += '<div class="chat-bubble ' + (isMe ? 'chat-sent' : 'chat-received') + '" style="cursor:pointer;" onclick="window.open(\'https://www.google.com/maps?q=' + msg.latitude + ',' + msg.longitude + '\', \'_blank\')">';
-            if (!isMe) {
-                html += '<div style="font-size:10px;font-weight:600;opacity:0.8;margin-bottom:4px;cursor:pointer;" onclick="event.stopPropagation();viewUserProfile(\'' + msg.username + '\')">' + msg.username + '</div>';
-            }
-            html += '<div style="background:rgba(99,102,241,0.2);padding:10px;border-radius:8px;">';
-            html += '<div style="font-size:20px;">📍</div>';
-            html += '<strong style="font-size:12px;">Shared Location</strong><br>';
-            html += '<span style="font-size:10px;">Lat: ' + msg.latitude.toFixed(4) + ', Lng: ' + msg.longitude.toFixed(4) + '</span><br>';
-            html += '<span style="font-size:10px;color:#6366f1;">Tap to view on map</span>';
-            html += '</div>';
+            html += '<div class="chat-bubble ' + (isMe ? 'chat-sent' : 'chat-received') + '" onclick="window.open(\'https://www.google.com/maps?q=' + msg.latitude + ',' + msg.longitude + '\',\'_blank\')" style="cursor:pointer;">';
+            if (!isMe) html += '<div style="font-size:10px;font-weight:600;opacity:0.8;margin-bottom:4px;">' + msg.username + '</div>';
+            html += '<div style="background:rgba(99,102,241,0.2);padding:10px;border-radius:8px;">📍 <strong>Shared Location</strong><br><span style="font-size:10px;">Tap to view on map</span></div>';
             html += '<div style="font-size:9px;opacity:0.6;text-align:' + (isMe ? 'right' : 'left') + ';margin-top:4px;">' + msgTime + '</div>';
             html += '</div>';
-            
-        } else if (msg.type === 'file') {
-            // File attachment
-            html += '<div class="chat-bubble ' + (isMe ? 'chat-sent' : 'chat-received') + '">';
-            if (!isMe) {
-                html += '<div style="font-size:10px;font-weight:600;opacity:0.8;margin-bottom:4px;cursor:pointer;" onclick="viewUserProfile(\'' + msg.username + '\')">' + msg.username + '</div>';
-            }
-            html += '<div style="display:flex;align-items:center;gap:8px;">';
-            html += '<span style="font-size:20px;">📎</span>';
-            html += '<div>';
-            html += '<strong style="font-size:11px;">' + escapeHtml(msg.fileName || 'File') + '</strong><br>';
-            html += '<button class="btn-sm" onclick="downloadMedia(\'' + msg.fileData + '\', \'' + (msg.fileName || 'file') + '\')" style="font-size:9px;padding:2px 8px;">⬇️ Download</button>';
-            html += '</div>';
-            html += '</div>';
-            html += '<div style="font-size:9px;opacity:0.6;text-align:' + (isMe ? 'right' : 'left') + ';margin-top:4px;">' + msgTime + '</div>';
-            html += '</div>';
-            
         } else {
-            // Regular text message
             html += '<div class="chat-bubble ' + (isMe ? 'chat-sent' : 'chat-received') + '">';
-            if (!isMe) {
-                html += '<div style="font-size:10px;font-weight:600;opacity:0.8;margin-bottom:2px;cursor:pointer;" onclick="viewUserProfile(\'' + msg.username + '\')">' + msg.username + '</div>';
-            }
+            if (!isMe) html += '<div style="font-size:10px;font-weight:600;opacity:0.8;margin-bottom:2px;">' + msg.username + '</div>';
             html += '<span style="word-break:break-word;">' + escapeHtml(msg.text || '') + '</span>';
             html += '<div style="font-size:9px;opacity:0.6;text-align:' + (isMe ? 'right' : 'left') + ';margin-top:3px;">' + msgTime + '</div>';
             html += '</div>';
         }
         
-        html += '</div>';
-        html += '</div>';
+        html += '</div></div>';
     });
     
     container.innerHTML = html;
-    
-    // Scroll to bottom
-    setTimeout(function() {
-        container.scrollTop = container.scrollHeight;
-    }, 100);
+    container.scrollTop = container.scrollHeight;
 }
 
-// Send text message
+// ============================================================
+// SEND MESSAGE - Single send, no duplicate
+// ============================================================
 function sendChatMessage() {
-    if (!currentChat || !S.username) {
-        toast('Select a chat first');
-        return;
-    }
+    if (!currentChat || !S.username) { toast('Select a chat'); return; }
     
     var input = document.getElementById('chatInput');
     if (!input) return;
-    
     var text = input.value.trim();
     if (!text) return;
     
-    var message = {
-        username: S.username,
-        text: text,
-        type: 'text',
-        time: new Date().toISOString()
-    };
+    var message = { username: S.username, text: text, type: 'text', time: new Date().toISOString() };
+    
+    // Clear input immediately to prevent double sends
+    input.value = '';
     
     db.ref('chats/' + currentChat).push(message).then(function() {
-        input.value = '';
-        input.focus();
-    }).catch(function(error) {
-        console.error('Send error:', error);
-        toast('Failed to send message');
+        // Message will be picked up by listener
+    }).catch(function(err) {
+        console.error('Send error:', err);
+        input.value = text; // Restore text on error
+        toast('Failed to send');
     });
 }
 
-// Attach file to chat
-function attachFileToChat() {
-    document.getElementById('chatFileInput').click();
-}
+// ============================================================
+// ATTACH FILE
+// ============================================================
+function attachFileToChat() { document.getElementById('chatFileInput').click(); }
 
-// Handle chat file selection
 function handleChatFileSelect(event) {
     var file = event.target.files[0];
     if (!file) return;
+    if (!currentChat) { toast('Select a chat'); event.target.value = ''; return; }
     
-    if (!currentChat) {
-        toast('Select a chat first');
-        event.target.value = '';
-        return;
-    }
+    var maxSize = file.type.startsWith('video/') ? 50*1024*1024 : 10*1024*1024;
+    if (file.size > maxSize) { toast('File too large'); event.target.value = ''; return; }
     
-    var maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
-    if (file.size > maxSize) {
-        toast('File too large (max ' + Math.round(maxSize / (1024 * 1024)) + 'MB)');
-        event.target.value = '';
-        return;
-    }
-    
-    toast('Uploading file...');
-    
+    toast('Uploading...');
     var reader = new FileReader();
     reader.onload = function(e) {
-        var type = 'file';
-        if (file.type.startsWith('image/')) type = 'image';
-        else if (file.type.startsWith('video/')) type = 'video';
-        
-        var message = {
-            username: S.username,
-            type: type,
-            fileData: e.target.result,
-            fileName: file.name,
-            text: '',
-            time: new Date().toISOString()
-        };
-        
-        db.ref('chats/' + currentChat).push(message).then(function() {
-            toast('File sent! 📎');
-        }).catch(function(error) {
-            console.error('File send error:', error);
-            toast('Failed to send file');
-        });
-    };
-    reader.onerror = function() {
-        toast('Error reading file');
-        event.target.value = '';
+        var type = file.type.startsWith('image/') ? 'image' : (file.type.startsWith('video/') ? 'video' : 'file');
+        var msg = { username: S.username, type: type, fileData: e.target.result, fileName: file.name, time: new Date().toISOString() };
+        db.ref('chats/' + currentChat).push(msg).then(function() { toast('Sent!'); });
     };
     reader.readAsDataURL(file);
 }
 
-// Share location
+// ============================================================
+// SHARE LOCATION
+// ============================================================
 function shareLocation() {
-    if (!currentChat) {
-        toast('Select a chat first');
-        return;
-    }
-    
-    if (!navigator.geolocation) {
-        toast('Geolocation not supported on this device');
-        return;
-    }
+    if (!currentChat) { toast('Select a chat'); return; }
+    if (!navigator.geolocation) { toast('Geolocation not supported'); return; }
     
     toast('Getting location...');
-    
-    navigator.geolocation.getCurrentPosition(
-        function(position) {
-            var message = {
-                username: S.username,
-                type: 'location',
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-                time: new Date().toISOString()
-            };
-            
-            db.ref('chats/' + currentChat).push(message).then(function() {
-                toast('📍 Location shared!');
-            }).catch(function(error) {
-                console.error('Location send error:', error);
-                toast('Failed to share location');
-            });
-        },
-        function(error) {
-            console.error('Geolocation error:', error);
-            var errorMsg = 'Could not get location. ';
-            if (error.code === 1) errorMsg += 'Permission denied.';
-            else if (error.code === 2) errorMsg += 'Position unavailable.';
-            else if (error.code === 3) errorMsg += 'Request timed out.';
-            toast(errorMsg);
-        },
-        {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
-        }
-    );
+    navigator.geolocation.getCurrentPosition(function(pos) {
+        var msg = { username: S.username, type: 'location', latitude: pos.coords.latitude, longitude: pos.coords.longitude, time: new Date().toISOString() };
+        db.ref('chats/' + currentChat).push(msg).then(function() { toast('📍 Location shared!'); });
+    }, function() { toast('Location error'); }, { enableHighAccuracy: true, timeout: 10000 });
 }
 
-// Download media from chat
-function downloadMedia(url, filename) {
-    if (!url) return;
-    
-    try {
-        if (url.startsWith('data:')) {
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = filename || 'file';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            toast('⬇️ Downloading...');
-        } else if (url.startsWith('http')) {
-            window.open(url, '_blank');
-        }
-    } catch (e) {
-        console.error('Download error:', e);
-        toast('Download failed');
-    }
-}
-
-// Initialize chat page
-function initChatPage() {
-    // Add enter key listener for chat input
-    var chatInput = document.getElementById('chatInput');
-    if (chatInput) {
-        chatInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendChatMessage();
-            }
-        });
-    }
-}
-
-// Call initialization
-document.addEventListener('DOMContentLoaded', function() {
-    initChatPage();
-});
-
-// Expose functions globally
 window.renderChatList = renderChatList;
 window.openChat = openChat;
 window.closeChat = closeChat;
@@ -500,6 +294,5 @@ window.sendChatMessage = sendChatMessage;
 window.attachFileToChat = attachFileToChat;
 window.handleChatFileSelect = handleChatFileSelect;
 window.shareLocation = shareLocation;
-window.downloadMedia = downloadMedia;
 
-console.log('💬 Chat module loaded');
+console.log('💬 Chat module loaded - fixed order and duplicates');
