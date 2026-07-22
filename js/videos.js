@@ -1,4 +1,4 @@
-// Videos Module - Full screen adaptive with save and download buttons
+// Videos Module - Fixed avatar and upload button position
 
 function renderVideos() {
     const container = document.getElementById('videoFeed');
@@ -10,7 +10,7 @@ function renderVideos() {
     }
     
     if (!S.videoData || S.videoData.length === 0) {
-        container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:40px;">No videos yet. Tap 📹 to upload!</p>';
+        container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:40px;">No videos yet.</p>';
         return;
     }
     
@@ -21,31 +21,39 @@ function renderVideos() {
         const likeCount = (v.likes || []).length;
         const commentCount = (v.comments || []).length;
         
+        // FIXED: Avatar display
+        let avatarDisplay = '';
+        if (v.avatar && (v.avatar.startsWith('data:') || v.avatar.includes('http'))) {
+            avatarDisplay = `<img src="${v.avatar}" alt="${v.author}" style="width:100%;height:100%;object-fit:cover;" />`;
+        } else {
+            avatarDisplay = v.avatar || '😊';
+        }
+        
         html += `<div class="tiktok-video">
             <video src="${v.url}" loop playsinline preload="metadata" 
-                style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;"></video>
+                style="width:100%;height:100%;object-fit:contain;position:absolute;inset:0;"></video>
             <div class="overlay">
                 <div class="user" onclick="viewUserProfile('${v.author}')">
-                    <div class="avatar">${v.avatar || '😊'}</div>
+                    <div class="avatar">${avatarDisplay}</div>
                     @${v.author}
                 </div>
                 <div class="desc">${escapeHtml(v.text || '')}</div>
                 <div class="side-actions">
-                    <button class="${liked ? 'liked' : ''}" onclick="likeVideo('${v.id}')">
+                    <button class="${liked ? 'liked' : ''}" onclick="event.stopPropagation();likeVideo('${v.id}')">
                         ❤️<span>${likeCount}</span>
                     </button>
-                    <button onclick="commentVideo('${v.id}')">
+                    <button onclick="event.stopPropagation();commentVideo('${v.id}')">
                         💬<span>${commentCount}</span>
                     </button>
-                    <button class="${bookmarked ? 'bookmarked' : ''}" onclick="bookmarkItem('${v.id}','video')">
+                    <button class="${bookmarked ? 'bookmarked' : ''}" onclick="event.stopPropagation();bookmarkItem('${v.id}','video')">
                         🔖<span>Save</span>
                     </button>
-                    <button onclick="downloadVideo('${v.url}', 'winchu-video-${v.id}.mp4')">
-                        ⬇️<span>Download</span>
+                    <button onclick="event.stopPropagation();downloadVideo('${v.url}', 'winchu-video.mp4')">
+                        ⬇️<span>DL</span>
                     </button>
                     ${v.author === S.username ? 
-                        `<button onclick="deleteVideo('${v.id}')" style="color:#ef4444;">
-                            🗑️<span>Delete</span>
+                        `<button onclick="event.stopPropagation();deleteVideo('${v.id}')" style="color:#ef4444;">
+                            🗑️<span>Del</span>
                         </button>` : ''}
                 </div>
             </div>
@@ -54,7 +62,7 @@ function renderVideos() {
     
     container.innerHTML = html;
     
-    // Video autoplay with Intersection Observer
+    // Video autoplay
     const videos = container.querySelectorAll('video');
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -70,7 +78,7 @@ function renderVideos() {
     
     videos.forEach(v => observer.observe(v));
     
-    // Add click to mute/unmute
+    // Click to mute/unmute
     videos.forEach(v => {
         v.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -78,95 +86,6 @@ function renderVideos() {
             toast(v.muted ? '🔇 Muted' : '🔊 Unmuted');
         });
     });
-}
-
-function likeVideo(id) {
-    if (!S.username) return;
-    
-    getRef('videos/' + id + '/likes').once('value', (snapshot) => {
-        let likes = snapshot.val() || [];
-        const idx = likes.indexOf(S.username);
-        
-        if (idx > -1) likes.splice(idx, 1);
-        else likes.push(S.username);
-        
-        getRef('videos/' + id + '/likes').set(likes);
-        
-        const video = S.videoData.find(v => v.id === id);
-        if (video) video.likes = likes;
-        
-        renderVideos();
-    });
-}
-
-function commentVideo(id) {
-    if (!S.username) return;
-    
-    showDialog({
-        emoji: '💬',
-        title: 'Add Comment',
-        placeholder: 'Write your comment...',
-        confirmText: 'Post'
-    }).then(result => {
-        if (result && result.trim()) {
-            getRef('videos/' + id + '/comments').once('value', (snapshot) => {
-                let comments = snapshot.val() || [];
-                comments.push({
-                    username: S.username,
-                    text: result.trim(),
-                    time: new Date().toISOString()
-                });
-                
-                getRef('videos/' + id + '/comments').set(comments);
-                
-                const video = S.videoData.find(v => v.id === id);
-                if (video) video.comments = comments;
-                
-                renderVideos();
-                toast('Comment added! 💬');
-            });
-        }
-    });
-}
-
-function deleteVideo(id) {
-    showDialog({
-        emoji: '🗑️',
-        title: 'Delete Video',
-        subtitle: 'Are you sure you want to delete this video?',
-        confirmText: 'Delete',
-        danger: true
-    }).then(result => {
-        if (result !== null) {
-            getRef('videos/' + id).remove().then(() => {
-                S.videoData = S.videoData.filter(v => v.id !== id);
-                renderVideos();
-                toast('Video deleted');
-            });
-        }
-    });
-}
-
-function downloadVideo(url, filename) {
-    if (!url) {
-        toast('No video to download');
-        return;
-    }
-    
-    // For data URLs, create a direct download
-    if (url.startsWith('data:')) {
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename || 'winchu-video.mp4';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        toast('⬇️ Downloading video...');
-    } else {
-        // For external URLs, open in new tab
-        window.open(url, '_blank');
-        toast('⬇️ Opening video...');
-    }
 }
 
 function handleVideoUpload(event) {
@@ -187,9 +106,10 @@ function handleVideoUpload(event) {
     
     const reader = new FileReader();
     reader.onload = function(e) {
+        // Store the actual avatar
         const video = {
             author: S.username,
-            avatar: S.avatar || '😊',
+            avatar: S.avatar || null,  // Store actual avatar image
             text: '',
             url: e.target.result,
             time: new Date().toISOString(),
@@ -198,48 +118,93 @@ function handleVideoUpload(event) {
         };
         
         pushData('videos', video).then(() => {
-            toast('📹 Video uploaded successfully!');
+            toast('📹 Video uploaded!');
         }).catch(() => {
-            toast('Failed to upload video');
+            toast('Failed to upload');
         });
     };
     
     reader.onerror = function() {
-        toast('Error reading video file');
+        toast('Error reading file');
     };
     
     reader.readAsDataURL(file);
 }
 
+function downloadVideo(url, filename) {
+    if (!url) { toast('No video'); return; }
+    
+    if (url.startsWith('data:')) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'winchu-video.mp4';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        toast('⬇️ Downloading...');
+    } else {
+        window.open(url, '_blank');
+        toast('⬇️ Opening video...');
+    }
+}
+
+function likeVideo(id) {
+    if (!S.username) return;
+    getRef('videos/' + id + '/likes').once('value', (snapshot) => {
+        let likes = snapshot.val() || [];
+        const idx = likes.indexOf(S.username);
+        if (idx > -1) likes.splice(idx, 1);
+        else likes.push(S.username);
+        getRef('videos/' + id + '/likes').set(likes);
+        const video = S.videoData.find(v => v.id === id);
+        if (video) video.likes = likes;
+        renderVideos();
+    });
+}
+
+function commentVideo(id) {
+    if (!S.username) return;
+    showDialog({
+        emoji: '💬', title: 'Comment', placeholder: 'Write...', confirmText: 'Post'
+    }).then(result => {
+        if (result && result.trim()) {
+            getRef('videos/' + id + '/comments').once('value', (snapshot) => {
+                let comments = snapshot.val() || [];
+                comments.push({ username: S.username, text: result.trim(), time: new Date().toISOString() });
+                getRef('videos/' + id + '/comments').set(comments);
+                const video = S.videoData.find(v => v.id === id);
+                if (video) video.comments = comments;
+                renderVideos();
+                toast('Comment added!');
+            });
+        }
+    });
+}
+
+function deleteVideo(id) {
+    showDialog({
+        emoji: '🗑️', title: 'Delete', subtitle: 'Delete this video?', confirmText: 'Delete', danger: true
+    }).then(result => {
+        if (result !== null) {
+            getRef('videos/' + id).remove();
+            S.videoData = S.videoData.filter(v => v.id !== id);
+            renderVideos();
+            toast('Deleted');
+        }
+    });
+}
+
 function loadVideos() {
     if (videosListener) videosListener.off();
-    
     videosListener = getRef('videos').orderByChild('time').limitToLast(50);
-    
     videosListener.on('child_added', (snapshot) => {
         const data = snapshot.val();
         data.id = snapshot.key;
-        
         if (!S.videoData.find(v => v.id === data.id)) {
             S.videoData.unshift(data);
             if (S.videoData.length > 50) S.videoData.pop();
             renderVideos();
         }
-    });
-    
-    videosListener.on('child_changed', (snapshot) => {
-        const data = snapshot.val();
-        data.id = snapshot.key;
-        const idx = S.videoData.findIndex(v => v.id === data.id);
-        if (idx > -1) {
-            S.videoData[idx] = data;
-            renderVideos();
-        }
-    });
-    
-    videosListener.on('child_removed', (snapshot) => {
-        S.videoData = S.videoData.filter(v => v.id !== snapshot.key);
-        renderVideos();
     });
 }
 

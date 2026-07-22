@@ -1,42 +1,4 @@
-// Social Feed Module
-
-function setupPostsListener() {
-    if (postsListener) postsListener.off();
-    
-    postsListener = getRef('posts').orderByChild('time').limitToLast(50);
-    
-    postsListener.on('child_added', (snapshot) => {
-        const post = snapshot.val();
-        post.id = snapshot.key;
-        
-        if (!S.socialPosts.find(p => p.id === post.id)) {
-            S.socialPosts.unshift(post);
-            if (S.socialPosts.length > 50) S.socialPosts.pop();
-            S.socialPosts.sort((a, b) => new Date(b.time) - new Date(a.time));
-            renderSocial();
-            renderProfile();
-            renderStories();
-            saveState();
-        }
-    });
-    
-    postsListener.on('child_changed', (snapshot) => {
-        const post = snapshot.val();
-        post.id = snapshot.key;
-        const idx = S.socialPosts.findIndex(p => p.id === post.id);
-        if (idx > -1) {
-            S.socialPosts[idx] = post;
-            renderSocial();
-        }
-    });
-    
-    postsListener.on('child_removed', (snapshot) => {
-        S.socialPosts = S.socialPosts.filter(p => p.id !== snapshot.key);
-        renderSocial();
-        renderProfile();
-    });
-}
-
+// In renderSocial function, fix the avatar display:
 function renderSocial() {
     const feed = document.getElementById('socialFeed');
     if (!feed) return;
@@ -62,10 +24,20 @@ function renderSocial() {
         const likeCount = (p.likes || []).length;
         const canDelete = p.author === S.username;
         
+        // FIXED: Avatar display - show image if available, otherwise emoji
+        let avatarDisplay = '';
+        if (p.avatar && p.avatar.startsWith('data:')) {
+            avatarDisplay = `<img src="${p.avatar}" alt="${p.author}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+        } else if (p.avatar && p.avatar.includes('unsplash')) {
+            avatarDisplay = `<img src="${p.avatar}" alt="${p.author}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+        } else {
+            avatarDisplay = p.avatar || '😊';
+        }
+        
         html += `<div class="ig-post" onclick="viewPostDetail('${p.id}')">
             <div class="ig-post-header">
                 <div class="profile-bubble" onclick="event.stopPropagation();viewUserProfile('${p.author}')">
-                    <div class="pb-avatar">${p.avatar || '😊'}</div>
+                    <div class="pb-avatar">${avatarDisplay}</div>
                     <span class="pb-name">${p.author}</span>
                 </div>
                 <span class="ig-post-time">${timeAgo}</span>
@@ -88,6 +60,7 @@ function renderSocial() {
     feed.innerHTML = html;
 }
 
+// FIXED: createPost - store avatar properly
 function createPost() {
     if (!S.username) { toast('Please log in'); return; }
     
@@ -96,11 +69,12 @@ function createPost() {
     
     if (!text && !selectedFileData) { toast('Write something or add media'); return; }
     
-    const avatar = S.avatar || (S.selectedAuras.length > 0 ? S.selectedAuras.map(k => AURAS[k].emoji).join('') : '😊');
+    // FIXED: Use the actual avatar image, not emoji
+    const avatar = S.avatar || null;
     
     const post = {
         author: S.username,
-        avatar: avatar,
+        avatar: avatar,  // Store the actual avatar data URL
         text: text || '',
         image: selectedFileData || null,
         time: new Date().toISOString(),
@@ -122,140 +96,7 @@ function createPost() {
     saveState();
 }
 
-function handleFileSelect(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
-    if (file.size > maxSize) {
-        toast(`File too large (max ${maxSize / (1024 * 1024)}MB)`);
-        return;
-    }
-    
-    selectedFile = file;
-    const reader = new FileReader();
-    
-    reader.onload = function(e) {
-        selectedFileData = e.target.result;
-        const preview = document.getElementById('filePreview');
-        
-        if (file.type.startsWith('image/')) {
-            preview.innerHTML = `<img src="${e.target.result}" style="max-height:150px;border-radius:8px;max-width:100%;" />`;
-        } else if (file.type.startsWith('video/')) {
-            preview.innerHTML = `<video src="${e.target.result}" controls style="max-height:150px;border-radius:8px;max-width:100%;"></video>`;
-        }
-        
-        preview.style.display = 'block';
-    };
-    
-    reader.readAsDataURL(file);
-}
-
-function likePost(postId) {
-    if (!S.username) return;
-    
-    getRef('posts/' + postId).once('value', (snapshot) => {
-        const post = snapshot.val();
-        if (!post) return;
-        
-        let likes = post.likes || [];
-        const idx = likes.indexOf(S.username);
-        
-        if (idx > -1) likes.splice(idx, 1);
-        else likes.push(S.username);
-        
-        getRef('posts/' + postId + '/likes').set(likes).then(() => {
-            const localPost = S.socialPosts.find(p => p.id === postId);
-            if (localPost) localPost.likes = likes;
-            renderSocial();
-            addNotification(post.author, `${S.username} liked your post`, 'like', postId);
-        });
-    });
-}
-
-function commentOnPost(postId) {
-    if (!S.username) return;
-    
-    showDialog({
-        emoji: '💬',
-        title: 'Add Comment',
-        placeholder: 'Write your comment...',
-        confirmText: 'Post'
-    }).then(result => {
-        if (result && result.trim()) {
-            getRef('posts/' + postId).once('value', (snapshot) => {
-                const post = snapshot.val();
-                if (!post) return;
-                
-                const comments = post.comments || [];
-                comments.push({
-                    username: S.username,
-                    text: result.trim(),
-                    time: new Date().toISOString()
-                });
-                
-                getRef('posts/' + postId + '/comments').set(comments).then(() => {
-                    const localPost = S.socialPosts.find(p => p.id === postId);
-                    if (localPost) localPost.comments = comments;
-                    renderSocial();
-                    toast('Comment added! 💬');
-                    addNotification(post.author, `${S.username} commented on your post`, 'comment', postId);
-                });
-            });
-        }
-    });
-}
-
-function deletePost(postId) {
-    showDialog({
-        emoji: '🗑️',
-        title: 'Delete Post',
-        subtitle: 'Are you sure you want to delete this post?',
-        confirmText: 'Delete',
-        danger: true
-    }).then(result => {
-        if (result !== null) {
-            getRef('posts/' + postId).remove().then(() => {
-                S.socialPosts = S.socialPosts.filter(p => p.id !== postId);
-                renderSocial();
-                renderProfile();
-                toast('Post deleted');
-                saveState();
-            });
-        }
-    });
-}
-
-function downloadMedia(url, filename) {
-    if (!url) return;
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename || 'media.jpg';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-}
-
-function renderStories() {
-    const row = document.getElementById('storyRow');
-    if (!row) return;
-    
-    const users = [...new Set(S.socialPosts.map(p => p.author))];
-    
-    if (users.length === 0) {
-        row.innerHTML = '<div style="font-size:12px;color:#94a3b8;padding:8px;">No stories yet</div>';
-        return;
-    }
-    
-    row.innerHTML = users.slice(0, 12).map(u => {
-        const post = S.socialPosts.find(p => p.author === u);
-        return `<div class="ig-story" onclick="viewUserProfile('${u}')">
-            <div class="ig-story-avatar"><div class="inner">${post?.avatar || '😊'}</div></div>
-            <span class="ig-story-name">${u}</span>
-        </div>`;
-    }).join('');
-}
-
+// Also fix viewPostDetail avatar
 function viewPostDetail(postId) {
     const post = S.socialPosts.find(p => p.id === postId);
     if (!post) { toast('Post not found'); return; }
@@ -265,9 +106,17 @@ function viewPostDetail(postId) {
     const liked = (post.likes || []).includes(S.username);
     const bookmarked = (S.bookmarks || []).some(b => b.id === postId);
     
+    // FIXED: Avatar display
+    let avatarDisplay = '';
+    if (post.avatar && (post.avatar.startsWith('data:') || post.avatar.includes('unsplash') || post.avatar.includes('http'))) {
+        avatarDisplay = `<img src="${post.avatar}" alt="${post.author}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+    } else {
+        avatarDisplay = post.avatar || '😊';
+    }
+    
     let html = `<div class="ig-post-header">
         <div class="profile-bubble" onclick="closePostDetail();viewUserProfile('${post.author}')">
-            <div class="pb-avatar">${post.avatar || '😊'}</div>
+            <div class="pb-avatar">${avatarDisplay}</div>
             <span class="pb-name">${post.author}</span>
         </div>
         <span class="ig-post-time">${timeSince(new Date(post.time))}</span>
