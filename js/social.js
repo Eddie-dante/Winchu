@@ -1,29 +1,38 @@
-// Social Feed Module - Fixed posting and display
+// Social Feed Module - Complete fix for posting and viewing
 
+// Setup posts listener - loads ALL posts
 function setupPostsListener() {
-    if (postsListener) postsListener.off();
+    console.log('Setting up posts listener...');
     
-    // First, load all existing posts
-    getRef('posts').orderByChild('time').limitToLast(100).once('value').then(function(snapshot) {
+    if (postsListener) {
+        postsListener.off();
+        postsListener = null;
+    }
+    
+    // First, load ALL existing posts from Firebase
+    getRef('posts').once('value').then(function(snapshot) {
         const data = snapshot.val();
         S.socialPosts = [];
         
         if (data) {
-            Object.keys(data).forEach(function(key) {
+            const keys = Object.keys(data);
+            console.log('Found ' + keys.length + ' posts in Firebase');
+            
+            keys.forEach(function(key) {
                 const post = data[key];
                 if (post && post.author) {
                     post.id = key;
                     S.socialPosts.push(post);
                 }
             });
+            
+            // Sort newest first
+            S.socialPosts.sort(function(a, b) {
+                return new Date(b.time) - new Date(a.time);
+            });
         }
         
-        // Sort by newest first
-        S.socialPosts.sort(function(a, b) {
-            return new Date(b.time) - new Date(a.time);
-        });
-        
-        console.log('Loaded ' + S.socialPosts.length + ' posts');
+        console.log('Loaded ' + S.socialPosts.length + ' posts into local state');
         renderSocial();
         renderProfile();
         renderStories();
@@ -32,9 +41,8 @@ function setupPostsListener() {
         console.error('Error loading posts:', error);
     });
     
-    // Listen for new posts
-    postsListener = getRef('posts').orderByChild('time').limitToLast(100);
-    
+    // Listen for new posts added
+    postsListener = getRef('posts');
     postsListener.on('child_added', function(snapshot) {
         const post = snapshot.val();
         if (!post || !post.author) return;
@@ -42,19 +50,16 @@ function setupPostsListener() {
         post.id = snapshot.key;
         
         // Check if already in array
-        const existing = S.socialPosts.find(function(p) { return p.id === post.id; });
-        if (!existing) {
+        const exists = S.socialPosts.find(function(p) { 
+            return p.id === post.id; 
+        });
+        
+        if (!exists) {
+            console.log('New post detected:', post.id);
             S.socialPosts.unshift(post);
-            // Keep only last 100 posts
-            if (S.socialPosts.length > 100) {
-                S.socialPosts.pop();
-            }
-            // Sort by time
             S.socialPosts.sort(function(a, b) {
                 return new Date(b.time) - new Date(a.time);
             });
-            
-            console.log('New post added:', post.id);
             renderSocial();
             renderProfile();
             renderStories();
@@ -67,7 +72,10 @@ function setupPostsListener() {
         if (!post) return;
         post.id = snapshot.key;
         
-        const idx = S.socialPosts.findIndex(function(p) { return p.id === post.id; });
+        const idx = S.socialPosts.findIndex(function(p) { 
+            return p.id === post.id; 
+        });
+        
         if (idx > -1) {
             S.socialPosts[idx] = post;
             renderSocial();
@@ -75,7 +83,9 @@ function setupPostsListener() {
     });
     
     postsListener.on('child_removed', function(snapshot) {
-        S.socialPosts = S.socialPosts.filter(function(p) { return p.id !== snapshot.key; });
+        S.socialPosts = S.socialPosts.filter(function(p) { 
+            return p.id !== snapshot.key; 
+        });
         renderSocial();
         renderProfile();
     });
@@ -83,27 +93,30 @@ function setupPostsListener() {
     console.log('📱 Posts listener active');
 }
 
+// Render social feed - shows ALL posts
 function renderSocial() {
     const feed = document.getElementById('socialFeed');
-    if (!feed) return;
+    if (!feed) {
+        console.log('Feed element not found');
+        return;
+    }
     
     if (!S.username) {
         feed.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:30px;">Please log in</p>';
         return;
     }
     
-    const allPosts = S.socialPosts || [];
+    const posts = S.socialPosts || [];
+    console.log('Rendering ' + posts.length + ' posts');
     
-    if (allPosts.length === 0) {
+    if (posts.length === 0) {
         feed.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;"><div style="font-size:48px;">📸</div><p>No posts yet. Be the first to share!</p></div>';
         return;
     }
     
-    console.log('Rendering ' + allPosts.length + ' posts');
-    
     let html = '';
     
-    allPosts.forEach(function(p) {
+    posts.forEach(function(p) {
         if (!p || !p.author) return;
         
         const liked = (p.likes || []).includes(S.username);
@@ -113,9 +126,10 @@ function renderSocial() {
         const likeCount = (p.likes || []).length;
         const canDelete = p.author === S.username;
         
+        // Avatar
         let avatarDisplay = '';
         if (p.avatar && (p.avatar.startsWith('data:') || p.avatar.includes('http'))) {
-            avatarDisplay = '<img src="' + p.avatar + '" alt="' + p.author + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display=\'none\';this.parentNode.textContent=\'' + p.author.charAt(0).toUpperCase() + '\';" />';
+            avatarDisplay = '<img src="' + p.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />';
         } else {
             const color = getColor(p.author);
             avatarDisplay = '<div style="width:100%;height:100%;border-radius:50%;background:' + color + ';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;">' + p.author.charAt(0).toUpperCase() + '</div>';
@@ -134,19 +148,21 @@ function renderSocial() {
         html += '</div>';
         
         if (p.image) {
-            html += '<img src="' + p.image + '" class="ig-post-image" onclick="event.stopPropagation();" />';
+            html += '<img src="' + p.image + '" class="ig-post-image" />';
         }
         
-        html += '<div style="padding:0 12px 4px;"><p style="font-size:13px;margin:4px 0;">' + escapeHtml(p.text || '') + '</p></div>';
+        if (p.text) {
+            html += '<div style="padding:0 12px 4px;"><p style="font-size:13px;margin:4px 0;">' + escapeHtml(p.text) + '</p></div>';
+        }
         
         html += '<div class="ig-post-actions" onclick="event.stopPropagation();">';
         html += '<button class="ig-post-action' + (liked ? ' liked' : '') + '" onclick="likePost(\'' + p.id + '\')">' + (liked ? '❤️' : '🤍') + '</button>';
-        html += '<span style="font-size:12px;font-weight:600;color:#94a3b8;">' + likeCount + '</span>';
+        html += '<span style="font-size:12px;font-weight:600;color:#94a3b8;margin-right:12px;">' + likeCount + '</span>';
         html += '<button class="ig-post-action" onclick="commentOnPost(\'' + p.id + '\')">💬</button>';
-        html += '<span style="font-size:12px;font-weight:600;color:#94a3b8;">' + commentCount + '</span>';
+        html += '<span style="font-size:12px;font-weight:600;color:#94a3b8;margin-right:12px;">' + commentCount + '</span>';
         html += '<button class="ig-post-action' + (bookmarked ? ' bookmarked' : '') + '" onclick="bookmarkItem(\'' + p.id + '\',\'post\')">🔖</button>';
         if (p.image) {
-            html += '<button class="ig-post-action" onclick="downloadMedia(\'' + p.image + '\',\'winchu-post.jpg\')">⬇️</button>';
+            html += '<button class="ig-post-action" onclick="downloadMedia(\'' + p.image + '\',\'post.jpg\')">⬇️</button>';
         }
         html += '</div>';
         
@@ -160,6 +176,7 @@ function renderSocial() {
     feed.innerHTML = html;
 }
 
+// Create post - save to Firebase
 function createPost() {
     if (!S.username) {
         toast('Please log in');
@@ -176,7 +193,7 @@ function createPost() {
         return;
     }
     
-    console.log('Creating post...');
+    console.log('Creating post for user:', S.username);
     
     const post = {
         author: S.username,
@@ -188,15 +205,9 @@ function createPost() {
         comments: []
     };
     
-    // Push to Firebase
-    const newPostRef = getRef('posts').push();
-    
-    newPostRef.set(post).then(function() {
-        console.log('Post saved to Firebase with ID:', newPostRef.key);
-        
-        // Add to local state immediately
-        post.id = newPostRef.key;
-        S.socialPosts.unshift(post);
+    // Save to Firebase
+    pushData('posts', post).then(function() {
+        console.log('Post saved to Firebase successfully');
         
         // Clear inputs
         input.value = '';
@@ -212,28 +223,22 @@ function createPost() {
         const fileInput = document.getElementById('postFile');
         if (fileInput) fileInput.value = '';
         
-        renderSocial();
-        renderProfile();
-        renderStories();
         saveState();
-        
         toast('📝 Posted!');
+        
+        // The listener will pick up the new post and render it
     }).catch(function(error) {
-        console.error('Post error:', error);
-        toast('Failed to post. Please try again.');
+        console.error('Post save error:', error);
+        toast('Failed to post. Error: ' + error.message);
     });
 }
 
+// Handle file selection
 function handleFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm'];
-    if (!allowedTypes.includes(file.type)) {
-        toast('Unsupported file type');
-        event.target.value = '';
-        return;
-    }
+    console.log('File selected:', file.name, file.type, file.size);
     
     const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
     if (file.size > maxSize) {
@@ -247,6 +252,8 @@ function handleFileSelect(event) {
     const reader = new FileReader();
     reader.onload = function(e) {
         selectedFileData = e.target.result;
+        console.log('File loaded, data length:', selectedFileData.length);
+        
         const preview = document.getElementById('filePreview');
         if (!preview) return;
         
@@ -258,6 +265,7 @@ function handleFileSelect(event) {
         preview.style.display = 'block';
     };
     reader.onerror = function() {
+        console.error('File read error');
         toast('Error reading file');
         event.target.value = '';
     };
@@ -291,16 +299,6 @@ function likePost(postId) {
         
         return getRef('posts/' + postId + '/likes').set(likes);
     }).then(function() {
-        const localPost = S.socialPosts.find(function(p) { return p.id === postId; });
-        if (localPost) {
-            const idx = (localPost.likes || []).indexOf(S.username);
-            if (idx > -1) {
-                localPost.likes.splice(idx, 1);
-            } else {
-                if (!localPost.likes) localPost.likes = [];
-                localPost.likes.push(S.username);
-            }
-        }
         renderSocial();
         saveState();
     }).catch(function(error) {
@@ -327,15 +325,6 @@ function commentOnPost(postId) {
                 });
                 return getRef('posts/' + postId + '/comments').set(comments);
             }).then(function() {
-                const localPost = S.socialPosts.find(function(p) { return p.id === postId; });
-                if (localPost) {
-                    if (!localPost.comments) localPost.comments = [];
-                    localPost.comments.push({
-                        username: S.username,
-                        text: result.trim(),
-                        time: new Date().toISOString()
-                    });
-                }
                 renderSocial();
                 toast('Comment added! 💬');
                 saveState();
@@ -359,6 +348,9 @@ function deletePost(postId) {
                 renderProfile();
                 toast('Post deleted');
                 saveState();
+            }).catch(function(error) {
+                console.error('Delete error:', error);
+                toast('Failed to delete');
             });
         }
     });
@@ -394,7 +386,7 @@ function viewPostDetail(postId) {
     
     if (post.image) html += '<img src="' + post.image + '" class="post-detail-image" />';
     
-    html += '<div style="padding:8px 0;"><p style="font-size:15px;">' + escapeHtml(post.text || '') + '</p></div>';
+    if (post.text) html += '<div style="padding:8px 0;"><p style="font-size:15px;">' + escapeHtml(post.text) + '</p></div>';
     
     html += '<div class="ig-post-actions" style="padding:8px 0;">';
     html += '<button class="ig-post-action' + (liked ? ' liked' : '') + '" onclick="likePost(\'' + post.id + '\');setTimeout(function(){viewPostDetail(\'' + post.id + '\');},300);">' + (liked ? '❤️' : '🤍') + '</button>';
@@ -409,7 +401,7 @@ function viewPostDetail(postId) {
     
     if (post.comments && post.comments.length > 0) {
         post.comments.forEach(function(c) {
-            html += '<div class="post-detail-comment"><strong onclick="closePostDetail();viewUserProfile(\'' + c.username + '\')">' + c.username + '</strong><span class="time">' + new Date(c.time).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) + '</span><br>' + c.text + '</div>';
+            html += '<div class="post-detail-comment"><strong>' + c.username + '</strong><span class="time">' + new Date(c.time).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) + '</span><br>' + c.text + '</div>';
         });
     } else {
         html += '<div style="color:#94a3b8;text-align:center;padding:12px;">No comments yet.</div>';
@@ -434,10 +426,8 @@ function downloadMedia(url, filename) {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        toast('⬇️ Downloading...');
-    } else if (url.startsWith('http')) {
+    } else {
         window.open(url, '_blank');
-        toast('⬇️ Opening...');
     }
 }
 
@@ -447,7 +437,7 @@ function bookmarkItem(id, type) {
     const idx = S.bookmarks.findIndex(function(b) { return b.id === id; });
     if (idx > -1) {
         S.bookmarks.splice(idx, 1);
-        toast('Removed from saved');
+        toast('Removed');
     } else {
         S.bookmarks.push({ id: id, type: type, time: new Date().toISOString() });
         toast('Saved! 🔖');
@@ -455,53 +445,29 @@ function bookmarkItem(id, type) {
     setData('users/' + S.username + '/bookmarks', S.bookmarks);
     saveState();
     renderSocial();
-    renderProfile();
 }
 
+// Status functions
 function addStatus() {
     if (!S.username) return;
     showDialog({
-        emoji: '📸',
-        title: 'Add Status',
-        subtitle: 'Share a photo or text (expires in 24h)',
-        placeholder: 'What\'s on your mind?',
-        confirmText: 'Post Status'
+        emoji: '📸', title: 'Add Status', placeholder: 'What\'s on your mind?', confirmText: 'Post'
     }).then(function(text) {
-        if (text === null) return;
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = 'image/*';
-        fileInput.onchange = function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                if (file.size > 5 * 1024 * 1024) { toast('Image too large (max 5MB)'); return; }
-                const reader = new FileReader();
-                reader.onload = function(ev) { saveStatus(text.trim(), ev.target.result); };
-                reader.readAsDataURL(file);
-            }
-        };
-        fileInput.click();
-        setTimeout(function() {
-            if (!fileInput.files.length && text !== null) saveStatus(text.trim(), null);
-        }, 3000);
+        if (text !== null) {
+            saveStatus(text.trim(), null);
+        }
     });
 }
 
 function saveStatus(text, imageData) {
-    if (!text && !imageData) return;
     const status = {
-        author: S.username,
-        avatar: S.avatar || null,
-        text: text || '',
-        image: imageData || null,
-        time: new Date().toISOString(),
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        views: []
+        author: S.username, avatar: S.avatar || null, text: text || '',
+        image: imageData || null, time: new Date().toISOString(),
+        expires: new Date(Date.now() + 86400000).toISOString(), views: []
     };
-    pushData('statuses', status).then(function() {
-        toast('Status added! 📸');
-        renderStories();
-    });
+    pushData('statuses', status);
+    toast('Status added! 📸');
+    renderStories();
 }
 
 function renderStories() {
@@ -512,26 +478,14 @@ function renderStories() {
         if (snapshot.val()) {
             Object.keys(snapshot.val()).forEach(function(key) {
                 const s = snapshot.val()[key];
-                s.id = key;
                 if (new Date(s.expires) > new Date()) statuses.push(s);
             });
         }
         const authors = [...new Set(statuses.map(function(s) { return s.author; }))];
         if (!authors.includes(S.username)) authors.unshift(S.username);
-        if (authors.length === 0) { row.innerHTML = '<div style="font-size:12px;color:#94a3b8;padding:8px;">No stories yet</div>'; return; }
-        row.innerHTML = authors.map(function(author) {
-            const authorStatus = statuses.find(function(s) { return s.author === author; });
-            const isMyStatus = author === S.username;
-            let avatarDisplay = '';
-            if (isMyStatus && S.avatar) {
-                avatarDisplay = '<img src="' + S.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />';
-            } else if (authorStatus && authorStatus.avatar) {
-                avatarDisplay = '<img src="' + authorStatus.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />';
-            } else {
-                const color = getColor(author);
-                avatarDisplay = '<div style="width:100%;height:100%;border-radius:50%;background:' + color + ';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px;">' + author.charAt(0).toUpperCase() + '</div>';
-            }
-            return '<div class="ig-story" onclick="' + (isMyStatus ? 'addStatus()' : 'viewStatus(\'' + author + '\')') + '"><div class="ig-story-avatar"><div class="inner">' + avatarDisplay + '</div></div><span class="ig-story-name">' + (isMyStatus ? 'My Status' : author) + '</span>' + (isMyStatus ? '<span style="font-size:8px;color:#6366f1;">+ Add</span>' : '') + '</div>';
+        row.innerHTML = authors.map(function(a) {
+            const isMe = a === S.username;
+            return '<div class="ig-story" onclick="' + (isMe ? 'addStatus()' : 'viewStatus(\'' + a + '\')') + '"><div class="ig-story-avatar"><div class="inner" style="background:' + getColor(a) + ';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;">' + a.charAt(0).toUpperCase() + '</div></div><span class="ig-story-name">' + (isMe ? 'My Status' : a) + '</span></div>';
         }).join('');
     });
 }
@@ -546,21 +500,16 @@ function viewStatus(username) {
             });
         }
         if (statuses.length === 0) { toast('No active status'); return; }
-        const status = statuses[statuses.length - 1];
-        let html = '<div style="text-align:center;"><span style="font-weight:600;">' + status.author + '</span><br><small style="color:#94a3b8;">' + timeSince(new Date(status.time)) + '</small></div>';
-        if (status.image) html += '<img src="' + status.image + '" style="width:100%;max-height:400px;object-fit:cover;border-radius:12px;margin:8px 0;" />';
-        if (status.text) html += '<p style="font-size:15px;text-align:center;padding:10px;">' + escapeHtml(status.text) + '</p>';
-        const overlay = document.getElementById('postDetailOverlay');
-        const body = document.getElementById('postDetailBody');
-        body.innerHTML = '<button class="post-detail-back" onclick="closePostDetail()">← <span>Close</span></button>' + html;
-        overlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
+        const s = statuses[statuses.length - 1];
+        let html = '<div style="text-align:center;"><strong>' + s.author + '</strong><br><small>' + timeSince(new Date(s.time)) + '</small></div>';
+        if (s.image) html += '<img src="' + s.image + '" style="width:100%;max-height:400px;object-fit:cover;border-radius:12px;margin:8px 0;" />';
+        if (s.text) html += '<p style="font-size:15px;text-align:center;">' + escapeHtml(s.text) + '</p>';
+        document.getElementById('postDetailBody').innerHTML = '<button class="post-detail-back" onclick="closePostDetail()">← Close</button>' + html;
+        document.getElementById('postDetailOverlay').classList.add('active');
     });
 }
 
-// Expose functions
 window.addStatus = addStatus;
-window.viewStatus = viewStatus;
 window.clearFileSelection = clearFileSelection;
 
-console.log('📱 Social module loaded');
+console.log('📱 Social module loaded - all posts visible');

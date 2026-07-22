@@ -11,7 +11,9 @@ const firebaseConfig = {
 
 // Initialize Firebase
 try {
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
     console.log('🔥 Firebase initialized');
 } catch (e) {
     console.error('Firebase init error:', e);
@@ -68,3 +70,5 @@ database.ref('.info/connected').on('value', function(snap) {
         console.log('❌ Disconnected from Firebase');
     }
 });
+
+console.log('🔒 Firebase module loaded');
