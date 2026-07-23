@@ -1,5 +1,8 @@
-// Profile Module - Complete
+// Profile Module - Complete with avatar management, friend system, user profiles
 
+// ============================================================
+// RENDER PROFILE
+// ============================================================
 function renderProfile() {
     if (!S.username) return;
     
@@ -7,21 +10,15 @@ function renderProfile() {
     
     // Update profile name
     var profileName = document.getElementById('profileName');
-    if (profileName) {
-        profileName.textContent = S.name || S.username;
-    }
+    if (profileName) profileName.textContent = S.name || S.username;
     
     // Update username
     var profileUsername = document.getElementById('profileUsername');
-    if (profileUsername) {
-        profileUsername.textContent = '@' + S.username;
-    }
+    if (profileUsername) profileUsername.textContent = '@' + S.username;
     
     // Update bio
     var profileBio = document.getElementById('profileBio');
-    if (profileBio) {
-        profileBio.textContent = S.bio || 'Building my energy. One aura at a time. ⚡';
-    }
+    if (profileBio) profileBio.textContent = S.bio || 'Building my energy. One aura at a time. ⚡';
     
     // Update avatar
     updateProfileAvatar();
@@ -56,7 +53,6 @@ function renderProfile() {
             postsGrid.innerHTML = '<p style="color:#94a3b8;text-align:center;grid-column:1/-1;padding:20px;">No posts yet. Share your first post! 📸</p>';
         } else {
             var gridHTML = '';
-            // Show newest posts first
             var sortedPosts = userPosts.slice().sort(function(a, b) {
                 return new Date(b.time) - new Date(a.time);
             });
@@ -70,7 +66,9 @@ function renderProfile() {
     }
 }
 
-// Update profile avatar display
+// ============================================================
+// UPDATE PROFILE AVATAR
+// ============================================================
 function updateProfileAvatar() {
     var avatarContainer = document.getElementById('profileAvatarEmoji');
     if (!avatarContainer) return;
@@ -84,7 +82,9 @@ function updateProfileAvatar() {
     }
 }
 
-// Update avatar in post composer
+// ============================================================
+// UPDATE POST AVATAR IN COMPOSER
+// ============================================================
 function updatePostAvatarInComposer() {
     var postAvatar = document.getElementById('postAvatarEmoji');
     if (!postAvatar) return;
@@ -98,12 +98,14 @@ function updatePostAvatarInComposer() {
     }
 }
 
-// Render friend requests in profile
+// ============================================================
+// RENDER FRIEND REQUESTS IN PROFILE
+// ============================================================
 function renderProfileRequests() {
     var section = document.getElementById('profileRequestsSection');
     if (!section) return;
     
-    db.ref('friendRequests/' + S.username).once('value').then(function(snapshot) {
+    firebase.database().ref('friendRequests/' + S.username).once('value').then(function(snapshot) {
         var requests = snapshot.val() || [];
         
         if (requests.length === 0) {
@@ -135,7 +137,9 @@ function renderProfileRequests() {
     });
 }
 
-// Edit name
+// ============================================================
+// EDIT NAME
+// ============================================================
 function editName() {
     showDialog({
         emoji: '✏️',
@@ -147,37 +151,27 @@ function editName() {
     }).then(function(result) {
         if (result !== null) {
             var newName = result.trim();
-            if (!newName) {
-                toast('Name cannot be empty');
-                return;
-            }
+            if (!newName) { toast('Name cannot be empty'); return; }
             
             S.name = newName;
             
-            // Save to Firebase
             if (S.username) {
-                db.ref('users/' + S.username + '/name').set(newName).then(function() {
-                    console.log('Name updated in Firebase');
-                });
-                
-                // Update name on all posts
+                firebase.database().ref('users/' + S.username + '/name').set(newName);
                 updateAllPostsAuthorName(newName);
             }
             
-            // Save local state
             saveState();
-            
-            // Update UI
             renderProfile();
             updateProfileAvatar();
             updatePostAvatarInComposer();
-            
             toast('Display name updated! ✏️');
         }
     });
 }
 
-// Edit bio
+// ============================================================
+// EDIT BIO
+// ============================================================
 function editProfile() {
     showDialog({
         emoji: '📝',
@@ -190,35 +184,30 @@ function editProfile() {
         if (result !== null) {
             S.bio = result.trim() || 'Building my energy. One aura at a time. ⚡';
             
-            // Save to Firebase
             if (S.username) {
-                db.ref('users/' + S.username + '/bio').set(S.bio);
+                firebase.database().ref('users/' + S.username + '/bio').set(S.bio);
             }
             
-            // Save local state
             saveState();
-            
-            // Update UI
             renderProfile();
-            
             toast('Bio updated! 📝');
         }
     });
 }
 
-// Handle avatar selection
+// ============================================================
+// HANDLE AVATAR SELECTION
+// ============================================================
 function handleAvatarSelect(event) {
     var file = event.target.files[0];
     if (!file) return;
     
-    // Validate file type
     if (!file.type.startsWith('image/')) {
         toast('Please select an image file (JPEG, PNG, GIF, WebP)');
         event.target.value = '';
         return;
     }
     
-    // Check file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
         toast('Image is too large. Maximum size is 10MB.');
         event.target.value = '';
@@ -232,7 +221,6 @@ function handleAvatarSelect(event) {
     reader.onload = function(e) {
         var imageData = e.target.result;
         
-        // Compress image if too large
         if (imageData.length > 500000) {
             compressImage(imageData, function(compressedData) {
                 saveAvatar(compressedData);
@@ -250,7 +238,9 @@ function handleAvatarSelect(event) {
     reader.readAsDataURL(file);
 }
 
-// Compress image before saving
+// ============================================================
+// COMPRESS IMAGE
+// ============================================================
 function compressImage(dataUrl, callback) {
     var img = new Image();
     img.onload = function() {
@@ -260,15 +250,9 @@ function compressImage(dataUrl, callback) {
         var height = img.height;
         
         if (width > height) {
-            if (width > maxSize) {
-                height *= maxSize / width;
-                width = maxSize;
-            }
+            if (width > maxSize) { height *= maxSize / width; width = maxSize; }
         } else {
-            if (height > maxSize) {
-                width *= maxSize / height;
-                height = maxSize;
-            }
+            if (height > maxSize) { width *= maxSize / height; height = maxSize; }
         }
         
         canvas.width = width;
@@ -283,116 +267,90 @@ function compressImage(dataUrl, callback) {
     img.src = dataUrl;
 }
 
-// Save avatar
+// ============================================================
+// SAVE AVATAR
+// ============================================================
 function saveAvatar(imageData) {
     S.avatar = imageData;
     
-    // Save to Firebase
     if (S.username) {
-        db.ref('users/' + S.username + '/avatar').set(imageData).then(function() {
+        firebase.database().ref('users/' + S.username + '/avatar').set(imageData).then(function() {
             console.log('Avatar saved to Firebase');
         });
     }
     
-    // Update avatar on all posts
     updateAllPostsAvatar(imageData);
-    
-    // Update UI
     updateProfileAvatar();
     updatePostAvatarInComposer();
-    
-    // Save local state
     saveState();
-    
     toast('✅ Avatar updated!');
 }
 
-// Update avatar on all user's posts
+// ============================================================
+// UPDATE ALL POSTS AVATAR
+// ============================================================
 function updateAllPostsAvatar(avatarUrl) {
-    // Update local posts
     (S.socialPosts || []).forEach(function(post) {
-        if (post.author === S.username) {
-            post.avatar = avatarUrl;
-        }
+        if (post.author === S.username) post.avatar = avatarUrl;
     });
     
-    // Update posts in Firebase
-    db.ref('posts').once('value').then(function(snapshot) {
+    firebase.database().ref('posts').once('value').then(function(snapshot) {
         var data = snapshot.val();
         if (data) {
             Object.keys(data).forEach(function(key) {
                 if (data[key].author === S.username) {
-                    db.ref('posts/' + key + '/avatar').set(avatarUrl);
+                    firebase.database().ref('posts/' + key + '/avatar').set(avatarUrl);
                 }
             });
         }
     });
     
-    // Update videos in Firebase
-    db.ref('videos').once('value').then(function(snapshot) {
+    firebase.database().ref('videos').once('value').then(function(snapshot) {
         var data = snapshot.val();
         if (data) {
             Object.keys(data).forEach(function(key) {
                 if (data[key].author === S.username) {
-                    db.ref('videos/' + key + '/avatar').set(avatarUrl);
+                    firebase.database().ref('videos/' + key + '/avatar').set(avatarUrl);
                 }
             });
         }
     });
 }
 
-// Update author name on all posts
+// ============================================================
+// UPDATE ALL POSTS AUTHOR NAME
+// ============================================================
 function updateAllPostsAuthorName(newName) {
-    // Update local posts
     (S.socialPosts || []).forEach(function(post) {
-        if (post.author === S.username) {
-            post.author = newName;
-        }
+        if (post.author === S.username) post.author = newName;
     });
     
-    // Update posts in Firebase
-    db.ref('posts').once('value').then(function(snapshot) {
+    firebase.database().ref('posts').once('value').then(function(snapshot) {
         var data = snapshot.val();
         if (data) {
             Object.keys(data).forEach(function(key) {
                 if (data[key].author === S.username) {
-                    db.ref('posts/' + key + '/author').set(newName);
+                    firebase.database().ref('posts/' + key + '/author').set(newName);
                 }
             });
         }
     });
     
-    // Update videos in Firebase
-    db.ref('videos').once('value').then(function(snapshot) {
+    firebase.database().ref('videos').once('value').then(function(snapshot) {
         var data = snapshot.val();
         if (data) {
             Object.keys(data).forEach(function(key) {
                 if (data[key].author === S.username) {
-                    db.ref('videos/' + key + '/author').set(newName);
-                }
-            });
-        }
-    });
-    
-    // Update chats
-    db.ref('chats').once('value').then(function(snapshot) {
-        var data = snapshot.val();
-        if (data) {
-            Object.keys(data).forEach(function(chatId) {
-                var chatData = data[chatId];
-                if (chatData) {
-                    Object.keys(chatData).forEach(function(msgKey) {
-                        if (chatData[msgKey].username === S.username) {
-                            db.ref('chats/' + chatId + '/' + msgKey + '/username').set(newName);
-                        }
-                    });
+                    firebase.database().ref('videos/' + key + '/author').set(newName);
                 }
             });
         }
     });
 }
 
-// Render users list (Find Friends page)
+// ============================================================
+// RENDER USERS LIST
+// ============================================================
 function renderUsers() {
     var container = document.getElementById('usersList');
     if (!container) return;
@@ -402,12 +360,10 @@ function renderUsers() {
         return;
     }
     
-    // Load friend requests first
-    db.ref('friendRequests/' + S.username).once('value').then(function(reqSnapshot) {
+    firebase.database().ref('friendRequests/' + S.username).once('value').then(function(reqSnapshot) {
         var pendingRequests = reqSnapshot.val() || [];
         
-        // Load all users
-        db.ref('users').once('value').then(function(snapshot) {
+        firebase.database().ref('users').once('value').then(function(snapshot) {
             var users = snapshot.val() || {};
             var usernames = Object.keys(users);
             
@@ -418,7 +374,6 @@ function renderUsers() {
             
             var html = '';
             
-            // Show pending requests section
             if (pendingRequests.length > 0) {
                 html += '<div style="margin-bottom:16px;padding:12px;background:rgba(99,102,241,0.1);border-radius:14px;">';
                 html += '<strong style="font-size:13px;">🔔 Pending Friend Requests (' + pendingRequests.length + ')</strong>';
@@ -438,7 +393,6 @@ function renderUsers() {
                 html += '<div style="margin:12px 0;border-top:1px solid rgba(0,0,0,0.1);"></div>';
             }
             
-            // Show all users
             html += '<strong style="font-size:13px;">👥 All Users</strong><br><br>';
             
             usernames.forEach(function(username) {
@@ -486,75 +440,94 @@ function renderUsers() {
     });
 }
 
-// Send friend request
+// ============================================================
+// SEND FRIEND REQUEST
+// ============================================================
 function sendFriendRequest(username) {
-    if (!S.username) {
-        toast('Please log in');
-        return;
-    }
+    if (!S.username) { toast('Please log in'); return; }
+    if (username === S.username) { toast('You cannot add yourself'); return; }
+    if ((S.friends || []).indexOf(username) > -1) { toast('Already friends'); return; }
     
-    if (username === S.username) {
-        toast('You cannot add yourself as a friend');
-        return;
-    }
-    
-    if ((S.friends || []).indexOf(username) > -1) {
-        toast('You are already friends with @' + username);
-        return;
-    }
-    
-    db.ref('friendRequests/' + username).once('value').then(function(snapshot) {
+    firebase.database().ref('friendRequests/' + username).once('value').then(function(snapshot) {
         var requests = snapshot.val() || [];
         
         if (requests.indexOf(S.username) > -1) {
-            toast('Friend request already sent to @' + username);
+            toast('Friend request already sent');
             return;
         }
         
         requests.push(S.username);
-        
-        return db.ref('friendRequests/' + username).set(requests);
+        return firebase.database().ref('friendRequests/' + username).set(requests);
     }).then(function() {
         toast('Friend request sent to @' + username + '! 📨');
-        addNotification(username, 'sent you a friend request', 'friend_request', '');
+        
+        // Send notification
+        firebase.database().ref('notifications/' + username).push({
+            from: S.username,
+            message: 'sent you a friend request',
+            type: 'friend_request',
+            time: new Date().toISOString(),
+            read: false
+        });
     }).catch(function(error) {
-        console.error('Error sending friend request:', error);
-        toast('Error sending request. Please try again.');
+        console.error('Error sending request:', error);
     });
 }
 
-// Accept friend request
+// ============================================================
+// ACCEPT FRIEND REQUEST - FIXED
+// ============================================================
 function acceptFriendRequest(username) {
     if (!S.username) return;
     
-    // Add to current user's friends
+    console.log('Accepting friend request from:', username);
+    
+    // Step 1: Add to current user's friends
     if (S.friends.indexOf(username) === -1) {
         S.friends.push(username);
     }
     
-    // Add current user to other person's friends
-    db.ref('users/' + username + '/friends').once('value').then(function(snapshot) {
+    // Step 2: Save current user's friends FIRST
+    firebase.database().ref('users/' + S.username + '/friends').set(S.friends).then(function() {
+        console.log('Step 2: Current user friends saved');
+        
+        // Step 3: Get other user's friends and add current user
+        return firebase.database().ref('users/' + username + '/friends').once('value');
+    }).then(function(snapshot) {
         var theirFriends = snapshot.val() || [];
         if (theirFriends.indexOf(S.username) === -1) {
             theirFriends.push(S.username);
-            return db.ref('users/' + username + '/friends').set(theirFriends);
+            return firebase.database().ref('users/' + username + '/friends').set(theirFriends);
         }
     }).then(function() {
-        // Remove the friend request
-        return db.ref('friendRequests/' + S.username).once('value');
+        console.log('Step 3: Other user friends updated');
+        
+        // Step 4: Remove the friend request
+        return firebase.database().ref('friendRequests/' + S.username).once('value');
     }).then(function(snapshot) {
         var requests = snapshot.val() || [];
         requests = requests.filter(function(r) { return r !== username; });
-        return db.ref('friendRequests/' + S.username).set(requests);
+        return firebase.database().ref('friendRequests/' + S.username).set(requests);
     }).then(function() {
-        // Save current user's friends
-        return db.ref('users/' + S.username + '/friends').set(S.friends);
-    }).then(function() {
+        console.log('Step 4: Friend request removed');
+        
+        // Step 5: Send notification to sender
+        firebase.database().ref('notifications/' + username).push({
+            from: S.username,
+            message: 'accepted your friend request',
+            type: 'friend_accept',
+            time: new Date().toISOString(),
+            read: false
+        });
+        
+        console.log('Step 5: Notification sent to sender');
+        
+        // Step 6: Update UI
         saveState();
         renderChatList();
         renderProfile();
         renderUsers();
-        addNotification(username, 'accepted your friend request', 'friend_accept', '');
+        
         toast('✅ You and @' + username + ' are now friends!');
     }).catch(function(error) {
         console.error('Error accepting request:', error);
@@ -562,24 +535,26 @@ function acceptFriendRequest(username) {
     });
 }
 
-// Decline friend request
+// ============================================================
+// DECLINE FRIEND REQUEST
+// ============================================================
 function declineFriendRequest(username) {
     if (!S.username) return;
     
-    db.ref('friendRequests/' + S.username).once('value').then(function(snapshot) {
+    firebase.database().ref('friendRequests/' + S.username).once('value').then(function(snapshot) {
         var requests = snapshot.val() || [];
         requests = requests.filter(function(r) { return r !== username; });
-        return db.ref('friendRequests/' + S.username).set(requests);
+        return firebase.database().ref('friendRequests/' + S.username).set(requests);
     }).then(function() {
         toast('Friend request declined');
         renderProfile();
         renderUsers();
-    }).catch(function(error) {
-        console.error('Error declining request:', error);
     });
 }
 
-// View another user's profile
+// ============================================================
+// VIEW USER PROFILE
+// ============================================================
 function viewUserProfile(username) {
     if (!username || username === S.username) {
         navigate('profile');
@@ -590,15 +565,14 @@ function viewUserProfile(username) {
     navigate('userprofile', username);
 }
 
-// Render another user's profile
+// ============================================================
+// RENDER USER PROFILE
+// ============================================================
 function renderUserProfile(username) {
     if (!username) return;
     
-    db.ref('users/' + username).once('value').then(function(snapshot) {
-        if (!snapshot.exists()) {
-            toast('User not found');
-            return;
-        }
+    firebase.database().ref('users/' + username).once('value').then(function(snapshot) {
+        if (!snapshot.exists()) { toast('User not found'); return; }
         
         var data = snapshot.val();
         var color = getColor(username);
@@ -626,9 +600,7 @@ function renderUserProfile(username) {
         if (bioEl) bioEl.textContent = data.bio || 'No bio yet';
         
         // Stats
-        var userPosts = (S.socialPosts || []).filter(function(p) {
-            return p.author === username;
-        });
+        var userPosts = (S.socialPosts || []).filter(function(p) { return p.author === username; });
         
         var postsEl = document.getElementById('viewProfilePosts');
         if (postsEl) postsEl.textContent = userPosts.length;
@@ -639,11 +611,10 @@ function renderUserProfile(username) {
         // Actions
         var actionsEl = document.getElementById('viewProfileActions');
         if (actionsEl) {
-            if (username === S.username) {
-                actionsEl.innerHTML = '<button class="btn-sm" onclick="navigate(\'profile\')">Edit Profile</button>';
-            } else if ((S.friends || []).indexOf(username) > -1) {
+            if ((S.friends || []).indexOf(username) > -1) {
+                var dmId = [S.username, username].sort().join('_dm_');
                 actionsEl.innerHTML = '<button class="btn-sm btn-success">✓ Friends</button> ' +
-                    '<button class="btn-sm" onclick="openChat(\'' + [S.username, username].sort().join('_dm_') + '\', \'dm\')">💬 Message</button>';
+                    '<button class="btn-sm" onclick="openChat(\'' + dmId + '\', \'dm\')">💬 Message</button>';
             } else {
                 actionsEl.innerHTML = '<button class="btn-sm btn-primary" onclick="sendFriendRequest(\'' + username + '\')">➕ Add Friend</button>';
             }
@@ -655,10 +626,7 @@ function renderUserProfile(username) {
             if (userPosts.length === 0) {
                 gridEl.innerHTML = '<p style="color:#94a3b8;text-align:center;grid-column:1/-1;padding:20px;">No posts yet.</p>';
             } else {
-                var sortedPosts = userPosts.slice().sort(function(a, b) {
-                    return new Date(b.time) - new Date(a.time);
-                });
-                
+                var sortedPosts = userPosts.slice().sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
                 gridEl.innerHTML = sortedPosts.map(function(post) {
                     var img = post.image || 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=400&q=80';
                     return '<div style="aspect-ratio:1;background-image:url(' + img + ');background-size:cover;background-position:center;border-radius:6px;cursor:pointer;" onclick="viewPostDetail(\'' + post.id + '\')"></div>';
@@ -667,22 +635,16 @@ function renderUserProfile(username) {
         }
     }).catch(function(error) {
         console.error('Error loading user profile:', error);
-        toast('Error loading profile');
     });
 }
 
-// Initialize profile
-function initProfile() {
-    if (S.username) {
-        loadUserDataFromFirebase();
-    }
-}
-
-// Load user data from Firebase
+// ============================================================
+// LOAD USER DATA FROM FIREBASE
+// ============================================================
 function loadUserDataFromFirebase() {
     if (!S.username) return;
     
-    db.ref('users/' + S.username).once('value').then(function(snapshot) {
+    firebase.database().ref('users/' + S.username).once('value').then(function(snapshot) {
         if (snapshot.exists()) {
             var data = snapshot.val();
             S.name = data.name || '';
@@ -692,23 +654,15 @@ function loadUserDataFromFirebase() {
             S.friends = data.friends || [];
             S.bookmarks = data.bookmarks || [];
             S.selectedAuras = data.selected_auras || [];
-            
             saveState();
             renderProfile();
         }
-    }).catch(function(error) {
-        console.error('Error loading user data:', error);
     });
 }
 
-// Call initialization
-document.addEventListener('DOMContentLoaded', function() {
-    if (S.username) {
-        initProfile();
-    }
-});
-
-// Expose functions globally
+// ============================================================
+// EXPOSE GLOBALLY
+// ============================================================
 window.renderProfile = renderProfile;
 window.updateProfileAvatar = updateProfileAvatar;
 window.updatePostAvatarInComposer = updatePostAvatarInComposer;
@@ -724,4 +678,4 @@ window.viewUserProfile = viewUserProfile;
 window.renderUserProfile = renderUserProfile;
 window.loadUserDataFromFirebase = loadUserDataFromFirebase;
 
-console.log('👤 Profile module loaded');
+console.log('👤 Profile module loaded - Friend requests fixed');
