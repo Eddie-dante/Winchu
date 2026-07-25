@@ -1,6 +1,8 @@
-// Dashboard Module - Complete
+// Dashboard Module - Complete with tasks, calendar, aura selection, streaks
 
-// Get tasks based on selected auras
+// ============================================================
+// GET TASKS BASED ON SELECTED AURAS
+// ============================================================
 function getTasks() {
     var tasks = [];
     S.selectedAuras.forEach(function(key) {
@@ -18,7 +20,9 @@ function getTasks() {
     return uniqueTasks.slice(0, 8);
 }
 
-// Calculate score percentage
+// ============================================================
+// CALCULATE SCORE PERCENTAGE
+// ============================================================
 function calcScore() {
     var tasks = getTasks();
     var total = tasks.length;
@@ -33,7 +37,9 @@ function calcScore() {
     };
 }
 
-// Calculate streak
+// ============================================================
+// CALCULATE STREAK
+// ============================================================
 function calcStreak() {
     var streak = 0;
     var now = new Date();
@@ -53,7 +59,9 @@ function calcStreak() {
     return streak;
 }
 
-// Render dashboard home page
+// ============================================================
+// RENDER DASHBOARD HOME PAGE
+// ============================================================
 function renderHome() {
     if (!S.username) {
         navigate('landing');
@@ -139,7 +147,9 @@ function renderHome() {
     saveState();
 }
 
-// Toggle task completion
+// ============================================================
+// TOGGLE TASK COMPLETION
+// ============================================================
 function toggleTask(index) {
     var idx = S.completedTasks.indexOf(index);
     if (idx > -1) {
@@ -164,15 +174,17 @@ function toggleTask(index) {
     
     // Save to Firebase
     if (S.username) {
-        db.ref('users/' + S.username + '/streakData').set(S.streakData);
-        db.ref('users/' + S.username + '/completedTasks').set(S.completedTasks);
+        setData('users/' + S.username + '/streakData', S.streakData);
+        setData('users/' + S.username + '/completedTasks', S.completedTasks);
     }
     
     renderHome();
     saveState();
 }
 
-// Render calendar
+// ============================================================
+// RENDER CALENDAR
+// ============================================================
 function renderCalendar() {
     var now = new Date();
     var year = now.getFullYear();
@@ -241,7 +253,9 @@ function renderCalendar() {
     }
 }
 
-// Reset today's tasks
+// ============================================================
+// RESET TODAY'S TASKS
+// ============================================================
 function resetDay() {
     showDialog({
         emoji: '🔄',
@@ -258,8 +272,8 @@ function resetDay() {
             
             // Save to Firebase
             if (S.username) {
-                db.ref('users/' + S.username + '/completedTasks').set([]);
-                db.ref('users/' + S.username + '/streakData').set(S.streakData);
+                setData('users/' + S.username + '/completedTasks', []);
+                setData('users/' + S.username + '/streakData', S.streakData);
             }
             
             renderHome();
@@ -269,7 +283,9 @@ function resetDay() {
     });
 }
 
-// Render aura selection grid
+// ============================================================
+// RENDER AURA SELECTION GRID
+// ============================================================
 function renderAuraGrid() {
     var grid = document.getElementById('auraGrid');
     if (!grid) return;
@@ -300,7 +316,9 @@ function renderAuraGrid() {
     }
 }
 
-// Toggle aura selection
+// ============================================================
+// TOGGLE AURA SELECTION
+// ============================================================
 function toggleAura(key) {
     var idx = S.selectedAuras.indexOf(key);
     
@@ -321,52 +339,33 @@ function toggleAura(key) {
     saveState();
 }
 
-// Get motivational quote based on aura
+// ============================================================
+// GET MOTIVATIONAL QUOTE
+// ============================================================
 function getMotivationalQuote() {
-    var quotes = {
-        focus: [
-            'Stay focused, go after your dreams.',
-            'Concentration is the secret of strength.',
-            'The successful warrior is the average man with laser-like focus.'
-        ],
-        energy: [
-            'Energy and persistence conquer all things.',
-            'The higher your energy level, the more efficient your body.',
-            'Passion is energy. Feel the power that comes from focusing on what excites you.'
-        ],
-        calm: [
-            'Peace begins with a smile.',
-            'Calm mind brings inner strength and self-confidence.',
-            'Nothing can bring you peace but yourself.'
-        ],
-        creative: [
-            'Creativity is intelligence having fun.',
-            'Every artist was first an amateur.',
-            'Think left and think right, think low and think high.'
-        ]
-    };
-    
-    if (S.selectedAuras.length > 0) {
-        var aura = S.selectedAuras[0];
-        var auraQuotes = quotes[aura] || ['You are capable of amazing things.'];
-        return auraQuotes[Math.floor(Math.random() * auraQuotes.length)];
-    }
-    
-    return 'You are capable of amazing things. ⚡';
+    var quotes = [
+        'You are capable of amazing things. ⚡',
+        'Small steps lead to big changes. 🌱',
+        'Every day is a new opportunity. ✨',
+        'Believe in yourself and all that you are. 💪',
+        'Progress, not perfection. 📈',
+        'You are stronger than you think. 🦁',
+        'Make today count. 🎯',
+        'Your future self will thank you. 🙏'
+    ];
+    return quotes[Math.floor(Math.random() * quotes.length)];
 }
 
-// Initialize dashboard
+// ============================================================
+// INITIALIZE DASHBOARD
+// ============================================================
 function initDashboard() {
-    // Nothing to initialize specifically
     console.log('📊 Dashboard ready');
 }
 
-// Call initialization
-document.addEventListener('DOMContentLoaded', function() {
-    initDashboard();
-});
-
-// Expose functions globally
+// ============================================================
+// EXPOSE FUNCTIONS GLOBALLY
+// ============================================================
 window.renderHome = renderHome;
 window.toggleTask = toggleTask;
 window.renderCalendar = renderCalendar;
@@ -377,5 +376,10 @@ window.getTasks = getTasks;
 window.calcScore = calcScore;
 window.calcStreak = calcStreak;
 window.getMotivationalQuote = getMotivationalQuote;
+
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', function() {
+    initDashboard();
+});
 
 console.log('📊 Dashboard module loaded');

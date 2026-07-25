@@ -13,132 +13,19 @@
     "id": "winchu-nexus-app",
     "categories": ["social", "lifestyle", "productivity"],
     "icons": [
-        {
-            "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=48&q=80",
-            "sizes": "48x48",
-            "type": "image/png"
-        },
-        {
-            "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=72&q=80",
-            "sizes": "72x72",
-            "type": "image/png"
-        },
-        {
-            "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=96&q=80",
-            "sizes": "96x96",
-            "type": "image/png"
-        },
-        {
-            "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=128&q=80",
-            "sizes": "128x128",
-            "type": "image/png"
-        },
-        {
-            "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=144&q=80",
-            "sizes": "144x144",
-            "type": "image/png"
-        },
-        {
-            "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=152&q=80",
-            "sizes": "152x152",
-            "type": "image/png"
-        },
-        {
-            "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=192&q=80",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any maskable"
-        },
-        {
-            "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=384&q=80",
-            "sizes": "384x384",
-            "type": "image/png"
-        },
-        {
-            "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=512&q=80",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "any maskable"
-        }
-    ],
-    "screenshots": [
-        {
-            "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1080&q=80",
-            "sizes": "1080x1920",
-            "type": "image/png",
-            "form_factor": "narrow",
-            "label": "Feed Screen"
-        },
-        {
-            "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1920&q=80",
-            "sizes": "1920x1080",
-            "type": "image/png",
-            "form_factor": "wide",
-            "label": "Desktop View"
-        }
+        { "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=48&q=80", "sizes": "48x48", "type": "image/png" },
+        { "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=72&q=80", "sizes": "72x72", "type": "image/png" },
+        { "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=96&q=80", "sizes": "96x96", "type": "image/png" },
+        { "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=128&q=80", "sizes": "128x128", "type": "image/png" },
+        { "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=144&q=80", "sizes": "144x144", "type": "image/png" },
+        { "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=152&q=80", "sizes": "152x152", "type": "image/png" },
+        { "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=192&q=80", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+        { "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=384&q=80", "sizes": "384x384", "type": "image/png" },
+        { "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=512&q=80", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
     ],
     "shortcuts": [
-        {
-            "name": "New Post",
-            "short_name": "Post",
-            "description": "Create a new post",
-            "url": "/?page=social",
-            "icons": [
-                {
-                    "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=96&q=80",
-                    "sizes": "96x96"
-                }
-            ]
-        },
-        {
-            "name": "Chats",
-            "short_name": "Chat",
-            "description": "Open your chats",
-            "url": "/?page=chat",
-            "icons": [
-                {
-                    "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=96&q=80",
-                    "sizes": "96x96"
-                }
-            ]
-        },
-        {
-            "name": "Diary",
-            "short_name": "Diary",
-            "description": "Open your diary",
-            "url": "/?page=diary",
-            "icons": [
-                {
-                    "src": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=96&q=80",
-                    "sizes": "96x96"
-                }
-            ]
-        }
-    ],
-    "share_target": {
-        "action": "/?page=social",
-        "method": "POST",
-        "enctype": "multipart/form-data",
-        "params": {
-            "title": "name",
-            "text": "description",
-            "url": "link"
-        }
-    },
-    "related_applications": [],
-    "prefer_related_applications": false,
-    "display_override": ["standalone", "window-controls-overlay"],
-    "edge_side_panel": {
-        "preferred_width": 400
-    },
-    "handle_links": "preferred",
-    "launch_handler": {
-        "client_mode": ["navigate-existing", "auto"]
-    },
-    "protocol_handlers": [
-        {
-            "protocol": "web+winchu",
-            "url": "/?page=%s"
-        }
+        { "name": "New Post", "short_name": "Post", "description": "Create a new post", "url": "/?page=social" },
+        { "name": "Chats", "short_name": "Chat", "description": "Open your chats", "url": "/?page=chat" },
+        { "name": "Diary", "short_name": "Diary", "description": "Open your diary", "url": "/page/diary.html" }
     ]
 }

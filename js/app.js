@@ -1,21 +1,24 @@
-// App Initialization - Complete and Working
-
-var postsListener = null;
-var videosListener = null;
-var notifListener = null;
+// App Initialization - Complete
 
 // ============================================================
 // INITIALIZE ALL APP DATA
 // ============================================================
 function initAppData() {
-    console.log('=== LOADING ALL DATA ===');
+    console.log('=== INITIALIZING APP DATA ===');
     
-    // Load posts
-    firebase.database().ref('posts').orderByChild('time').limitToLast(200).once('value').then(function(snap) {
-        var data = snap.val();
+    // Show loading indicator
+    toast('Loading your feed...');
+    
+    // Load all posts from Firebase
+    getRef('posts').orderByChild('time').limitToLast(200).once('value').then(function(snapshot) {
+        var data = snapshot.val();
         S.socialPosts = [];
+        
         if (data) {
-            Object.keys(data).forEach(function(key) {
+            var keys = Object.keys(data);
+            console.log('Found ' + keys.length + ' posts in database');
+            
+            keys.forEach(function(key) {
                 var post = data[key];
                 if (post && post.author) {
                     post.id = key;
@@ -24,20 +27,31 @@ function initAppData() {
                     S.socialPosts.push(post);
                 }
             });
-            S.socialPosts.sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
+            
+            S.socialPosts.sort(function(a, b) {
+                return new Date(b.time) - new Date(a.time);
+            });
         }
-        console.log('Posts loaded:', S.socialPosts.length);
+        
+        console.log('Loaded ' + S.socialPosts.length + ' posts');
         if (typeof renderSocial === 'function') renderSocial();
         if (typeof renderProfile === 'function') renderProfile();
         if (typeof renderStories === 'function') renderStories();
+        saveState();
+    }).catch(function(error) {
+        console.error('Error loading posts:', error);
     });
     
-    // Load videos
-    firebase.database().ref('videos').orderByChild('time').limitToLast(100).once('value').then(function(snap) {
-        var data = snap.val();
+    // Load all videos from Firebase
+    getRef('videos').orderByChild('time').limitToLast(100).once('value').then(function(snapshot) {
+        var data = snapshot.val();
         S.videoData = [];
+        
         if (data) {
-            Object.keys(data).forEach(function(key) {
+            var keys = Object.keys(data);
+            console.log('Found ' + keys.length + ' videos in database');
+            
+            keys.forEach(function(key) {
                 var video = data[key];
                 if (video && video.author) {
                     video.id = key;
@@ -46,16 +60,23 @@ function initAppData() {
                     S.videoData.push(video);
                 }
             });
-            S.videoData.sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
+            
+            S.videoData.sort(function(a, b) {
+                return new Date(b.time) - new Date(a.time);
+            });
         }
-        console.log('Videos loaded:', S.videoData.length);
+        
+        console.log('Loaded ' + S.videoData.length + ' videos');
         if (typeof renderVideos === 'function') renderVideos();
+    }).catch(function(error) {
+        console.error('Error loading videos:', error);
     });
     
     // Load groups
-    firebase.database().ref('groups').once('value').then(function(snap) {
-        var data = snap.val();
+    getRef('groups').once('value').then(function(snapshot) {
+        var data = snapshot.val();
         S.groups = [];
+        
         if (data) {
             Object.keys(data).forEach(function(key) {
                 var group = data[key];
@@ -65,103 +86,293 @@ function initAppData() {
                 }
             });
         }
+        
+        console.log('Loaded ' + S.groups.length + ' groups');
         if (typeof renderGroups === 'function') renderGroups();
         if (typeof renderChatList === 'function') renderChatList();
+    }).catch(function(error) {
+        console.error('Error loading groups:', error);
+    });
+    
+    // Load diary entries
+    getRef('diary/' + S.username).orderByKey().limitToLast(100).once('value').then(function(snapshot) {
+        var data = snapshot.val();
+        S.diary = [];
+        if (data) {
+            S.diary = Object.values(data).reverse();
+        }
+        if (typeof renderDiary === 'function') renderDiary();
+    });
+    
+    // Load routines
+    getRef('routines/' + S.username).orderByKey().limitToLast(100).once('value').then(function(snapshot) {
+        var data = snapshot.val();
+        S.routines = [];
+        if (data) {
+            S.routines = Object.values(data).reverse();
+        }
+        if (typeof renderRoutines === 'function') renderRoutines();
     });
     
     // Load notifications
-    firebase.database().ref('notifications/' + S.username).orderByChild('time').limitToLast(50).once('value').then(function(snap) {
-        var data = snap.val();
+    getRef('notifications/' + S.username).orderByChild('time').limitToLast(50).once('value').then(function(snapshot) {
+        var data = snapshot.val();
         S.notifications = [];
         if (data) {
             Object.keys(data).forEach(function(key) {
-                var n = data[key];
-                if (n) { n.id = key; S.notifications.push(n); }
+                var notif = data[key];
+                if (notif) { notif.id = key; S.notifications.push(notif); }
             });
-            S.notifications.sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
+            S.notifications.sort(function(a, b) {
+                return new Date(b.time) - new Date(a.time);
+            });
         }
         updateNotifBadge();
     });
     
-    // Setup real-time listeners
-    setupRealtimeListeners();
+    // Load bookmarks
+    getRef('users/' + S.username + '/bookmarks').once('value').then(function(snapshot) {
+        var data = snapshot.val();
+        S.bookmarks = data || [];
+    });
     
-    // Init wallpapers
+    // Setup real-time listeners
+    setupPostsListener();
+    setupVideosListener();
+    setupNotifListener();
+    setupGroupsListener();
+    
+    // Initialize wallpapers
     if (typeof initWallpapers === 'function') initWallpapers();
     
     // Setup presence
     setupPresence();
     
-    console.log('✅ All data loaded');
+    // Periodic online status update
+    setInterval(function() {
+        if (S && S.username) {
+            updateData('users/' + S.username, {
+                last_seen: new Date().toISOString(),
+                online: true
+            });
+        }
+    }, 60000);
+    
+    console.log('✅ All app data initialized');
 }
 
 // ============================================================
-// SETUP REAL-TIME LISTENERS
+// SETUP POSTS REAL-TIME LISTENER
 // ============================================================
-function setupRealtimeListeners() {
-    // Posts listener
-    if (postsListener) postsListener.off();
-    postsListener = firebase.database().ref('posts');
-    postsListener.on('child_added', function(snap) {
-        var post = snap.val();
+function setupPostsListener() {
+    if (postsListener) { postsListener.off(); postsListener = null; }
+    
+    postsListener = getRef('posts');
+    
+    postsListener.on('child_added', function(snapshot) {
+        var post = snapshot.val();
         if (!post || !post.author) return;
-        post.id = snap.key;
+        
+        post.id = snapshot.key;
         if (!post.likes) post.likes = [];
         if (!post.comments) post.comments = [];
-        if (!S.socialPosts.find(function(p) { return p.id === post.id; })) {
+        
+        var existing = S.socialPosts.find(function(p) { return p.id === post.id; });
+        if (!existing) {
+            console.log('New post detected:', post.id, 'by', post.author);
             S.socialPosts.unshift(post);
+            if (S.socialPosts.length > 200) S.socialPosts = S.socialPosts.slice(0, 200);
+            S.socialPosts.sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
             if (typeof renderSocial === 'function') renderSocial();
+            if (typeof renderProfile === 'function') renderProfile();
+            if (typeof renderStories === 'function') renderStories();
+            saveState();
         }
     });
-    postsListener.on('child_changed', function(snap) {
-        var post = snap.val(); if (!post) return; post.id = snap.key;
+    
+    postsListener.on('child_changed', function(snapshot) {
+        var post = snapshot.val();
+        if (!post) return;
+        post.id = snapshot.key;
         var idx = S.socialPosts.findIndex(function(p) { return p.id === post.id; });
         if (idx > -1) { S.socialPosts[idx] = post; if (typeof renderSocial === 'function') renderSocial(); }
     });
     
-    // Videos listener
-    if (videosListener) videosListener.off();
-    videosListener = firebase.database().ref('videos');
-    videosListener.on('child_added', function(snap) {
-        var video = snap.val();
+    postsListener.on('child_removed', function(snapshot) {
+        S.socialPosts = S.socialPosts.filter(function(p) { return p.id !== snapshot.key; });
+        if (typeof renderSocial === 'function') renderSocial();
+        if (typeof renderProfile === 'function') renderProfile();
+    });
+    
+    console.log('📱 Posts listener active');
+}
+
+// ============================================================
+// SETUP VIDEOS REAL-TIME LISTENER
+// ============================================================
+function setupVideosListener() {
+    if (videosListener) { videosListener.off(); videosListener = null; }
+    
+    videosListener = getRef('videos');
+    
+    videosListener.on('child_added', function(snapshot) {
+        var video = snapshot.val();
         if (!video || !video.author) return;
-        video.id = snap.key;
+        video.id = snapshot.key;
         if (!video.likes) video.likes = [];
         if (!video.comments) video.comments = [];
+        
         if (!S.videoData.find(function(v) { return v.id === video.id; })) {
             S.videoData.unshift(video);
+            if (S.videoData.length > 100) S.videoData = S.videoData.slice(0, 100);
             if (typeof renderVideos === 'function') renderVideos();
         }
     });
-    videosListener.on('child_changed', function(snap) {
-        var video = snap.val(); if (!video) return; video.id = snap.key;
+    
+    videosListener.on('child_changed', function(snapshot) {
+        var video = snapshot.val();
+        if (!video) return;
+        video.id = snapshot.key;
         var idx = S.videoData.findIndex(function(v) { return v.id === video.id; });
         if (idx > -1) { S.videoData[idx] = video; if (typeof renderVideos === 'function') renderVideos(); }
     });
     
-    // Notifications listener
-    if (notifListener) notifListener.off();
-    if (S.username) {
-        notifListener = firebase.database().ref('notifications/' + S.username).orderByChild('time').limitToLast(50);
-        notifListener.on('child_added', function(snap) {
-            var n = snap.val(); if (!n) return; n.id = snap.key;
-            if (!S.notifications.find(function(x) { return x.id === n.id; })) {
-                S.notifications.unshift(n);
-                updateNotifBadge();
+    videosListener.on('child_removed', function(snapshot) {
+        S.videoData = S.videoData.filter(function(v) { return v.id !== snapshot.key; });
+        if (typeof renderVideos === 'function') renderVideos();
+    });
+    
+    console.log('🎬 Videos listener active');
+}
+
+// ============================================================
+// SETUP NOTIFICATIONS REAL-TIME LISTENER
+// ============================================================
+function setupNotifListener() {
+    if (notifListener) { notifListener.off(); notifListener = null; }
+    if (!S.username) return;
+    
+    notifListener = getRef('notifications/' + S.username).orderByChild('time').limitToLast(50);
+    
+    notifListener.on('child_added', function(snapshot) {
+        var notif = snapshot.val();
+        if (!notif) return;
+        notif.id = snapshot.key;
+        
+        if (!S.notifications.find(function(n) { return n.id === notif.id; })) {
+            S.notifications.unshift(notif);
+            updateNotifBadge();
+        }
+    });
+    
+    console.log('🔔 Notifications listener active');
+}
+
+// ============================================================
+// SETUP GROUPS REAL-TIME LISTENER
+// ============================================================
+function setupGroupsListener() {
+    getRef('groups').on('child_added', function(snapshot) {
+        var group = snapshot.val();
+        group.id = snapshot.key;
+        if (group.members && group.members.indexOf(S.username) > -1) {
+            if (!S.groups.find(function(g) { return g.id === group.id; })) {
+                S.groups.push(group);
+                if (typeof renderGroups === 'function') renderGroups();
+                if (typeof renderChatList === 'function') renderChatList();
             }
-        });
-    }
+        }
+    });
+    
+    getRef('groups').on('child_changed', function(snapshot) {
+        var group = snapshot.val();
+        group.id = snapshot.key;
+        if (group.members && group.members.indexOf(S.username) > -1) {
+            var idx = S.groups.findIndex(function(g) { return g.id === group.id; });
+            if (idx > -1) { S.groups[idx] = group; }
+            else { S.groups.push(group); }
+        } else {
+            S.groups = S.groups.filter(function(g) { return g.id !== group.id; });
+        }
+        if (typeof renderGroups === 'function') renderGroups();
+        if (typeof renderChatList === 'function') renderChatList();
+    });
+    
+    getRef('groups').on('child_removed', function(snapshot) {
+        S.groups = S.groups.filter(function(g) { return g.id !== snapshot.key; });
+        if (typeof renderGroups === 'function') renderGroups();
+        if (typeof renderChatList === 'function') renderChatList();
+    });
+    
+    console.log('👥 Groups listener active');
 }
 
 // ============================================================
 // UPDATE NOTIFICATION BADGE
 // ============================================================
 function updateNotifBadge() {
-    var unread = (S.notifications || []).filter(function(n) { return !n.read; }).length;
+    var unreadCount = (S.notifications || []).filter(function(n) { return !n.read; }).length;
+    
     var badges = ['notifBadge', 'profileNotifBadge'];
     badges.forEach(function(id) {
-        var b = document.getElementById(id);
-        if (b) { b.textContent = unread > 99 ? '99+' : unread; b.style.display = unread > 0 ? 'flex' : 'none'; }
+        var badge = document.getElementById(id);
+        if (badge) {
+            badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+            badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+        }
+    });
+    
+    if (unreadCount > 0) {
+        document.title = '(' + unreadCount + ') Winchu · Nexus';
+    } else {
+        document.title = 'Winchu · Nexus';
+    }
+}
+
+// ============================================================
+// MARK ALL NOTIFICATIONS AS READ
+// ============================================================
+function markAllNotifsRead() {
+    if (!S.username) return;
+    
+    var unreadNotifs = S.notifications.filter(function(n) { return !n.read; });
+    
+    if (unreadNotifs.length === 0) {
+        toast('All notifications are already read');
+        return;
+    }
+    
+    unreadNotifs.forEach(function(notif) {
+        notif.read = true;
+        updateData('notifications/' + S.username + '/' + notif.id + '/read', true);
+    });
+    
+    updateNotifBadge();
+    if (typeof renderNotifications === 'function') renderNotifications();
+    toast('All notifications marked as read ✓');
+}
+
+// ============================================================
+// ADD NOTIFICATION
+// ============================================================
+function addNotification(to, message, type, refId) {
+    if (!S.username || !to) return;
+    if (to === S.username) return;
+    
+    var notification = {
+        from: S.username,
+        to: to,
+        message: message,
+        type: type || 'general',
+        refId: refId || '',
+        time: new Date().toISOString(),
+        read: false
+    };
+    
+    pushData('notifications/' + to, notification).then(function() {
+        console.log('Notification sent to:', to);
+    }).catch(function(error) {
+        console.error('Error sending notification:', error);
     });
 }
 
@@ -169,7 +380,7 @@ function updateNotifBadge() {
 // INITIALIZE APP
 // ============================================================
 function initApp() {
-    console.log('=== STARTING APP ===');
+    console.log('=== INITIALIZING APP ===');
     
     var auth = localStorage.getItem('wa');
     
@@ -180,21 +391,21 @@ function initApp() {
                 loadState();
                 
                 if (S.username === data.username) {
-                    console.log('Session found for:', S.username);
+                    console.log('Restoring session for:', S.username);
                     
                     setupPresence();
                     
-                    // Load user data
-                    firebase.database().ref('users/' + S.username).once('value').then(function(snap) {
-                        if (snap.exists()) {
-                            var d = snap.val();
-                            S.name = d.name || '';
-                            S.bio = d.bio || 'Building my energy.';
-                            S.avatar = d.avatar || null;
-                            S.wallpaper = d.wallpaper || null;
-                            S.friends = d.friends || [];
-                            S.bookmarks = d.bookmarks || [];
-                            S.selectedAuras = d.selected_auras || [];
+                    // Load user data from Firebase
+                    getRef('users/' + S.username).once('value').then(function(snapshot) {
+                        if (snapshot.exists()) {
+                            var userData = snapshot.val();
+                            S.name = userData.name || '';
+                            S.bio = userData.bio || 'Building my energy. One aura at a time. ⚡';
+                            S.avatar = userData.avatar || null;
+                            S.wallpaper = userData.wallpaper || null;
+                            S.friends = userData.friends || [];
+                            S.bookmarks = userData.bookmarks || [];
+                            S.selectedAuras = userData.selected_auras || [];
                             saveState();
                         }
                     });
@@ -208,10 +419,10 @@ function initApp() {
                     }
                     
                     // Show UI
-                    var fab = document.getElementById('wpFab');
-                    var nav = document.getElementById('bottomNav');
-                    if (fab) fab.style.display = 'flex';
-                    if (nav) nav.style.display = 'flex';
+                    var wpFab = document.getElementById('wpFab');
+                    var bottomNav = document.getElementById('bottomNav');
+                    if (wpFab) wpFab.style.display = 'flex';
+                    if (bottomNav) bottomNav.style.display = 'flex';
                     
                     // Navigate
                     if (S.selectedAuras.length === 0) {
@@ -221,26 +432,100 @@ function initApp() {
                         initAppData();
                     }
                     
-                    console.log('✅ App ready');
+                    console.log('✅ Winchu · Nexus ready');
                     return;
                 }
             }
-        } catch(e) {
+        } catch (e) {
             console.error('Init error:', e);
         }
     }
     
     navigate('landing');
+    console.log('👋 Welcome to Winchu · Nexus');
 }
 
-// Start
+// ============================================================
+// START APP WHEN DOM READY
+// ============================================================
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(initApp, 500);
 });
 
-// Expose
+// ============================================================
+// KEYBOARD SHORTCUTS
+// ============================================================
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'k') {
+        e.preventDefault();
+        navigate('users');
+    }
+    if (e.key === 'Escape') {
+        closeDialog();
+        closePostDetail();
+    }
+});
+
+// ============================================================
+// WINDOW RESIZE HANDLER
+// ============================================================
+var resizeTimeout;
+window.addEventListener('resize', function() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(function() {
+        var activePage = document.querySelector('.page.active');
+        if (activePage) {
+            var pageId = activePage.id.replace('page-', '');
+            if (pageId === 'videos') renderVideos();
+            if (pageId === 'wallpapers') renderWallpapers();
+        }
+    }, 250);
+});
+
+// ============================================================
+// ONLINE/OFFLINE HANDLERS
+// ============================================================
+window.addEventListener('online', function() {
+    console.log('📶 Back online');
+    if (S.username) {
+        setupPresence();
+        updateData('users/' + S.username, { online: true });
+        toast('📶 Back online');
+    }
+});
+
+window.addEventListener('offline', function() {
+    console.log('📶 Went offline');
+    if (S.username) {
+        updateData('users/' + S.username, { online: false });
+    }
+    toast('⚠️ You are offline. Some features may not work.');
+});
+
+// ============================================================
+// SERVICE WORKER REGISTRATION
+// ============================================================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
+            console.log('ServiceWorker registered:', registration.scope);
+        }).catch(function(error) {
+            console.log('ServiceWorker registration failed:', error);
+        });
+    });
+}
+
+// ============================================================
+// EXPOSE FUNCTIONS GLOBALLY
+// ============================================================
 window.initApp = initApp;
 window.initAppData = initAppData;
+window.setupPostsListener = setupPostsListener;
+window.setupVideosListener = setupVideosListener;
+window.setupNotifListener = setupNotifListener;
+window.setupGroupsListener = setupGroupsListener;
 window.updateNotifBadge = updateNotifBadge;
+window.markAllNotifsRead = markAllNotifsRead;
+window.addNotification = addNotification;
 
-console.log('⚡ App core loaded');
+console.log('⚡ Winchu · Nexus Core Loaded - Version 2.0');

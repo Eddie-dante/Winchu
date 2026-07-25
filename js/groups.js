@@ -1,5 +1,8 @@
 // Groups Module - Complete with WhatsApp-style group management
 
+// ============================================================
+// RENDER GROUPS LIST
+// ============================================================
 function renderGroups() {
     var container = document.getElementById('groupsList');
     if (!container) return;
@@ -37,15 +40,9 @@ function renderGroups() {
         
         var roleBadge = '';
         var roleColor = '#94a3b8';
-        if (isCreator) {
-            roleBadge = 'Creator';
-            roleColor = '#6366f1';
-        } else if (isAdmin) {
-            roleBadge = 'Admin';
-            roleColor = '#8b5cf6';
-        } else {
-            roleBadge = 'Member';
-        }
+        if (isCreator) { roleBadge = 'Creator'; roleColor = '#6366f1'; }
+        else if (isAdmin) { roleBadge = 'Admin'; roleColor = '#8b5cf6'; }
+        else { roleBadge = 'Member'; }
         
         html += '<div class="group-card">';
         
@@ -86,12 +83,11 @@ function renderGroups() {
     container.innerHTML = html;
 }
 
-// Create a new group
+// ============================================================
+// CREATE A NEW GROUP
+// ============================================================
 function createGroup() {
-    if (!S.username) {
-        toast('Please log in');
-        return;
-    }
+    if (!S.username) { toast('Please log in'); return; }
     
     var friends = S.friends || [];
     
@@ -125,7 +121,9 @@ function createGroup() {
     });
 }
 
-// Show friend selection dialog
+// ============================================================
+// SHOW FRIEND SELECTION DIALOG
+// ============================================================
 function showFriendSelectionDialog(groupName, description, friends) {
     closeDialog();
     
@@ -204,18 +202,13 @@ function showFriendSelectionDialog(groupName, description, friends) {
             });
         }, 100);
         
-        var cleanup = function() {
-            overlay.classList.remove('active');
-        };
+        var cleanup = function() { overlay.classList.remove('active'); };
         
         backBtn.onclick = function() { cleanup(); };
         cancelBtn.onclick = function() { cleanup(); };
         
         confirmBtn.onclick = function() {
-            if (selectedFriends.length < 1) {
-                toast('Select at least 1 friend');
-                return;
-            }
+            if (selectedFriends.length < 1) { toast('Select at least 1 friend'); return; }
             
             cleanup();
             
@@ -233,7 +226,7 @@ function showFriendSelectionDialog(groupName, description, friends) {
             };
             
             // Save to Firebase
-            db.ref('groups/' + groupId).set(group).then(function() {
+            setData('groups/' + groupId, group).then(function() {
                 // Add to local state
                 if (!S.groups.find(function(g) { return g.id === groupId; })) {
                     S.groups.push(group);
@@ -254,19 +247,16 @@ function showFriendSelectionDialog(groupName, description, friends) {
             });
         };
         
-        overlay.onclick = function(e) {
-            if (e.target === overlay) cleanup();
-        };
+        overlay.onclick = function(e) { if (e.target === overlay) cleanup(); };
     }, 200);
 }
 
-// View group members
+// ============================================================
+// VIEW GROUP MEMBERS
+// ============================================================
 function viewGroupMembers(groupId) {
     var group = S.groups.find(function(g) { return g.id === groupId; });
-    if (!group) {
-        toast('Group not found');
-        return;
-    }
+    if (!group) { toast('Group not found'); return; }
     
     closeDialog();
     
@@ -355,7 +345,9 @@ function viewGroupMembers(groupId) {
     }, 200);
 }
 
-// Show add members dialog
+// ============================================================
+// SHOW ADD MEMBERS DIALOG
+// ============================================================
 function showAddMembersDialog(groupId) {
     var group = S.groups.find(function(g) { return g.id === groupId; });
     if (!group) return;
@@ -367,10 +359,7 @@ function showAddMembersDialog(groupId) {
             return (group.members || []).indexOf(f) === -1;
         });
         
-        if (friends.length === 0) {
-            toast('No friends available to add.');
-            return;
-        }
+        if (friends.length === 0) { toast('No friends available to add.'); return; }
         
         var overlay = document.getElementById('dialogOverlay');
         var emoji = document.getElementById('dialogEmoji');
@@ -417,18 +406,14 @@ function showAddMembersDialog(groupId) {
                         this.style.borderColor = 'transparent';
                         this.style.background = 'rgba(255,255,255,0.4)';
                         var c = this.querySelector('.check-circle');
-                        c.style.background = 'transparent';
-                        c.style.borderColor = '#cbd5e1';
-                        c.style.color = 'inherit';
+                        c.style.background = 'transparent'; c.style.borderColor = '#cbd5e1'; c.style.color = 'inherit';
                         selectedFriends = selectedFriends.filter(function(f) { return f !== friend; });
                     } else {
                         this.dataset.selected = 'true';
                         this.style.borderColor = '#6366f1';
                         this.style.background = 'rgba(99,102,241,0.1)';
                         var c = this.querySelector('.check-circle');
-                        c.style.background = '#6366f1';
-                        c.style.borderColor = '#6366f1';
-                        c.style.color = '#fff';
+                        c.style.background = '#6366f1'; c.style.borderColor = '#6366f1'; c.style.color = '#fff';
                         selectedFriends.push(friend);
                     }
                     
@@ -448,7 +433,7 @@ function showAddMembersDialog(groupId) {
             
             group.members = Array.from(new Set((group.members || []).concat(selectedFriends)));
             
-            db.ref('groups/' + groupId + '/members').set(group.members).then(function() {
+            setData('groups/' + groupId + '/members', group.members).then(function() {
                 selectedFriends.forEach(function(friend) {
                     addNotification(friend, 'added you to "' + group.name + '"', 'group_add', groupId);
                 });
@@ -463,13 +448,12 @@ function showAddMembersDialog(groupId) {
     }, 200);
 }
 
-// Show group settings
+// ============================================================
+// SHOW GROUP SETTINGS
+// ============================================================
 function showGroupSettings(groupId) {
     var group = S.groups.find(function(g) { return g.id === groupId; });
-    if (!group || group.admin !== S.username) {
-        toast('Only the creator can change settings');
-        return;
-    }
+    if (!group || group.admin !== S.username) { toast('Only the creator can change settings'); return; }
     
     closeDialog();
     
@@ -509,22 +493,19 @@ function showGroupSettings(groupId) {
     }, 200);
 }
 
-// Promote member to admin
+// ============================================================
+// PROMOTE TO ADMIN
+// ============================================================
 function promoteToAdmin(groupId, username) {
     var group = S.groups.find(function(g) { return g.id === groupId; });
     if (!group || group.admin !== S.username) return;
     
-    showDialog({
-        emoji: '⭐',
-        title: 'Promote to Admin',
-        subtitle: 'Make @' + username + ' an admin?',
-        confirmText: 'Promote'
-    }).then(function(result) {
+    showDialog({ emoji: '⭐', title: 'Promote to Admin', subtitle: 'Make @' + username + ' an admin?', confirmText: 'Promote' }).then(function(result) {
         if (result !== null) {
             group.admins = group.admins || [];
             if (group.admins.indexOf(username) === -1) {
                 group.admins.push(username);
-                db.ref('groups/' + groupId + '/admins').set(group.admins);
+                setData('groups/' + groupId + '/admins', group.admins);
                 addNotification(username, 'promoted you to admin in "' + group.name + '"', 'group_promote', groupId);
                 saveState();
                 renderGroups();
@@ -534,37 +515,33 @@ function promoteToAdmin(groupId, username) {
     });
 }
 
-// Demote admin
+// ============================================================
+// DEMOTE ADMIN
+// ============================================================
 function demoteAdmin(groupId, username) {
     var group = S.groups.find(function(g) { return g.id === groupId; });
     if (!group || group.admin !== S.username) return;
     
     group.admins = (group.admins || []).filter(function(a) { return a !== username; });
-    db.ref('groups/' + groupId + '/admins').set(group.admins);
+    setData('groups/' + groupId + '/admins', group.admins);
     saveState();
     renderGroups();
     toast('@' + username + ' demoted from admin');
 }
 
-// Remove member from group
+// ============================================================
+// REMOVE MEMBER
+// ============================================================
 function removeMember(groupId, username) {
     var group = S.groups.find(function(g) { return g.id === groupId; });
     if (!group) return;
     
-    showDialog({
-        emoji: '🗑️',
-        title: 'Remove Member',
-        subtitle: 'Remove @' + username + ' from the group?',
-        confirmText: 'Remove',
-        danger: true
-    }).then(function(result) {
+    showDialog({ emoji: '🗑️', title: 'Remove Member', subtitle: 'Remove @' + username + '?', confirmText: 'Remove', danger: true }).then(function(result) {
         if (result !== null) {
             group.members = (group.members || []).filter(function(m) { return m !== username; });
             group.admins = (group.admins || []).filter(function(a) { return a !== username; });
-            
-            db.ref('groups/' + groupId + '/members').set(group.members);
-            db.ref('groups/' + groupId + '/admins').set(group.admins);
-            
+            setData('groups/' + groupId + '/members', group.members);
+            setData('groups/' + groupId + '/admins', group.admins);
             addNotification(username, 'removed you from "' + group.name + '"', 'group_remove', groupId);
             saveState();
             renderGroups();
@@ -573,21 +550,17 @@ function removeMember(groupId, username) {
     });
 }
 
-// Rename group
+// ============================================================
+// RENAME GROUP
+// ============================================================
 function renameGroup(groupId) {
     var group = S.groups.find(function(g) { return g.id === groupId; });
     if (!group) return;
     
-    showDialog({
-        emoji: '✏️',
-        title: 'Rename Group',
-        placeholder: 'New name...',
-        defaultValue: group.name,
-        confirmText: 'Save'
-    }).then(function(result) {
+    showDialog({ emoji: '✏️', title: 'Rename Group', placeholder: 'New name...', defaultValue: group.name, confirmText: 'Save' }).then(function(result) {
         if (result && result.trim()) {
             group.name = result.trim();
-            db.ref('groups/' + groupId + '/name').set(group.name);
+            setData('groups/' + groupId + '/name', group.name);
             saveState();
             renderGroups();
             renderChatList();
@@ -596,21 +569,17 @@ function renameGroup(groupId) {
     });
 }
 
-// Edit group description
+// ============================================================
+// EDIT GROUP DESCRIPTION
+// ============================================================
 function editGroupDesc(groupId) {
     var group = S.groups.find(function(g) { return g.id === groupId; });
     if (!group) return;
     
-    showDialog({
-        emoji: '📝',
-        title: 'Edit Description',
-        placeholder: 'Group description...',
-        defaultValue: group.description || '',
-        confirmText: 'Save'
-    }).then(function(result) {
+    showDialog({ emoji: '📝', title: 'Edit Description', placeholder: 'Group description...', defaultValue: group.description || '', confirmText: 'Save' }).then(function(result) {
         if (result !== null) {
             group.description = result.trim();
-            db.ref('groups/' + groupId + '/description').set(group.description);
+            setData('groups/' + groupId + '/description', group.description);
             saveState();
             renderGroups();
             toast('Description updated!');
@@ -618,26 +587,19 @@ function editGroupDesc(groupId) {
     });
 }
 
-// Delete group
+// ============================================================
+// DELETE GROUP
+// ============================================================
 function deleteGroup(groupId) {
     var group = S.groups.find(function(g) { return g.id === groupId; });
     if (!group) return;
     
-    showDialog({
-        emoji: '🗑️',
-        title: 'Delete Group',
-        subtitle: 'Permanently delete "' + escapeHtml(group.name) + '"? This cannot be undone.',
-        confirmText: 'Delete',
-        danger: true
-    }).then(function(result) {
+    showDialog({ emoji: '🗑️', title: 'Delete Group', subtitle: 'Permanently delete "' + escapeHtml(group.name) + '"?', confirmText: 'Delete', danger: true }).then(function(result) {
         if (result !== null) {
             (group.members || []).forEach(function(member) {
-                if (member !== S.username) {
-                    addNotification(member, '"' + group.name + '" was deleted', 'group_delete', '');
-                }
+                if (member !== S.username) addNotification(member, '"' + group.name + '" was deleted', 'group_delete', '');
             });
-            
-            db.ref('groups/' + groupId).remove();
+            removeData('groups/' + groupId);
             S.groups = S.groups.filter(function(g) { return g.id !== groupId; });
             saveState();
             renderGroups();
@@ -647,30 +609,21 @@ function deleteGroup(groupId) {
     });
 }
 
-// Leave group
+// ============================================================
+// LEAVE GROUP
+// ============================================================
 function leaveGroup(groupId) {
     var group = S.groups.find(function(g) { return g.id === groupId; });
     if (!group) return;
     
-    if (group.admin === S.username) {
-        toast('As creator, you cannot leave. Delete the group instead.');
-        return;
-    }
+    if (group.admin === S.username) { toast('As creator, you cannot leave. Delete the group instead.'); return; }
     
-    showDialog({
-        emoji: '🚪',
-        title: 'Leave Group',
-        subtitle: 'Leave "' + escapeHtml(group.name) + '"?',
-        confirmText: 'Leave',
-        danger: true
-    }).then(function(result) {
+    showDialog({ emoji: '🚪', title: 'Leave Group', subtitle: 'Leave "' + escapeHtml(group.name) + '"?', confirmText: 'Leave', danger: true }).then(function(result) {
         if (result !== null) {
             group.members = (group.members || []).filter(function(m) { return m !== S.username; });
             group.admins = (group.admins || []).filter(function(a) { return a !== S.username; });
-            
-            db.ref('groups/' + groupId + '/members').set(group.members);
-            db.ref('groups/' + groupId + '/admins').set(group.admins);
-            
+            setData('groups/' + groupId + '/members', group.members);
+            setData('groups/' + groupId + '/admins', group.admins);
             S.groups = S.groups.filter(function(g) { return g.id !== groupId; });
             saveState();
             renderGroups();
@@ -680,21 +633,23 @@ function leaveGroup(groupId) {
     });
 }
 
-// Open group chat
+// ============================================================
+// OPEN GROUP CHAT
+// ============================================================
 function openGroupChat(groupId) {
     currentChat = groupId;
     currentChatType = 'group';
     var group = S.groups.find(function(g) { return g.id === groupId; });
     currentChatParticipants = group ? group.members : [];
     navigate('chat');
-    setTimeout(function() {
-        openChat(groupId, 'group');
-    }, 300);
+    setTimeout(function() { openChat(groupId, 'group'); }, 300);
 }
 
-// Load groups from Firebase
+// ============================================================
+// LOAD GROUPS FROM FIREBASE
+// ============================================================
 function loadGroups() {
-    db.ref('groups').once('value').then(function(snapshot) {
+    getRef('groups').once('value').then(function(snapshot) {
         var data = snapshot.val();
         S.groups = [];
         if (data) {
@@ -708,12 +663,12 @@ function loadGroups() {
         }
         renderGroups();
         renderChatList();
-    }).catch(function(error) {
-        console.error('Error loading groups:', error);
     });
 }
 
-// Expose functions globally
+// ============================================================
+// EXPOSE GLOBALLY
+// ============================================================
 window.renderGroups = renderGroups;
 window.createGroup = createGroup;
 window.viewGroupMembers = viewGroupMembers;
@@ -729,4 +684,4 @@ window.leaveGroup = leaveGroup;
 window.openGroupChat = openGroupChat;
 window.loadGroups = loadGroups;
 
-console.log('👥 Groups module loaded');
+console.log('👥 Groups module loaded - WhatsApp style');

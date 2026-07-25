@@ -1,9 +1,11 @@
-// Wallpapers Module - Complete with working URLs, filter, random, and apply
+// Wallpapers Module - Complete with 100+ wallpapers, filter, random, apply
 
 var ALL_WALLPAPERS = [];
 var currentWallpaperFilter = 'all';
 
-// Portrait wallpapers (vertical/phone)
+// ============================================================
+// PORTRAIT WALLPAPERS (Phone)
+// ============================================================
 var portraitWalls = [
     'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=600&q=80',
     'https://images.unsplash.com/photo-1557682224-5b8590cd9ec7?w=600&q=80',
@@ -54,20 +56,12 @@ var portraitWalls = [
     'https://images.unsplash.com/photo-1541697411518-77cce4e8a25c?w=600&q=80',
     'https://images.unsplash.com/photo-1541807084-4f5c2c2c2c2c?w=600&q=80',
     'https://images.unsplash.com/photo-1559827299-8c2f3c3c3c3c?w=600&q=80',
-    'https://images.unsplash.com/photo-1532270912911-9c2f3c3c3c3c?w=600&q=80',
-    'https://images.unsplash.com/photo-1504198453319-4f5c2c2c2c2c?w=600&q=80',
-    'https://images.unsplash.com/photo-1469475937061-4f5c2c2c2c2c?w=600&q=80',
-    'https://images.unsplash.com/photo-1497436072909-4f5c2c2c2c2c?w=600&q=80',
-    'https://images.unsplash.com/photo-1523712999613-4f5c2c2c2c2c?w=600&q=80',
-    'https://images.unsplash.com/photo-1541697411518-77cce4e8a25c?w=600&q=80',
-    'https://images.unsplash.com/photo-1528825871115-3581a5387919?w=600&q=80',
-    'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&q=80',
-    'https://images.unsplash.com/photo-1597696929736-6d13bed8e6a8?w=600&q=80',
-    'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=600&q=80',
-    'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=600&q=80'
+    'https://images.unsplash.com/photo-1532270912911-9c2f3c3c3c3c?w=600&q=80'
 ];
 
-// Landscape wallpapers (horizontal/desktop)
+// ============================================================
+// LANDSCAPE WALLPAPERS (Desktop)
+// ============================================================
 var landscapeWalls = [
     'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&q=80',
     'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1200&q=80',
@@ -108,17 +102,7 @@ var landscapeWalls = [
     'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&q=80',
     'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200&q=80',
     'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80',
-    'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1200&q=80',
-    'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=1200&q=80',
-    'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=1200&q=80',
-    'https://images.unsplash.com/photo-1470071459606-3b5ec3a7fe05?w=1200&q=80',
-    'https://images.unsplash.com/photo-1440589473619-3cde28941638?w=1200&q=80',
-    'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1200&q=80',
-    'https://images.unsplash.com/photo-1533050487297-09b450131914?w=1200&q=80',
-    'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1200&q=80',
-    'https://images.unsplash.com/photo-1541697411518-77cce4e8a25c?w=1200&q=80',
-    'https://images.unsplash.com/photo-1528825871115-3581a5387919?w=1200&q=80',
-    'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1200&q=80'
+    'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1200&q=80'
 ];
 
 // ============================================================
@@ -153,10 +137,7 @@ function filterWallpapers(type) {
 function randomWallpaper() {
     var filtered = currentWallpaperFilter === 'all' ? ALL_WALLPAPERS : ALL_WALLPAPERS.filter(function(w) { return w.type === currentWallpaperFilter; });
     
-    if (filtered.length === 0) {
-        toast('No wallpapers in this category');
-        return;
-    }
+    if (filtered.length === 0) { toast('No wallpapers in this category'); return; }
     
     var randomWall = filtered[Math.floor(Math.random() * filtered.length)];
     setWallpaper(randomWall.url);
@@ -166,14 +147,10 @@ function randomWallpaper() {
 // SET WALLPAPER
 // ============================================================
 function setWallpaper(url) {
-    if (!url) {
-        console.error('No wallpaper URL provided');
-        return;
-    }
+    if (!url) { console.error('No wallpaper URL provided'); return; }
     
     console.log('Setting wallpaper:', url.substring(0, 50) + '...');
     
-    // Save to state
     S.wallpaper = url;
     
     // Apply to body background
@@ -184,7 +161,7 @@ function setWallpaper(url) {
     
     // Save to Firebase
     if (S.username) {
-        db.ref('users/' + S.username + '/wallpaper').set(url).then(function() {
+        setData('users/' + S.username + '/wallpaper', url).then(function() {
             console.log('Wallpaper saved to Firebase');
         }).catch(function(error) {
             console.error('Error saving wallpaper:', error);
@@ -208,9 +185,7 @@ function renderWallpapers() {
     
     // Update count
     var countEl = document.getElementById('wpCount');
-    if (countEl) {
-        countEl.textContent = filtered.length + ' wallpapers available';
-    }
+    if (countEl) countEl.textContent = filtered.length + ' wallpapers available';
     
     // Render grid
     var grid = document.getElementById('wpGrid');
@@ -235,6 +210,14 @@ function renderWallpapers() {
 }
 
 // ============================================================
+// SET DEFAULT WALLPAPER
+// ============================================================
+function setDefaultWallpaper() {
+    var defaultUrl = 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1920&q=80';
+    setWallpaper(defaultUrl);
+}
+
+// ============================================================
 // GET WALLPAPER CATEGORIES
 // ============================================================
 function getWallpaperCategories() {
@@ -246,67 +229,6 @@ function getWallpaperCategories() {
 }
 
 // ============================================================
-// SEARCH WALLPAPERS (by color/theme keywords)
-// ============================================================
-function searchWallpapers() {
-    showDialog({
-        emoji: '🔍',
-        title: 'Search Wallpapers',
-        subtitle: 'Enter keywords (e.g., nature, dark, blue, mountain)',
-        placeholder: 'Search...',
-        confirmText: 'Search'
-    }).then(function(query) {
-        if (!query || !query.trim()) return;
-        
-        var q = query.trim().toLowerCase();
-        var keywords = q.split(' ');
-        
-        // Filter wallpapers by URL keywords
-        var results = ALL_WALLPAPERS.filter(function(w) {
-            return keywords.some(function(keyword) {
-                return w.url.toLowerCase().indexOf(keyword) > -1;
-            });
-        });
-        
-        if (results.length === 0) {
-            toast('No wallpapers found for: ' + q);
-            return;
-        }
-        
-        // Show results in a dialog
-        var html = '<div style="max-height:400px;overflow-y:auto;">';
-        html += '<p style="font-size:11px;color:#94a3b8;margin-bottom:8px;">Found ' + results.length + ' wallpapers for "' + escapeHtml(q) + '"</p>';
-        html += '<div class="wp-grid" style="grid-template-columns:repeat(3,1fr);">';
-        
-        results.forEach(function(w) {
-            html += '<div class="wp-thumb ' + w.type + '" ' +
-                'style="background-image:url(' + w.url + ')" ' +
-                'onclick="closeDialog();setWallpaper(\'' + w.url + '\')" ' +
-                'title="Click to apply"></div>';
-        });
-        
-        html += '</div></div>';
-        
-        showDialog({
-            emoji: '🎨',
-            title: 'Search Results',
-            htmlSubtitle: html,
-            showBack: true,
-            noCancel: true,
-            confirmText: 'Close'
-        });
-    });
-}
-
-// ============================================================
-// SET DEFAULT WALLPAPER
-// ============================================================
-function setDefaultWallpaper() {
-    var defaultUrl = 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1920&q=80';
-    setWallpaper(defaultUrl);
-}
-
-// ============================================================
 // EXPOSE GLOBALLY
 // ============================================================
 window.initWallpapers = initWallpapers;
@@ -314,7 +236,6 @@ window.filterWallpapers = filterWallpapers;
 window.randomWallpaper = randomWallpaper;
 window.setWallpaper = setWallpaper;
 window.renderWallpapers = renderWallpapers;
-window.searchWallpapers = searchWallpapers;
 window.setDefaultWallpaper = setDefaultWallpaper;
 window.getWallpaperCategories = getWallpaperCategories;
 

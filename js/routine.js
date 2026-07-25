@@ -1,6 +1,8 @@
-// Routine Module - Complete with CRUD, tags, search, export, and completion tracking
+// Routine Module - Complete with CRUD, tags, search, export, completion tracking
 
-// Render routines list
+// ============================================================
+// RENDER ROUTINES LIST
+// ============================================================
 function renderRoutines() {
     var container = document.getElementById('routineEntries');
     if (!container) return;
@@ -31,15 +33,11 @@ function renderRoutines() {
     sortedRoutines.forEach(function(routine, displayIndex) {
         var originalIndex = S.routines.indexOf(routine);
         var dateStr = new Date(routine.date).toLocaleDateString('en', {
-            weekday: 'short',
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
+            weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
         });
         
         var timeStr = new Date(routine.date).toLocaleTimeString('en', {
-            hour: '2-digit',
-            minute: '2-digit'
+            hour: '2-digit', minute: '2-digit'
         });
         
         var borderColor = routine.completed ? '#22c55e' : '#6366f1';
@@ -109,16 +107,16 @@ function renderRoutines() {
     actionsDiv.style.cssText = 'display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;';
     actionsDiv.innerHTML = '<button class="btn-sm" onclick="searchRoutines()" style="flex:1;">🔍 Search</button>' +
         '<button class="btn-sm" onclick="exportRoutines()" style="flex:1;">📤 Export</button>' +
+        '<button class="btn-sm" onclick="showRoutineStats()" style="flex:1;">📊 Stats</button>' +
         '<button class="btn-sm" onclick="renderRoutines()" style="flex:1;">🔄 Refresh</button>';
     container.appendChild(actionsDiv);
 }
 
-// Save a new routine
+// ============================================================
+// SAVE A NEW ROUTINE
+// ============================================================
 function saveRoutine() {
-    if (!S.username) {
-        toast('Please log in');
-        return;
-    }
+    if (!S.username) { toast('Please log in'); return; }
     
     var title = document.getElementById('routineTitle');
     var content = document.getElementById('routineInput');
@@ -128,10 +126,7 @@ function saveRoutine() {
     var titleVal = title.value.trim();
     var contentVal = content.value.trim();
     
-    if (!titleVal || !contentVal) {
-        toast('Please add both a title and description');
-        return;
-    }
+    if (!titleVal || !contentVal) { toast('Please add both a title and description'); return; }
     
     var routine = {
         title: titleVal,
@@ -155,7 +150,7 @@ function saveRoutine() {
     S.routines.unshift(routine);
     
     // Save to Firebase
-    db.ref('routines/' + S.username).push(routine).then(function() {
+    pushData('routines/' + S.username, routine).then(function() {
         console.log('Routine saved to Firebase');
     }).catch(function(error) {
         console.error('Error saving routine:', error);
@@ -170,7 +165,9 @@ function saveRoutine() {
     toast('📋 Routine saved!');
 }
 
-// Toggle routine completion
+// ============================================================
+// TOGGLE ROUTINE COMPLETION
+// ============================================================
 function toggleRoutineComplete(index) {
     if (index < 0 || index >= S.routines.length) return;
     
@@ -186,49 +183,35 @@ function toggleRoutineComplete(index) {
     toast(routine.completed ? '✅ Routine completed!' : '🔄 Routine reopened');
 }
 
-// Edit routine
+// ============================================================
+// EDIT ROUTINE
+// ============================================================
 function editRoutine(index) {
     if (index < 0 || index >= S.routines.length) return;
     
     var routine = S.routines[index];
     
     showDialog({
-        emoji: '✏️',
-        title: 'Edit Routine Title',
-        subtitle: 'Update the title',
-        placeholder: 'Routine title...',
-        defaultValue: routine.title,
-        confirmText: 'Next →'
+        emoji: '✏️', title: 'Edit Routine Title', placeholder: 'Routine title...',
+        defaultValue: routine.title, confirmText: 'Next →'
     }).then(function(newTitle) {
         if (newTitle === null) return;
         
         showDialog({
-            emoji: '📝',
-            title: 'Edit Description',
-            subtitle: 'Update the description',
-            placeholder: 'Describe your routine...',
-            defaultValue: routine.content,
-            confirmText: 'Next →'
+            emoji: '📝', title: 'Edit Description', placeholder: 'Describe your routine...',
+            defaultValue: routine.content, confirmText: 'Next →'
         }).then(function(newContent) {
             if (newContent === null) return;
             
             showDialog({
-                emoji: '⚡',
-                title: 'Priority',
-                subtitle: 'Set priority level',
-                placeholder: 'low, medium, or high',
-                defaultValue: routine.priority || 'medium',
-                confirmText: 'Next →'
+                emoji: '⚡', title: 'Priority', placeholder: 'low, medium, or high',
+                defaultValue: routine.priority || 'medium', confirmText: 'Next →'
             }).then(function(newPriority) {
                 if (newPriority === null) return;
                 
                 showDialog({
-                    emoji: '🕐',
-                    title: 'Time of Day',
-                    subtitle: 'When do you do this routine?',
-                    placeholder: 'e.g., Morning, Afternoon, Evening',
-                    defaultValue: routine.timeOfDay || '',
-                    confirmText: '💾 Save'
+                    emoji: '🕐', title: 'Time of Day', placeholder: 'e.g., Morning, Afternoon, Evening',
+                    defaultValue: routine.timeOfDay || '', confirmText: '💾 Save'
                 }).then(function(newTimeOfDay) {
                     routine.title = (newTitle && newTitle.trim()) ? newTitle.trim() : routine.title;
                     routine.content = (newContent && newContent.trim()) ? newContent.trim() : routine.content;
@@ -255,28 +238,27 @@ function editRoutine(index) {
     });
 }
 
-// Delete routine
+// ============================================================
+// DELETE ROUTINE
+// ============================================================
 function deleteRoutine(index) {
     if (index < 0 || index >= S.routines.length) return;
     
     showDialog({
-        emoji: '🗑️',
-        title: 'Delete Routine',
-        subtitle: 'Are you sure you want to delete this routine?',
-        confirmText: 'Delete',
-        danger: true
+        emoji: '🗑️', title: 'Delete Routine', subtitle: 'Are you sure?',
+        confirmText: 'Delete', danger: true
     }).then(function(result) {
         if (result !== null) {
             var routine = S.routines[index];
             S.routines.splice(index, 1);
             
             // Remove from Firebase
-            db.ref('routines/' + S.username).once('value').then(function(snapshot) {
+            getRef('routines/' + S.username).once('value').then(function(snapshot) {
                 var data = snapshot.val();
                 if (data) {
                     Object.keys(data).forEach(function(key) {
                         if (data[key].date === routine.date && data[key].title === routine.title) {
-                            db.ref('routines/' + S.username + '/' + key).remove();
+                            removeData('routines/' + S.username + '/' + key);
                         }
                     });
                 }
@@ -289,18 +271,20 @@ function deleteRoutine(index) {
     });
 }
 
-// Update routine in Firebase
+// ============================================================
+// UPDATE ROUTINE IN FIREBASE
+// ============================================================
 function updateRoutineInFirebase(index) {
     if (!S.username || index < 0 || index >= S.routines.length) return;
     
     var routine = S.routines[index];
     
-    db.ref('routines/' + S.username).once('value').then(function(snapshot) {
+    getRef('routines/' + S.username).once('value').then(function(snapshot) {
         var data = snapshot.val();
         if (data) {
             Object.keys(data).forEach(function(key) {
                 if (data[key].date === routine.date && data[key].title === routine.title) {
-                    db.ref('routines/' + S.username + '/' + key).update({
+                    updateData('routines/' + S.username + '/' + key, {
                         completed: routine.completed,
                         title: routine.title,
                         content: routine.content,
@@ -316,7 +300,9 @@ function updateRoutineInFirebase(index) {
     });
 }
 
-// Filter routines by tag
+// ============================================================
+// FILTER ROUTINES BY TAG
+// ============================================================
 function filterRoutinesByTag(tag) {
     var container = document.getElementById('routineEntries');
     if (!container) return;
@@ -339,14 +325,15 @@ function filterRoutinesByTag(tag) {
         '</div>';
     
     filtered.forEach(function(routine) {
-        var originalIndex = S.routines.indexOf(routine);
-        html += renderSingleRoutine(routine, originalIndex);
+        html += renderSingleRoutine(routine, S.routines.indexOf(routine));
     });
     
     container.innerHTML = html;
 }
 
-// Render a single routine
+// ============================================================
+// RENDER SINGLE ROUTINE
+// ============================================================
 function renderSingleRoutine(routine, index) {
     var dateStr = new Date(routine.date).toLocaleDateString('en', {
         weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
@@ -374,13 +361,12 @@ function renderSingleRoutine(routine, index) {
     return html;
 }
 
-// Search routines
+// ============================================================
+// SEARCH ROUTINES
+// ============================================================
 function searchRoutines() {
     showDialog({
-        emoji: '🔍',
-        title: 'Search Routines',
-        subtitle: 'Search by title, content, or tag',
-        placeholder: 'Search...',
+        emoji: '🔍', title: 'Search Routines', placeholder: 'Search by title, content, or tag...',
         confirmText: 'Search'
     }).then(function(query) {
         if (!query || !query.trim()) return;
@@ -416,15 +402,13 @@ function searchRoutines() {
     });
 }
 
-// Export routines
+// ============================================================
+// EXPORT ROUTINES
+// ============================================================
 function exportRoutines() {
-    if (!S.routines || S.routines.length === 0) {
-        toast('No routines to export');
-        return;
-    }
+    if (!S.routines || S.routines.length === 0) { toast('No routines to export'); return; }
     
-    var text = '📋 MY ROUTINES\n';
-    text += '='.repeat(50) + '\n\n';
+    var text = '📋 MY ROUTINES\n' + '='.repeat(50) + '\n\n';
     
     S.routines.forEach(function(routine, index) {
         var dateStr = new Date(routine.date).toLocaleDateString('en', {
@@ -454,7 +438,9 @@ function exportRoutines() {
     toast('📤 Routines exported!');
 }
 
-// Get routine statistics
+// ============================================================
+// GET ROUTINE STATISTICS
+// ============================================================
 function getRoutineStats() {
     var total = S.routines.length;
     var completed = S.routines.filter(function(r) { return r.completed; }).length;
@@ -462,30 +448,23 @@ function getRoutineStats() {
     var highPriority = S.routines.filter(function(r) { return r.priority === 'high'; }).length;
     
     var allTags = [];
-    S.routines.forEach(function(r) {
-        if (r.tags) allTags = allTags.concat(r.tags);
-    });
+    S.routines.forEach(function(r) { if (r.tags) allTags = allTags.concat(r.tags); });
     
     var tagCounts = {};
-    allTags.forEach(function(tag) {
-        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-    });
+    allTags.forEach(function(tag) { tagCounts[tag] = (tagCounts[tag] || 0) + 1; });
     
-    var topTags = Object.keys(tagCounts).sort(function(a, b) {
-        return tagCounts[b] - tagCounts[a];
-    }).slice(0, 5);
+    var topTags = Object.keys(tagCounts).sort(function(a, b) { return tagCounts[b] - tagCounts[a]; }).slice(0, 5);
     
     return {
-        total: total,
-        completed: completed,
-        inProgress: inProgress,
+        total: total, completed: completed, inProgress: inProgress,
         completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
-        highPriority: highPriority,
-        topTags: topTags
+        highPriority: highPriority, topTags: topTags, tagCounts: tagCounts
     };
 }
 
-// Show routine statistics
+// ============================================================
+// SHOW ROUTINE STATISTICS
+// ============================================================
 function showRoutineStats() {
     var stats = getRoutineStats();
     
@@ -501,23 +480,21 @@ function showRoutineStats() {
     if (stats.topTags.length > 0) {
         html += '<div><small>Top Tags:</small><br>';
         stats.topTags.forEach(function(tag) {
-            html += '<span style="font-size:10px;background:rgba(99,102,241,0.1);color:#6366f1;padding:2px 8px;border-radius:8px;margin:2px;display:inline-block;">#' + tag + ' (' + tagCounts[tag] + ')</span>';
+            html += '<span style="font-size:10px;background:rgba(99,102,241,0.1);color:#6366f1;padding:2px 8px;border-radius:8px;margin:2px;display:inline-block;">#' + tag + ' (' + stats.tagCounts[tag] + ')</span>';
         });
         html += '</div>';
     }
     html += '</div>';
     
     showDialog({
-        emoji: '📊',
-        title: 'Routine Statistics',
-        htmlSubtitle: html,
-        showBack: true,
-        noCancel: true,
-        confirmText: 'Close'
+        emoji: '📊', title: 'Routine Statistics', htmlSubtitle: html,
+        showBack: true, noCancel: true, confirmText: 'Close'
     });
 }
 
-// Expose functions globally
+// ============================================================
+// EXPOSE GLOBALLY
+// ============================================================
 window.renderRoutines = renderRoutines;
 window.saveRoutine = saveRoutine;
 window.toggleRoutineComplete = toggleRoutineComplete;

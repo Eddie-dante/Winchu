@@ -1,18 +1,19 @@
-// Notifications Module - Complete
+// Notifications Module - Complete with real-time alerts, badge updates, settings
 
-// Setup notifications listener
+var notifListener = null;
+
+// ============================================================
+// SETUP NOTIFICATIONS LISTENER
+// ============================================================
 function setupNotifListener() {
-    if (notifListener) {
-        notifListener.off();
-        notifListener = null;
-    }
+    if (notifListener) { notifListener.off(); notifListener = null; }
     
     if (!S.username) return;
     
     console.log('Setting up notifications listener for:', S.username);
     
     // Load existing notifications
-    db.ref('notifications/' + S.username).orderByChild('time').limitToLast(50).once('value').then(function(snapshot) {
+    getRef('notifications/' + S.username).orderByChild('time').limitToLast(50).once('value').then(function(snapshot) {
         var data = snapshot.val();
         S.notifications = [];
         
@@ -38,7 +39,7 @@ function setupNotifListener() {
     });
     
     // Listen for new notifications
-    notifListener = db.ref('notifications/' + S.username).orderByChild('time').limitToLast(50);
+    notifListener = getRef('notifications/' + S.username).orderByChild('time').limitToLast(50);
     
     notifListener.on('child_added', function(snapshot) {
         var notif = snapshot.val();
@@ -52,22 +53,19 @@ function setupNotifListener() {
         if (!existing) {
             console.log('New notification:', notif.message);
             S.notifications.unshift(notif);
-            
-            // Keep only last 100 notifications
-            if (S.notifications.length > 100) {
-                S.notifications = S.notifications.slice(0, 100);
-            }
-            
-            // Sort by time
-            S.notifications.sort(function(a, b) {
-                return new Date(b.time) - new Date(a.time);
-            });
-            
             updateNotifBadge();
             
             // Show toast for new notification
             if (notif.from && notif.from !== S.username) {
-                toast(getNotifIcon(notif.type) + ' ' + notif.from + ': ' + notif.message);
+                var icon = getNotifIcon(notif.type);
+                toast(icon + ' ' + notif.from + ': ' + notif.message);
+                
+                // Show desktop notification
+                showDesktopNotification(
+                    notif.from,
+                    notif.message,
+                    notif.type
+                );
             }
         }
     });
@@ -90,7 +88,9 @@ function setupNotifListener() {
     console.log('🔔 Notifications listener active');
 }
 
-// Add a notification for another user
+// ============================================================
+// ADD NOTIFICATION
+// ============================================================
 function addNotification(to, message, type, refId) {
     if (!S.username || !to) return;
     
@@ -107,14 +107,16 @@ function addNotification(to, message, type, refId) {
         read: false
     };
     
-    db.ref('notifications/' + to).push(notification).then(function() {
+    pushData('notifications/' + to, notification).then(function() {
         console.log('Notification sent to:', to);
     }).catch(function(error) {
         console.error('Error sending notification:', error);
     });
 }
 
-// Render notifications page
+// ============================================================
+// RENDER NOTIFICATIONS PAGE
+// ============================================================
 function renderNotifications() {
     var container = document.getElementById('notificationsList');
     if (!container) return;
@@ -198,7 +200,9 @@ function renderNotifications() {
     container.innerHTML = html;
 }
 
-// Handle notification click
+// ============================================================
+// HANDLE NOTIFICATION CLICK
+// ============================================================
 function handleNotifClick(notifId, type, refId) {
     // Mark as read
     markNotifRead(notifId);
@@ -208,6 +212,7 @@ function handleNotifClick(notifId, type, refId) {
         case 'like':
         case 'comment':
             if (refId) {
+                closeDialog();
                 viewPostDetail(refId);
             }
             break;
@@ -217,8 +222,6 @@ function handleNotifClick(notifId, type, refId) {
             break;
         case 'group_add':
         case 'group_promote':
-            navigate('groups');
-            break;
         case 'group_remove':
         case 'group_delete':
             navigate('groups');
@@ -228,7 +231,9 @@ function handleNotifClick(notifId, type, refId) {
     }
 }
 
-// Mark single notification as read
+// ============================================================
+// MARK SINGLE NOTIFICATION AS READ
+// ============================================================
 function markNotifRead(notifId) {
     if (!S.username) return;
     
@@ -238,7 +243,7 @@ function markNotifRead(notifId) {
     
     if (notif && !notif.read) {
         notif.read = true;
-        db.ref('notifications/' + S.username + '/' + notifId + '/read').set(true).then(function() {
+        updateData('notifications/' + S.username + '/' + notifId + '/read', true).then(function() {
             console.log('Notification marked as read');
         }).catch(function(error) {
             console.error('Error marking notification:', error);
@@ -249,7 +254,9 @@ function markNotifRead(notifId) {
     }
 }
 
-// Mark all notifications as read
+// ============================================================
+// MARK ALL NOTIFICATIONS AS READ
+// ============================================================
 function markAllNotifsRead() {
     if (!S.username) return;
     
@@ -266,7 +273,7 @@ function markAllNotifsRead() {
     
     unreadNotifs.forEach(function(notif) {
         notif.read = true;
-        promises.push(db.ref('notifications/' + S.username + '/' + notif.id + '/read').set(true));
+        promises.push(updateData('notifications/' + S.username + '/' + notif.id + '/read', true));
     });
     
     Promise.all(promises).then(function() {
@@ -279,7 +286,9 @@ function markAllNotifsRead() {
     });
 }
 
-// Delete a notification
+// ============================================================
+// DELETE NOTIFICATION
+// ============================================================
 function deleteNotification(notifId) {
     if (!S.username) return;
     
@@ -291,7 +300,7 @@ function deleteNotification(notifId) {
         danger: true
     }).then(function(result) {
         if (result !== null) {
-            db.ref('notifications/' + S.username + '/' + notifId).remove().then(function() {
+            removeData('notifications/' + S.username + '/' + notifId).then(function() {
                 S.notifications = S.notifications.filter(function(n) {
                     return n.id !== notifId;
                 });
@@ -305,7 +314,9 @@ function deleteNotification(notifId) {
     });
 }
 
-// Clear all notifications
+// ============================================================
+// CLEAR ALL NOTIFICATIONS
+// ============================================================
 function clearAllNotifications() {
     if (!S.username) return;
     
@@ -322,7 +333,7 @@ function clearAllNotifications() {
         danger: true
     }).then(function(result) {
         if (result !== null) {
-            db.ref('notifications/' + S.username).remove().then(function() {
+            removeData('notifications/' + S.username).then(function() {
                 S.notifications = [];
                 updateNotifBadge();
                 renderNotifications();
@@ -335,7 +346,9 @@ function clearAllNotifications() {
     });
 }
 
-// Update notification badge count
+// ============================================================
+// UPDATE NOTIFICATION BADGE
+// ============================================================
 function updateNotifBadge() {
     var unreadCount = (S.notifications || []).filter(function(n) {
         return !n.read;
@@ -360,7 +373,9 @@ function updateNotifBadge() {
     }
 }
 
-// Get icon for notification type
+// ============================================================
+// GET ICON FOR NOTIFICATION TYPE
+// ============================================================
 function getNotifIcon(type) {
     var icons = {
         'like': '❤️',
@@ -380,33 +395,61 @@ function getNotifIcon(type) {
     return icons[type] || '🔔';
 }
 
-// Get notification settings
-function getNotificationSettings() {
-    var settings = localStorage.getItem('winchu_notif_settings');
-    if (settings) {
-        try {
-            return JSON.parse(settings);
-        } catch(e) {}
+// ============================================================
+// SHOW DESKTOP NOTIFICATION
+// ============================================================
+function showDesktopNotification(title, body, type) {
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+    
+    try {
+        var notification = new Notification(title, {
+            body: body,
+            icon: 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=128&q=80',
+            tag: 'winchu-notification',
+            badge: 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=128&q=80'
+        });
+        
+        notification.onclick = function() {
+            window.focus();
+            notification.close();
+            navigate('notifications');
+        };
+        
+        setTimeout(function() {
+            notification.close();
+        }, 5000);
+    } catch(e) {
+        console.error('Desktop notification error:', e);
+    }
+}
+
+// ============================================================
+// REQUEST DESKTOP NOTIFICATION PERMISSION
+// ============================================================
+function requestNotifPermission() {
+    if (!('Notification' in window)) {
+        toast('Desktop notifications not supported');
+        return;
     }
     
-    // Default settings
-    return {
-        likes: true,
-        comments: true,
-        friendRequests: true,
-        friendAccepts: true,
-        groupActivity: true,
-        sound: true,
-        desktop: true
-    };
+    if (Notification.permission === 'granted') {
+        toast('Desktop notifications already enabled');
+        return;
+    }
+    
+    Notification.requestPermission().then(function(permission) {
+        if (permission === 'granted') {
+            toast('Desktop notifications enabled! ✅');
+        } else {
+            toast('Desktop notifications denied');
+        }
+    });
 }
 
-// Save notification settings
-function saveNotificationSettings(settings) {
-    localStorage.setItem('winchu_notif_settings', JSON.stringify(settings));
-}
-
-// Show notification settings dialog
+// ============================================================
+// SHOW NOTIFICATION SETTINGS
+// ============================================================
 function showNotifSettings() {
     var settings = getNotificationSettings();
     
@@ -454,89 +497,39 @@ function showNotifSettings() {
     });
 }
 
-// Update a single notification setting
+// ============================================================
+// GET NOTIFICATION SETTINGS
+// ============================================================
+function getNotificationSettings() {
+    var settings = localStorage.getItem('winchu_notif_settings');
+    if (settings) {
+        try { return JSON.parse(settings); } catch(e) {}
+    }
+    
+    // Default settings
+    return {
+        likes: true,
+        comments: true,
+        friendRequests: true,
+        friendAccepts: true,
+        groupActivity: true,
+        desktop: true
+    };
+}
+
+// ============================================================
+// UPDATE NOTIFICATION SETTING
+// ============================================================
 function updateNotifSetting(key, value) {
     var settings = getNotificationSettings();
     settings[key] = value;
-    saveNotificationSettings(settings);
+    localStorage.setItem('winchu_notif_settings', JSON.stringify(settings));
     console.log('Notification setting updated:', key, value);
 }
 
-// Request desktop notification permission
-function requestNotifPermission() {
-    if (!('Notification' in window)) {
-        toast('Desktop notifications not supported');
-        return;
-    }
-    
-    if (Notification.permission === 'granted') {
-        toast('Desktop notifications already enabled');
-        return;
-    }
-    
-    Notification.requestPermission().then(function(permission) {
-        if (permission === 'granted') {
-            toast('Desktop notifications enabled! ✅');
-            var settings = getNotificationSettings();
-            settings.desktop = true;
-            saveNotificationSettings(settings);
-        } else {
-            toast('Desktop notifications denied');
-        }
-    });
-}
-
-// Show desktop notification
-function showDesktopNotification(title, body, icon) {
-    var settings = getNotificationSettings();
-    
-    if (!settings.desktop) return;
-    if (!('Notification' in window)) return;
-    if (Notification.permission !== 'granted') return;
-    
-    try {
-        var notification = new Notification(title, {
-            body: body,
-            icon: icon || 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=128&q=80',
-            tag: 'winchu-notification'
-        });
-        
-        notification.onclick = function() {
-            window.focus();
-            notification.close();
-        };
-        
-        setTimeout(function() {
-            notification.close();
-        }, 5000);
-    } catch(e) {
-        console.error('Desktop notification error:', e);
-    }
-}
-
-// Initialize notifications
-function initNotifications() {
-    if (S.username) {
-        setupNotifListener();
-        updateNotifBadge();
-        
-        // Request desktop notification permission after 5 seconds
-        setTimeout(function() {
-            if ('Notification' in window && Notification.permission === 'default') {
-                // Don't auto-request, let user initiate
-            }
-        }, 5000);
-    }
-}
-
-// Call initialization when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-    if (S.username) {
-        initNotifications();
-    }
-});
-
-// Expose functions globally
+// ============================================================
+// EXPOSE GLOBALLY
+// ============================================================
 window.renderNotifications = renderNotifications;
 window.setupNotifListener = setupNotifListener;
 window.addNotification = addNotification;

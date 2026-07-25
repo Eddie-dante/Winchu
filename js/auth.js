@@ -1,4 +1,4 @@
-// Authentication Module - Complete with signup, login, logout, password reset, and account deletion
+// Authentication Module - Complete with signup, login, logout, password reset
 
 // ============================================================
 // HANDLE SIGNUP
@@ -37,16 +37,15 @@ function handleSignup() {
         return;
     }
     
-    // Only allow letters, numbers, and underscores
     if (!/^[a-zA-Z0-9_]+$/.test(usernameVal)) {
         toast('Username can only contain letters, numbers, and underscores');
         return;
     }
     
-    // Check if username already exists
-    toast('Checking username availability...');
+    // Check if username exists
+    toast('Checking username...');
     
-    db.ref('users/' + usernameVal).once('value').then(function(snapshot) {
+    getRef('users/' + usernameVal).once('value').then(function(snapshot) {
         if (snapshot.exists()) {
             toast('Username already taken. Please choose another.');
             throw new Error('Username taken');
@@ -55,7 +54,6 @@ function handleSignup() {
         console.log('Username available. Creating account...');
         toast('Creating account...');
         
-        // Create user data object
         var userData = {
             name: nameVal,
             username: usernameVal,
@@ -71,8 +69,7 @@ function handleSignup() {
             online: true
         };
         
-        // Save to Firebase
-        return db.ref('users/' + usernameVal).set(userData);
+        return setData('users/' + usernameVal, userData);
         
     }).then(function() {
         console.log('Account created successfully for:', usernameVal);
@@ -95,22 +92,21 @@ function handleSignup() {
         S.videoData = [];
         S.socialPosts = [];
         
-        // Save state to localStorage
+        // Save state
         saveState();
         localStorage.setItem('wa', JSON.stringify({
             username: usernameVal,
             timestamp: Date.now()
         }));
         
-        // Setup online presence
+        // Setup presence
         setupPresence();
         
-        // Clear form fields
+        // Clear form
         nameEl.value = '';
         usernameEl.value = '';
         passwordEl.value = '';
         
-        // Show success
         toast('Account created successfully! 🎉');
         
         // Navigate to aura selection
@@ -152,7 +148,7 @@ function handleLogin() {
     
     toast('Logging in...');
     
-    db.ref('users/' + usernameVal).once('value').then(function(snapshot) {
+    getRef('users/' + usernameVal).once('value').then(function(snapshot) {
         if (!snapshot.exists()) {
             console.log('User not found:', usernameVal);
             toast('User not found. Please check your username or create an account.');
@@ -162,7 +158,6 @@ function handleLogin() {
         var userData = snapshot.val();
         console.log('User found, checking password...');
         
-        // Verify password
         if (userData.password !== passwordVal) {
             console.log('Password incorrect for:', usernameVal);
             toast('Incorrect password. Please try again.');
@@ -212,28 +207,23 @@ function handleLogin() {
         }
         
         // Update online status
-        db.ref('users/' + usernameVal).update({
+        updateData('users/' + usernameVal, {
             online: true,
             last_seen: new Date().toISOString()
         });
         
-        // Load user data from Firebase
+        // Load user data
         loadUserDataFromFirebase(usernameVal);
         
-        // Show welcome toast
+        // Show welcome
         var displayName = S.name || S.username;
         toast('Welcome back, ' + displayName + '! ✨');
         
-        // Navigate to appropriate page
+        // Navigate
         if (S.selectedAuras.length === 0) {
-            setTimeout(function() {
-                navigate('select');
-            }, 500);
+            setTimeout(function() { navigate('select'); }, 500);
         } else {
-            setTimeout(function() {
-                navigate('social');
-                initAppData();
-            }, 500);
+            setTimeout(function() { navigate('social'); initAppData(); }, 500);
         }
         
     }).catch(function(error) {
@@ -248,9 +238,9 @@ function handleLogin() {
 function logout() {
     console.log('=== LOGOUT STARTED ===');
     
-    // Update online status in Firebase
-    if (S.username && db) {
-        db.ref('users/' + S.username).update({
+    // Update online status
+    if (S.username) {
+        updateData('users/' + S.username, {
             online: false,
             last_seen: new Date().toISOString()
         }).catch(function(err) {
@@ -258,67 +248,41 @@ function logout() {
         });
     }
     
-    // Clear all state
+    // Clear state
     S = {
-        username: null,
-        name: '',
-        bio: 'Building my energy. One aura at a time. ⚡',
-        wallpaper: null,
-        selectedAuras: [],
-        avatar: null,
-        friends: [],
-        completedTasks: [],
-        streakData: {},
-        socialPosts: [],
-        diary: [],
-        routines: [],
-        videoData: [],
-        bookmarks: [],
-        notifications: [],
-        groups: []
+        username: null, name: '', bio: 'Building my energy. One aura at a time. ⚡',
+        wallpaper: null, selectedAuras: [], avatar: null, friends: [],
+        completedTasks: [], streakData: {}, socialPosts: [], diary: [],
+        routines: [], videoData: [], bookmarks: [], notifications: [], groups: []
     };
     
     currentChat = null;
     chatMessages = [];
     viewingProfile = null;
     
-    // Clear localStorage
+    // Clear storage
     localStorage.removeItem('ws');
     localStorage.removeItem('wa');
     
-    // Remove all Firebase listeners
-    if (chatListener) {
-        chatListener.off();
-        chatListener = null;
-    }
-    if (postsListener) {
-        postsListener.off();
-        postsListener = null;
-    }
-    if (videosListener) {
-        videosListener.off();
-        videosListener = null;
-    }
-    if (notifListener) {
-        notifListener.off();
-        notifListener = null;
-    }
+    // Remove listeners
+    if (chatListener) { chatListener.off(); chatListener = null; }
+    if (postsListener) { postsListener.off(); postsListener = null; }
+    if (videosListener) { videosListener.off(); videosListener = null; }
+    if (notifListener) { notifListener.off(); notifListener = null; }
     
-    // Reset background to default
+    // Reset background
     document.body.style.backgroundImage = "url('https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1920&q=80')";
     document.body.style.backgroundSize = 'cover';
     document.body.style.backgroundPosition = 'center';
     document.body.style.backgroundAttachment = 'fixed';
     
-    // Hide UI elements
+    // Hide UI
     var wpFab = document.getElementById('wpFab');
     var bottomNav = document.getElementById('bottomNav');
     if (wpFab) wpFab.style.display = 'none';
     if (bottomNav) bottomNav.style.display = 'none';
     
-    // Navigate to landing
     navigate('landing');
-    
     toast('Logged out successfully');
     console.log('✅ Logout complete');
 }
@@ -327,33 +291,29 @@ function logout() {
 // CONFIRM AURA SELECTION
 // ============================================================
 function confirmSelection() {
-    console.log('=== CONFIRMING AURA SELECTION ===');
+    console.log('=== CONFIRMING AURAS ===');
     
     if (S.selectedAuras.length === 0) {
         toast('Please select at least one aura to continue.');
         return;
     }
     
-    // Save auras to Firebase
     if (S.username) {
-        db.ref('users/' + S.username + '/selected_auras').set(S.selectedAuras).then(function() {
+        setData('users/' + S.username + '/selected_auras', S.selectedAuras).then(function() {
             console.log('Auras saved to Firebase');
         }).catch(function(err) {
             console.error('Error saving auras:', err);
         });
     }
     
-    // Save to local state
     saveState();
     
-    // Show confirmation
     var auraNames = S.selectedAuras.map(function(k) {
         return AURAS[k] ? AURAS[k].emoji + ' ' + AURAS[k].name : k;
     }).join(', ');
     
     toast('Auras activated: ' + auraNames + ' ✨');
     
-    // Navigate to social feed
     setTimeout(function() {
         navigate('social');
         initAppData();
@@ -364,7 +324,7 @@ function confirmSelection() {
 // RESET PASSWORD
 // ============================================================
 function resetPassword() {
-    console.log('=== PASSWORD RESET STARTED ===');
+    console.log('=== PASSWORD RESET ===');
     
     showDialog({
         emoji: '🔑',
@@ -377,7 +337,7 @@ function resetPassword() {
         
         var usernameVal = username.trim();
         
-        db.ref('users/' + usernameVal).once('value').then(function(snapshot) {
+        getRef('users/' + usernameVal).once('value').then(function(snapshot) {
             if (!snapshot.exists()) {
                 toast('User not found. Please check your username.');
                 return;
@@ -399,11 +359,9 @@ function resetPassword() {
                     return;
                 }
                 
-                db.ref('users/' + usernameVal + '/password').set(passwordVal).then(function() {
+                setData('users/' + usernameVal + '/password', passwordVal).then(function() {
                     toast('Password reset successfully! Please log in with your new password.');
-                    setTimeout(function() {
-                        navigate('login');
-                    }, 1000);
+                    setTimeout(function() { navigate('login'); }, 1000);
                 }).catch(function(error) {
                     console.error('Reset error:', error);
                     toast('Error resetting password. Please try again.');
@@ -420,12 +378,12 @@ function resetPassword() {
 // DELETE ACCOUNT
 // ============================================================
 function deleteAccount() {
-    console.log('=== ACCOUNT DELETION STARTED ===');
+    console.log('=== ACCOUNT DELETION ===');
     
     showDialog({
         emoji: '⚠️',
         title: 'Delete Account',
-        subtitle: 'This action cannot be undone. All your data including posts, videos, diary entries, and routines will be permanently deleted.',
+        subtitle: 'This action cannot be undone. All your data will be permanently deleted.',
         confirmText: 'Delete My Account',
         danger: true,
         cancelText: 'Cancel'
@@ -435,14 +393,14 @@ function deleteAccount() {
         showDialog({
             emoji: '🔐',
             title: 'Confirm Password',
-            subtitle: 'Enter your password to confirm account deletion',
+            subtitle: 'Enter your password to confirm deletion',
             placeholder: 'Your password...',
             confirmText: 'Confirm Delete',
             danger: true
         }).then(function(password) {
             if (!password) return;
             
-            db.ref('users/' + S.username).once('value').then(function(snapshot) {
+            getRef('users/' + S.username).once('value').then(function(snapshot) {
                 var userData = snapshot.val();
                 
                 if (userData.password !== password) {
@@ -452,83 +410,42 @@ function deleteAccount() {
                 
                 toast('Deleting account...');
                 
-                // Delete user profile
-                db.ref('users/' + S.username).remove();
+                // Delete user data
+                removeData('users/' + S.username);
+                removeData('diary/' + S.username);
+                removeData('routines/' + S.username);
+                removeData('notifications/' + S.username);
                 
-                // Delete diary entries
-                db.ref('diary/' + S.username).remove();
-                
-                // Delete routines
-                db.ref('routines/' + S.username).remove();
-                
-                // Delete notifications
-                db.ref('notifications/' + S.username).remove();
-                
-                // Delete user's posts
-                db.ref('posts').once('value').then(function(postSnapshot) {
+                // Delete posts
+                getRef('posts').once('value').then(function(postSnapshot) {
                     var posts = postSnapshot.val();
                     if (posts) {
                         Object.keys(posts).forEach(function(key) {
                             if (posts[key].author === S.username) {
-                                db.ref('posts/' + key).remove();
+                                removeData('posts/' + key);
                             }
                         });
                     }
                 });
                 
-                // Delete user's videos
-                db.ref('videos').once('value').then(function(videoSnapshot) {
+                // Delete videos
+                getRef('videos').once('value').then(function(videoSnapshot) {
                     var videos = videoSnapshot.val();
                     if (videos) {
                         Object.keys(videos).forEach(function(key) {
                             if (videos[key].author === S.username) {
-                                db.ref('videos/' + key).remove();
-                            }
-                        });
-                    }
-                });
-                
-                // Remove from friends lists
-                db.ref('users').once('value').then(function(usersSnapshot) {
-                    var users = usersSnapshot.val();
-                    if (users) {
-                        Object.keys(users).forEach(function(key) {
-                            var userFriends = users[key].friends || [];
-                            var updatedFriends = userFriends.filter(function(f) {
-                                return f !== S.username;
-                            });
-                            if (updatedFriends.length !== userFriends.length) {
-                                db.ref('users/' + key + '/friends').set(updatedFriends);
-                            }
-                        });
-                    }
-                });
-                
-                // Remove friend requests
-                db.ref('friendRequests').once('value').then(function(reqSnapshot) {
-                    var requests = reqSnapshot.val();
-                    if (requests) {
-                        Object.keys(requests).forEach(function(key) {
-                            var filtered = (requests[key] || []).filter(function(r) {
-                                return r !== S.username;
-                            });
-                            if (filtered.length === 0) {
-                                db.ref('friendRequests/' + key).remove();
-                            } else {
-                                db.ref('friendRequests/' + key).set(filtered);
+                                removeData('videos/' + key);
                             }
                         });
                     }
                 });
                 
                 toast('Account deleted. Goodbye! 👋');
-                setTimeout(function() {
-                    logout();
-                }, 1500);
+                setTimeout(function() { logout(); }, 1500);
                 
             }).catch(function(error) {
                 console.error('Delete error:', error);
-                toast('Error deleting account. Please try again.');
+                toast('Error deleting account.');
             });
         });
     });
@@ -540,7 +457,7 @@ function deleteAccount() {
 function loadUserDataFromFirebase(username) {
     if (!username) return;
     
-    db.ref('users/' + username).once('value').then(function(snapshot) {
+    getRef('users/' + username).once('value').then(function(snapshot) {
         if (snapshot.exists()) {
             var data = snapshot.val();
             S.name = data.name || '';
@@ -553,20 +470,6 @@ function loadUserDataFromFirebase(username) {
         }
     }).catch(function(error) {
         console.error('Load user error:', error);
-    });
-    
-    // Load diary entries
-    db.ref('diary/' + username).orderByKey().limitToLast(100).once('value').then(function(snapshot) {
-        if (snapshot.exists()) {
-            S.diary = Object.values(snapshot.val()).reverse();
-        }
-    });
-    
-    // Load routines
-    db.ref('routines/' + username).orderByKey().limitToLast(100).once('value').then(function(snapshot) {
-        if (snapshot.exists()) {
-            S.routines = Object.values(snapshot.val()).reverse();
-        }
     });
 }
 
@@ -583,7 +486,7 @@ function changePassword() {
     }).then(function(currentPass) {
         if (!currentPass) return;
         
-        db.ref('users/' + S.username).once('value').then(function(snapshot) {
+        getRef('users/' + S.username).once('value').then(function(snapshot) {
             var userData = snapshot.val();
             
             if (userData.password !== currentPass) {
@@ -594,7 +497,7 @@ function changePassword() {
             showDialog({
                 emoji: '🔑',
                 title: 'New Password',
-                subtitle: 'Enter your new password (6+ characters)',
+                subtitle: 'Enter new password (6+ characters)',
                 placeholder: 'New password...',
                 confirmText: 'Save'
             }).then(function(newPass) {
@@ -603,8 +506,8 @@ function changePassword() {
                     return;
                 }
                 
-                db.ref('users/' + S.username + '/password').set(newPass.trim()).then(function() {
-                    toast('Password changed successfully! 🔐');
+                setData('users/' + S.username + '/password', newPass.trim()).then(function() {
+                    toast('Password changed! 🔐');
                 });
             });
         });
@@ -623,4 +526,4 @@ window.deleteAccount = deleteAccount;
 window.changePassword = changePassword;
 window.loadUserDataFromFirebase = loadUserDataFromFirebase;
 
-console.log('🔐 Auth module loaded successfully');
+console.log('🔐 Auth module loaded');

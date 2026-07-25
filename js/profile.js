@@ -1,4 +1,4 @@
-// Profile Module - Complete with avatar management, friend system, user profiles
+// Profile Module - Complete with avatar, friends, user profiles, friend requests
 
 // ============================================================
 // RENDER PROFILE
@@ -105,7 +105,7 @@ function renderProfileRequests() {
     var section = document.getElementById('profileRequestsSection');
     if (!section) return;
     
-    firebase.database().ref('friendRequests/' + S.username).once('value').then(function(snapshot) {
+    getRef('friendRequests/' + S.username).once('value').then(function(snapshot) {
         var requests = snapshot.val() || [];
         
         if (requests.length === 0) {
@@ -122,9 +122,7 @@ function renderProfileRequests() {
             var color = getColor(requester);
             html += '<div class="request-card" style="margin-top:8px;">';
             html += '<div class="req-avatar" style="background:' + color + ';">' + requester.charAt(0).toUpperCase() + '</div>';
-            html += '<div class="req-info">';
-            html += '<div class="req-name">@' + requester + '</div>';
-            html += '</div>';
+            html += '<div class="req-info"><div class="req-name">@' + requester + '</div></div>';
             html += '<div class="req-actions">';
             html += '<button class="btn-sm btn-success" onclick="acceptFriendRequest(\'' + requester + '\')" style="padding:5px 12px;font-size:11px;">✅ Accept</button>';
             html += '<button class="btn-sm btn-danger" onclick="declineFriendRequest(\'' + requester + '\')" style="padding:5px 12px;font-size:11px;">❌ Decline</button>';
@@ -156,7 +154,7 @@ function editName() {
             S.name = newName;
             
             if (S.username) {
-                firebase.database().ref('users/' + S.username + '/name').set(newName);
+                setData('users/' + S.username + '/name', newName);
                 updateAllPostsAuthorName(newName);
             }
             
@@ -185,7 +183,7 @@ function editProfile() {
             S.bio = result.trim() || 'Building my energy. One aura at a time. ⚡';
             
             if (S.username) {
-                firebase.database().ref('users/' + S.username + '/bio').set(S.bio);
+                setData('users/' + S.username + '/bio', S.bio);
             }
             
             saveState();
@@ -274,7 +272,7 @@ function saveAvatar(imageData) {
     S.avatar = imageData;
     
     if (S.username) {
-        firebase.database().ref('users/' + S.username + '/avatar').set(imageData).then(function() {
+        setData('users/' + S.username + '/avatar', imageData).then(function() {
             console.log('Avatar saved to Firebase');
         });
     }
@@ -294,23 +292,23 @@ function updateAllPostsAvatar(avatarUrl) {
         if (post.author === S.username) post.avatar = avatarUrl;
     });
     
-    firebase.database().ref('posts').once('value').then(function(snapshot) {
+    getRef('posts').once('value').then(function(snapshot) {
         var data = snapshot.val();
         if (data) {
             Object.keys(data).forEach(function(key) {
                 if (data[key].author === S.username) {
-                    firebase.database().ref('posts/' + key + '/avatar').set(avatarUrl);
+                    setData('posts/' + key + '/avatar', avatarUrl);
                 }
             });
         }
     });
     
-    firebase.database().ref('videos').once('value').then(function(snapshot) {
+    getRef('videos').once('value').then(function(snapshot) {
         var data = snapshot.val();
         if (data) {
             Object.keys(data).forEach(function(key) {
                 if (data[key].author === S.username) {
-                    firebase.database().ref('videos/' + key + '/avatar').set(avatarUrl);
+                    setData('videos/' + key + '/avatar', avatarUrl);
                 }
             });
         }
@@ -325,23 +323,23 @@ function updateAllPostsAuthorName(newName) {
         if (post.author === S.username) post.author = newName;
     });
     
-    firebase.database().ref('posts').once('value').then(function(snapshot) {
+    getRef('posts').once('value').then(function(snapshot) {
         var data = snapshot.val();
         if (data) {
             Object.keys(data).forEach(function(key) {
                 if (data[key].author === S.username) {
-                    firebase.database().ref('posts/' + key + '/author').set(newName);
+                    setData('posts/' + key + '/author', newName);
                 }
             });
         }
     });
     
-    firebase.database().ref('videos').once('value').then(function(snapshot) {
+    getRef('videos').once('value').then(function(snapshot) {
         var data = snapshot.val();
         if (data) {
             Object.keys(data).forEach(function(key) {
                 if (data[key].author === S.username) {
-                    firebase.database().ref('videos/' + key + '/author').set(newName);
+                    setData('videos/' + key + '/author', newName);
                 }
             });
         }
@@ -349,7 +347,7 @@ function updateAllPostsAuthorName(newName) {
 }
 
 // ============================================================
-// RENDER USERS LIST
+// RENDER USERS LIST (Find Friends)
 // ============================================================
 function renderUsers() {
     var container = document.getElementById('usersList');
@@ -360,10 +358,10 @@ function renderUsers() {
         return;
     }
     
-    firebase.database().ref('friendRequests/' + S.username).once('value').then(function(reqSnapshot) {
+    getRef('friendRequests/' + S.username).once('value').then(function(reqSnapshot) {
         var pendingRequests = reqSnapshot.val() || [];
         
-        firebase.database().ref('users').once('value').then(function(snapshot) {
+        getRef('users').once('value').then(function(snapshot) {
             var users = snapshot.val() || {};
             var usernames = Object.keys(users);
             
@@ -374,6 +372,7 @@ function renderUsers() {
             
             var html = '';
             
+            // Show pending requests section
             if (pendingRequests.length > 0) {
                 html += '<div style="margin-bottom:16px;padding:12px;background:rgba(99,102,241,0.1);border-radius:14px;">';
                 html += '<strong style="font-size:13px;">🔔 Pending Friend Requests (' + pendingRequests.length + ')</strong>';
@@ -422,7 +421,6 @@ function renderUsers() {
                 html += '<div class="bio">' + escapeHtml(userData.bio || 'No bio yet') + '</div>';
                 html += '</div>';
                 html += '<div class="actions">';
-                
                 if (!isMe) {
                     if (isFriend) {
                         html += '<button class="btn-sm btn-success" onclick="viewUserProfile(\'' + username + '\')">✓ Friends</button>';
@@ -430,7 +428,6 @@ function renderUsers() {
                         html += '<button class="btn-sm" onclick="sendFriendRequest(\'' + username + '\')">➕ Add Friend</button>';
                     }
                 }
-                
                 html += '</div>';
                 html += '</div>';
             });
@@ -448,86 +445,57 @@ function sendFriendRequest(username) {
     if (username === S.username) { toast('You cannot add yourself'); return; }
     if ((S.friends || []).indexOf(username) > -1) { toast('Already friends'); return; }
     
-    firebase.database().ref('friendRequests/' + username).once('value').then(function(snapshot) {
+    getRef('friendRequests/' + username).once('value').then(function(snapshot) {
         var requests = snapshot.val() || [];
-        
-        if (requests.indexOf(S.username) > -1) {
-            toast('Friend request already sent');
-            return;
-        }
-        
+        if (requests.indexOf(S.username) > -1) { toast('Friend request already sent'); return; }
         requests.push(S.username);
-        return firebase.database().ref('friendRequests/' + username).set(requests);
+        return setData('friendRequests/' + username, requests);
     }).then(function() {
         toast('Friend request sent to @' + username + '! 📨');
-        
-        // Send notification
-        firebase.database().ref('notifications/' + username).push({
-            from: S.username,
-            message: 'sent you a friend request',
-            type: 'friend_request',
-            time: new Date().toISOString(),
-            read: false
-        });
+        addNotification(username, 'sent you a friend request', 'friend_request', '');
     }).catch(function(error) {
         console.error('Error sending request:', error);
     });
 }
 
 // ============================================================
-// ACCEPT FRIEND REQUEST - FIXED
+// ACCEPT FRIEND REQUEST - Fixed mutual friendship
 // ============================================================
 function acceptFriendRequest(username) {
     if (!S.username) return;
     
     console.log('Accepting friend request from:', username);
     
-    // Step 1: Add to current user's friends
+    // Add to current user's friends
     if (S.friends.indexOf(username) === -1) {
         S.friends.push(username);
     }
     
-    // Step 2: Save current user's friends FIRST
-    firebase.database().ref('users/' + S.username + '/friends').set(S.friends).then(function() {
-        console.log('Step 2: Current user friends saved');
-        
-        // Step 3: Get other user's friends and add current user
-        return firebase.database().ref('users/' + username + '/friends').once('value');
+    // Save current user's friends FIRST
+    setData('users/' + S.username + '/friends', S.friends).then(function() {
+        // Add current user to other person's friends
+        return getRef('users/' + username + '/friends').once('value');
     }).then(function(snapshot) {
         var theirFriends = snapshot.val() || [];
         if (theirFriends.indexOf(S.username) === -1) {
             theirFriends.push(S.username);
-            return firebase.database().ref('users/' + username + '/friends').set(theirFriends);
+            return setData('users/' + username + '/friends', theirFriends);
         }
     }).then(function() {
-        console.log('Step 3: Other user friends updated');
-        
-        // Step 4: Remove the friend request
-        return firebase.database().ref('friendRequests/' + S.username).once('value');
+        // Remove the friend request
+        return getRef('friendRequests/' + S.username).once('value');
     }).then(function(snapshot) {
         var requests = snapshot.val() || [];
         requests = requests.filter(function(r) { return r !== username; });
-        return firebase.database().ref('friendRequests/' + S.username).set(requests);
+        return setData('friendRequests/' + S.username, requests);
     }).then(function() {
-        console.log('Step 4: Friend request removed');
+        // Send notification to the sender
+        addNotification(username, 'accepted your friend request', 'friend_accept', '');
         
-        // Step 5: Send notification to sender
-        firebase.database().ref('notifications/' + username).push({
-            from: S.username,
-            message: 'accepted your friend request',
-            type: 'friend_accept',
-            time: new Date().toISOString(),
-            read: false
-        });
-        
-        console.log('Step 5: Notification sent to sender');
-        
-        // Step 6: Update UI
         saveState();
         renderChatList();
         renderProfile();
         renderUsers();
-        
         toast('✅ You and @' + username + ' are now friends!');
     }).catch(function(error) {
         console.error('Error accepting request:', error);
@@ -541,10 +509,10 @@ function acceptFriendRequest(username) {
 function declineFriendRequest(username) {
     if (!S.username) return;
     
-    firebase.database().ref('friendRequests/' + S.username).once('value').then(function(snapshot) {
+    getRef('friendRequests/' + S.username).once('value').then(function(snapshot) {
         var requests = snapshot.val() || [];
         requests = requests.filter(function(r) { return r !== username; });
-        return firebase.database().ref('friendRequests/' + S.username).set(requests);
+        return setData('friendRequests/' + S.username, requests);
     }).then(function() {
         toast('Friend request declined');
         renderProfile();
@@ -571,7 +539,7 @@ function viewUserProfile(username) {
 function renderUserProfile(username) {
     if (!username) return;
     
-    firebase.database().ref('users/' + username).once('value').then(function(snapshot) {
+    getRef('users/' + username).once('value').then(function(snapshot) {
         if (!snapshot.exists()) { toast('User not found'); return; }
         
         var data = snapshot.val();
@@ -639,28 +607,6 @@ function renderUserProfile(username) {
 }
 
 // ============================================================
-// LOAD USER DATA FROM FIREBASE
-// ============================================================
-function loadUserDataFromFirebase() {
-    if (!S.username) return;
-    
-    firebase.database().ref('users/' + S.username).once('value').then(function(snapshot) {
-        if (snapshot.exists()) {
-            var data = snapshot.val();
-            S.name = data.name || '';
-            S.bio = data.bio || 'Building my energy. One aura at a time. ⚡';
-            S.avatar = data.avatar || null;
-            S.wallpaper = data.wallpaper || null;
-            S.friends = data.friends || [];
-            S.bookmarks = data.bookmarks || [];
-            S.selectedAuras = data.selected_auras || [];
-            saveState();
-            renderProfile();
-        }
-    });
-}
-
-// ============================================================
 // EXPOSE GLOBALLY
 // ============================================================
 window.renderProfile = renderProfile;
@@ -676,6 +622,5 @@ window.acceptFriendRequest = acceptFriendRequest;
 window.declineFriendRequest = declineFriendRequest;
 window.viewUserProfile = viewUserProfile;
 window.renderUserProfile = renderUserProfile;
-window.loadUserDataFromFirebase = loadUserDataFromFirebase;
 
 console.log('👤 Profile module loaded - Friend requests fixed');

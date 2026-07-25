@@ -1,5 +1,8 @@
-// Bookmarks Module - Complete with back button
+// Bookmarks Module - Complete with save, view, remove bookmarks
 
+// ============================================================
+// RENDER BOOKMARKS PAGE
+// ============================================================
 function renderBookmarks() {
     var container = document.getElementById('bookmarksList');
     if (!container) return;
@@ -9,28 +12,28 @@ function renderBookmarks() {
         return;
     }
     
-    // Add back button at the top
-    var backButton = document.createElement('button');
-    backButton.className = 'btn-sm';
-    backButton.textContent = '← Back to Profile';
-    backButton.style.cssText = 'margin-bottom:12px;width:auto;';
-    backButton.onclick = function() {
-        navigate('profile');
-    };
+    // Add back button
+    var backBtn = document.createElement('button');
+    backBtn.className = 'btn-sm';
+    backBtn.textContent = '← Back to Profile';
+    backBtn.style.cssText = 'margin-bottom:12px;width:auto;';
+    backBtn.onclick = function() { navigate('profile'); };
     
-    // Clear container and add back button
     container.innerHTML = '';
-    container.appendChild(backButton);
+    container.appendChild(backBtn);
     
     // Create content wrapper
     var contentWrapper = document.createElement('div');
     contentWrapper.id = 'bookmarksContent';
     container.appendChild(contentWrapper);
     
-    // Load bookmarks
+    // Load and display bookmarks
     loadAndDisplayBookmarks(contentWrapper);
 }
 
+// ============================================================
+// LOAD AND DISPLAY BOOKMARKS
+// ============================================================
 function loadAndDisplayBookmarks(contentWrapper) {
     S.bookmarks = S.bookmarks || [];
     
@@ -50,20 +53,15 @@ function loadAndDisplayBookmarks(contentWrapper) {
     
     var html = '';
     var loadedCount = 0;
-    var totalBookmarks = sortedBookmarks.length;
     
     sortedBookmarks.forEach(function(bookmark) {
         if (bookmark.type === 'post') {
-            // Find the post in socialPosts
-            var post = S.socialPosts.find(function(p) {
-                return p.id === bookmark.id;
-            });
+            var post = S.socialPosts.find(function(p) { return p.id === bookmark.id; });
             
             if (post) {
                 html += renderBookmarkPost(post, bookmark);
                 loadedCount++;
             } else {
-                // Post might have been deleted
                 html += '<div class="entry-card" style="opacity:0.5;">' +
                     '<p style="font-size:12px;color:#94a3b8;">📝 Post no longer available</p>' +
                     '<button class="btn-sm btn-danger" onclick="removeBookmark(\'' + bookmark.id + '\')" style="font-size:10px;margin-top:4px;">🗑️ Remove</button>' +
@@ -71,16 +69,12 @@ function loadAndDisplayBookmarks(contentWrapper) {
                 loadedCount++;
             }
         } else if (bookmark.type === 'video') {
-            // Find the video in videoData
-            var video = S.videoData.find(function(v) {
-                return v.id === bookmark.id;
-            });
+            var video = S.videoData.find(function(v) { return v.id === bookmark.id; });
             
             if (video) {
                 html += renderBookmarkVideo(video, bookmark);
                 loadedCount++;
             } else {
-                // Video might have been deleted
                 html += '<div class="entry-card" style="opacity:0.5;">' +
                     '<p style="font-size:12px;color:#94a3b8;">🎬 Video no longer available</p>' +
                     '<button class="btn-sm btn-danger" onclick="removeBookmark(\'' + bookmark.id + '\')" style="font-size:10px;margin-top:4px;">🗑️ Remove</button>' +
@@ -100,13 +94,13 @@ function loadAndDisplayBookmarks(contentWrapper) {
     }
 }
 
+// ============================================================
+// RENDER BOOKMARK POST
+// ============================================================
 function renderBookmarkPost(post, bookmark) {
     var timeAgo = timeSince(new Date(bookmark.time));
     var savedDate = new Date(bookmark.time).toLocaleDateString('en', {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
+        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
     });
     
     var color = getColor(post.author);
@@ -156,6 +150,9 @@ function renderBookmarkPost(post, bookmark) {
     return html;
 }
 
+// ============================================================
+// RENDER BOOKMARK VIDEO
+// ============================================================
 function renderBookmarkVideo(video, bookmark) {
     var timeAgo = timeSince(new Date(bookmark.time));
     
@@ -200,18 +197,16 @@ function renderBookmarkVideo(video, bookmark) {
     return html;
 }
 
+// ============================================================
+// BOOKMARK ITEM (Save/Unsave)
+// ============================================================
 function bookmarkItem(id, type) {
-    if (!S.username) {
-        toast('Please log in to save items');
-        return;
-    }
+    if (!S.username) { toast('Please log in to save items'); return; }
     
     S.bookmarks = S.bookmarks || [];
     
     // Check if already bookmarked
-    var existingIndex = S.bookmarks.findIndex(function(b) {
-        return b.id === id;
-    });
+    var existingIndex = S.bookmarks.findIndex(function(b) { return b.id === id; });
     
     if (existingIndex > -1) {
         // Remove bookmark
@@ -219,16 +214,12 @@ function bookmarkItem(id, type) {
         toast('Removed from saved items');
     } else {
         // Add bookmark
-        S.bookmarks.push({
-            id: id,
-            type: type,
-            time: new Date().toISOString()
-        });
+        S.bookmarks.push({ id: id, type: type, time: new Date().toISOString() });
         toast('Saved! 🔖');
     }
     
     // Save to Firebase
-    db.ref('users/' + S.username + '/bookmarks').set(S.bookmarks).then(function() {
+    setData('users/' + S.username + '/bookmarks', S.bookmarks).then(function() {
         console.log('Bookmarks updated in Firebase');
     }).catch(function(error) {
         console.error('Error saving bookmarks:', error);
@@ -249,18 +240,17 @@ function bookmarkItem(id, type) {
     }
 }
 
+// ============================================================
+// REMOVE BOOKMARK
+// ============================================================
 function removeBookmark(id) {
     if (!S.username) return;
     
     S.bookmarks = S.bookmarks || [];
-    
-    // Remove the bookmark
-    S.bookmarks = S.bookmarks.filter(function(b) {
-        return b.id !== id;
-    });
+    S.bookmarks = S.bookmarks.filter(function(b) { return b.id !== id; });
     
     // Save to Firebase
-    db.ref('users/' + S.username + '/bookmarks').set(S.bookmarks).then(function() {
+    setData('users/' + S.username + '/bookmarks', S.bookmarks).then(function() {
         console.log('Bookmark removed from Firebase');
     }).catch(function(error) {
         console.error('Error removing bookmark:', error);
@@ -282,12 +272,14 @@ function removeBookmark(id) {
     toast('Bookmark removed');
 }
 
-// Initialize bookmarks page when navigated to
+// ============================================================
+// INITIALIZE BOOKMARKS PAGE
+// ============================================================
 function initBookmarksPage() {
     var bookmarksPage = document.getElementById('page-bookmarks');
     if (!bookmarksPage) return;
     
-    // Add event listener for when the page becomes active
+    // Observer for when page becomes active
     var observer = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
             if (mutation.target.classList.contains('active')) {
@@ -302,12 +294,16 @@ function initBookmarksPage() {
     });
 }
 
-// Call initialization
+// ============================================================
+// CALL INITIALIZATION
+// ============================================================
 document.addEventListener('DOMContentLoaded', function() {
     initBookmarksPage();
 });
 
-// Expose functions globally
+// ============================================================
+// EXPOSE GLOBALLY
+// ============================================================
 window.renderBookmarks = renderBookmarks;
 window.bookmarkItem = bookmarkItem;
 window.removeBookmark = removeBookmark;
