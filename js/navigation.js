@@ -1,514 +1,331 @@
-// App Initialization - Complete (No auto diary redirect)
-
-var postsListener = null;
-var videosListener = null;
-var notifListener = null;
+// Navigation Module - Fixed - No diary auto-redirect
 
 // ============================================================
-// INITIALIZE ALL APP DATA
+// PAGE NAVIGATION SYSTEM
 // ============================================================
-function initAppData() {
-    console.log('=== INITIALIZING APP DATA ===');
+function navigate(page, data) {
+    console.log('🧭 Navigating to:', page);
     
-    // Load all posts from Firebase
-    firebase.database().ref('posts').orderByChild('time').limitToLast(200).once('value').then(function(snapshot) {
-        var data = snapshot.val();
-        S.socialPosts = [];
-        if (data) {
-            Object.keys(data).forEach(function(key) {
-                var post = data[key];
-                if (post && post.author) {
-                    post.id = key;
-                    if (!post.likes) post.likes = [];
-                    if (!post.comments) post.comments = [];
-                    S.socialPosts.push(post);
-                }
-            });
-            S.socialPosts.sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
-        }
-        console.log('Loaded ' + S.socialPosts.length + ' posts');
-        if (typeof renderSocial === 'function') renderSocial();
-        if (typeof renderProfile === 'function') renderProfile();
-        if (typeof renderStories === 'function') renderStories();
-        saveState();
-    }).catch(function(error) {
-        console.error('Error loading posts:', error);
-    });
+    var authPages = ['landing', 'login', 'signup'];
+    var protectedPages = [
+        'home', 'social', 'chat', 'profile', 'routine', 'videos', 
+        'wallpapers', 'users', 'groups', 'notifications', 'bookmarks', 'userprofile'
+    ];
     
-    // Load all videos from Firebase
-    firebase.database().ref('videos').orderByChild('time').limitToLast(100).once('value').then(function(snapshot) {
-        var data = snapshot.val();
-        S.videoData = [];
-        if (data) {
-            Object.keys(data).forEach(function(key) {
-                var video = data[key];
-                if (video && video.author) {
-                    video.id = key;
-                    if (!video.likes) video.likes = [];
-                    if (!video.comments) video.comments = [];
-                    S.videoData.push(video);
-                }
-            });
-            S.videoData.sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
-        }
-        console.log('Loaded ' + S.videoData.length + ' videos');
-        if (typeof renderVideos === 'function') renderVideos();
-    }).catch(function(error) {
-        console.error('Error loading videos:', error);
-    });
-    
-    // Load groups
-    firebase.database().ref('groups').once('value').then(function(snapshot) {
-        var data = snapshot.val();
-        S.groups = [];
-        if (data) {
-            Object.keys(data).forEach(function(key) {
-                var group = data[key];
-                group.id = key;
-                if (group.members && group.members.indexOf(S.username) > -1) {
-                    S.groups.push(group);
-                }
-            });
-        }
-        console.log('Loaded ' + S.groups.length + ' groups');
-        if (typeof renderGroups === 'function') renderGroups();
-        if (typeof renderChatList === 'function') renderChatList();
-    }).catch(function(error) {
-        console.error('Error loading groups:', error);
-    });
-    
-    // Load diary entries (data only, no redirect)
-    firebase.database().ref('diary/' + S.username).orderByKey().limitToLast(100).once('value').then(function(snapshot) {
-        var data = snapshot.val();
-        S.diary = [];
-        if (data) {
-            S.diary = Object.values(data).reverse();
-        }
-        console.log('Loaded ' + S.diary.length + ' diary entries');
-        // Update diary count on dashboard
-        var diaryCount = document.getElementById('diaryCount');
-        if (diaryCount) diaryCount.textContent = S.diary.length;
-    });
-    
-    // Load routines
-    firebase.database().ref('routines/' + S.username).orderByKey().limitToLast(100).once('value').then(function(snapshot) {
-        var data = snapshot.val();
-        S.routines = [];
-        if (data) {
-            S.routines = Object.values(data).reverse();
-        }
-        console.log('Loaded ' + S.routines.length + ' routines');
-    });
-    
-    // Load notifications
-    firebase.database().ref('notifications/' + S.username).orderByChild('time').limitToLast(50).once('value').then(function(snapshot) {
-        var data = snapshot.val();
-        S.notifications = [];
-        if (data) {
-            Object.keys(data).forEach(function(key) {
-                var notif = data[key];
-                if (notif) { notif.id = key; S.notifications.push(notif); }
-            });
-            S.notifications.sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
-        }
-        updateNotifBadge();
-    });
-    
-    // Load bookmarks
-    firebase.database().ref('users/' + S.username + '/bookmarks').once('value').then(function(snapshot) {
-        var data = snapshot.val();
-        S.bookmarks = data || [];
-    });
-    
-    // Setup real-time listeners
-    setupPostsListener();
-    setupVideosListener();
-    setupNotifListener();
-    setupGroupsListener();
-    
-    // Initialize wallpapers
-    if (typeof initWallpapers === 'function') initWallpapers();
-    
-    // Setup presence
-    setupPresence();
-    
-    // Periodic online status update
-    setInterval(function() {
-        if (S && S.username) {
-            updateData('users/' + S.username, {
-                last_seen: new Date().toISOString(),
-                online: true
-            });
-        }
-    }, 60000);
-    
-    console.log('✅ All app data initialized');
-}
-
-// ============================================================
-// SETUP POSTS REAL-TIME LISTENER
-// ============================================================
-function setupPostsListener() {
-    if (postsListener) { postsListener.off(); postsListener = null; }
-    
-    postsListener = firebase.database().ref('posts');
-    
-    postsListener.on('child_added', function(snapshot) {
-        var post = snapshot.val();
-        if (!post || !post.author) return;
-        post.id = snapshot.key;
-        if (!post.likes) post.likes = [];
-        if (!post.comments) post.comments = [];
-        
-        var existing = S.socialPosts.find(function(p) { return p.id === post.id; });
-        if (!existing) {
-            console.log('New post detected:', post.id, 'by', post.author);
-            S.socialPosts.unshift(post);
-            if (S.socialPosts.length > 200) S.socialPosts = S.socialPosts.slice(0, 200);
-            S.socialPosts.sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
-            if (typeof renderSocial === 'function') renderSocial();
-            if (typeof renderProfile === 'function') renderProfile();
-            if (typeof renderStories === 'function') renderStories();
-            saveState();
-        }
-    });
-    
-    postsListener.on('child_changed', function(snapshot) {
-        var post = snapshot.val();
-        if (!post) return;
-        post.id = snapshot.key;
-        var idx = S.socialPosts.findIndex(function(p) { return p.id === post.id; });
-        if (idx > -1) { S.socialPosts[idx] = post; if (typeof renderSocial === 'function') renderSocial(); }
-    });
-    
-    postsListener.on('child_removed', function(snapshot) {
-        S.socialPosts = S.socialPosts.filter(function(p) { return p.id !== snapshot.key; });
-        if (typeof renderSocial === 'function') renderSocial();
-        if (typeof renderProfile === 'function') renderProfile();
-    });
-    
-    console.log('📱 Posts listener active');
-}
-
-// ============================================================
-// SETUP VIDEOS REAL-TIME LISTENER
-// ============================================================
-function setupVideosListener() {
-    if (videosListener) { videosListener.off(); videosListener = null; }
-    
-    videosListener = firebase.database().ref('videos');
-    
-    videosListener.on('child_added', function(snapshot) {
-        var video = snapshot.val();
-        if (!video || !video.author) return;
-        video.id = snapshot.key;
-        if (!video.likes) video.likes = [];
-        if (!video.comments) video.comments = [];
-        
-        if (!S.videoData.find(function(v) { return v.id === video.id; })) {
-            S.videoData.unshift(video);
-            if (S.videoData.length > 100) S.videoData = S.videoData.slice(0, 100);
-            if (typeof renderVideos === 'function') renderVideos();
-        }
-    });
-    
-    videosListener.on('child_changed', function(snapshot) {
-        var video = snapshot.val();
-        if (!video) return;
-        video.id = snapshot.key;
-        var idx = S.videoData.findIndex(function(v) { return v.id === video.id; });
-        if (idx > -1) { S.videoData[idx] = video; if (typeof renderVideos === 'function') renderVideos(); }
-    });
-    
-    videosListener.on('child_removed', function(snapshot) {
-        S.videoData = S.videoData.filter(function(v) { return v.id !== snapshot.key; });
-        if (typeof renderVideos === 'function') renderVideos();
-    });
-    
-    console.log('🎬 Videos listener active');
-}
-
-// ============================================================
-// SETUP NOTIFICATIONS REAL-TIME LISTENER
-// ============================================================
-function setupNotifListener() {
-    if (notifListener) { notifListener.off(); notifListener = null; }
-    if (!S.username) return;
-    
-    notifListener = firebase.database().ref('notifications/' + S.username).orderByChild('time').limitToLast(50);
-    
-    notifListener.on('child_added', function(snapshot) {
-        var notif = snapshot.val();
-        if (!notif) return;
-        notif.id = snapshot.key;
-        
-        if (!S.notifications.find(function(n) { return n.id === notif.id; })) {
-            S.notifications.unshift(notif);
-            updateNotifBadge();
-        }
-    });
-    
-    console.log('🔔 Notifications listener active');
-}
-
-// ============================================================
-// SETUP GROUPS REAL-TIME LISTENER
-// ============================================================
-function setupGroupsListener() {
-    firebase.database().ref('groups').on('child_added', function(snapshot) {
-        var group = snapshot.val();
-        group.id = snapshot.key;
-        if (group.members && group.members.indexOf(S.username) > -1) {
-            if (!S.groups.find(function(g) { return g.id === group.id; })) {
-                S.groups.push(group);
-                if (typeof renderGroups === 'function') renderGroups();
-                if (typeof renderChatList === 'function') renderChatList();
-            }
-        }
-    });
-    
-    firebase.database().ref('groups').on('child_changed', function(snapshot) {
-        var group = snapshot.val();
-        group.id = snapshot.key;
-        if (group.members && group.members.indexOf(S.username) > -1) {
-            var idx = S.groups.findIndex(function(g) { return g.id === group.id; });
-            if (idx > -1) { S.groups[idx] = group; }
-            else { S.groups.push(group); }
-        } else {
-            S.groups = S.groups.filter(function(g) { return g.id !== group.id; });
-        }
-        if (typeof renderGroups === 'function') renderGroups();
-        if (typeof renderChatList === 'function') renderChatList();
-    });
-    
-    firebase.database().ref('groups').on('child_removed', function(snapshot) {
-        S.groups = S.groups.filter(function(g) { return g.id !== snapshot.key; });
-        if (typeof renderGroups === 'function') renderGroups();
-        if (typeof renderChatList === 'function') renderChatList();
-    });
-    
-    console.log('👥 Groups listener active');
-}
-
-// ============================================================
-// UPDATE NOTIFICATION BADGE
-// ============================================================
-function updateNotifBadge() {
-    var unreadCount = (S.notifications || []).filter(function(n) { return !n.read; }).length;
-    
-    var badges = ['notifBadge', 'profileNotifBadge'];
-    badges.forEach(function(id) {
-        var badge = document.getElementById(id);
-        if (badge) {
-            badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
-            badge.style.display = unreadCount > 0 ? 'flex' : 'none';
-        }
-    });
-    
-    if (unreadCount > 0) {
-        document.title = '(' + unreadCount + ') Winchu · Nexus';
-    } else {
-        document.title = 'Winchu · Nexus';
-    }
-}
-
-// ============================================================
-// MARK ALL NOTIFICATIONS AS READ
-// ============================================================
-function markAllNotifsRead() {
-    if (!S.username) return;
-    
-    var unreadNotifs = S.notifications.filter(function(n) { return !n.read; });
-    
-    if (unreadNotifs.length === 0) {
-        toast('All notifications are already read');
+    // Diary redirect - ONLY when diary button is clicked
+    if (page === 'diary') {
+        window.location.href = 'page/diary.html';
         return;
     }
     
-    unreadNotifs.forEach(function(notif) {
-        notif.read = true;
-        updateData('notifications/' + S.username + '/' + notif.id + '/read', true);
+    if (protectedPages.indexOf(page) > -1 && !S.username) {
+        toast('Please log in first');
+        page = 'landing';
+    }
+    
+    // Hide all pages
+    var allPages = document.querySelectorAll('.page');
+    allPages.forEach(function(p) {
+        p.classList.remove('active');
     });
     
-    updateNotifBadge();
-    if (typeof renderNotifications === 'function') renderNotifications();
-    toast('All notifications marked as read ✓');
+    // Show target page
+    var target = document.getElementById('page-' + page);
+    if (target) {
+        target.classList.add('active');
+        target.style.animation = 'none';
+        target.offsetHeight;
+        target.style.animation = 'fadeUp 0.4s ease forwards';
+    }
+    
+    // Update navigation buttons
+    var navButtons = document.querySelectorAll('.nav-btn');
+    navButtons.forEach(function(btn) {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-page') === page) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Show/hide bottom navigation
+    var bottomNav = document.getElementById('bottomNav');
+    if (bottomNav) {
+        bottomNav.style.display = S.username && authPages.indexOf(page) === -1 ? 'flex' : 'none';
+    }
+    
+    // Show/hide wallpaper FAB
+    var wpFab = document.getElementById('wpFab');
+    if (wpFab) {
+        wpFab.style.display = S.username && authPages.indexOf(page) === -1 ? 'flex' : 'none';
+    }
+    
+    // Scroll to top
+    window.scrollTo(0, 0);
+    
+    // Render page content - NO diary case
+    renderPageContent(page, data);
 }
 
 // ============================================================
-// ADD NOTIFICATION
+// RENDER PAGE CONTENT - No diary auto-redirect
 // ============================================================
-function addNotification(to, message, type, refId) {
-    if (!S.username || !to) return;
-    if (to === S.username) return;
-    
-    var notification = {
-        from: S.username,
-        to: to,
-        message: message,
-        type: type || 'general',
-        refId: refId || '',
-        time: new Date().toISOString(),
-        read: false
-    };
-    
-    pushData('notifications/' + to, notification).then(function() {
-        console.log('Notification sent to:', to);
-    }).catch(function(error) {
-        console.error('Error sending notification:', error);
-    });
-}
-
-// ============================================================
-// INITIALIZE APP
-// ============================================================
-function initApp() {
-    console.log('=== INITIALIZING APP ===');
-    
-    var auth = localStorage.getItem('wa');
-    
-    if (auth) {
-        try {
-            var data = JSON.parse(auth);
-            if (data.username && (Date.now() - data.timestamp < 7 * 24 * 60 * 60 * 1000)) {
-                loadState();
-                
-                if (S.username === data.username) {
-                    console.log('Restoring session for:', S.username);
-                    
-                    setupPresence();
-                    
-                    // Load user data from Firebase
-                    firebase.database().ref('users/' + S.username).once('value').then(function(snapshot) {
-                        if (snapshot.exists()) {
-                            var userData = snapshot.val();
-                            S.name = userData.name || '';
-                            S.bio = userData.bio || 'Building my energy. One aura at a time. ⚡';
-                            S.avatar = userData.avatar || null;
-                            S.wallpaper = userData.wallpaper || null;
-                            S.friends = userData.friends || [];
-                            S.bookmarks = userData.bookmarks || [];
-                            S.selectedAuras = userData.selected_auras || [];
-                            saveState();
-                        }
-                    });
-                    
-                    // Apply wallpaper
-                    if (S.wallpaper) {
-                        document.body.style.backgroundImage = 'url(' + S.wallpaper + ')';
-                        document.body.style.backgroundSize = 'cover';
-                        document.body.style.backgroundPosition = 'center';
-                        document.body.style.backgroundAttachment = 'fixed';
-                    }
-                    
-                    // Show UI
-                    var wpFab = document.getElementById('wpFab');
-                    var bottomNav = document.getElementById('bottomNav');
-                    if (wpFab) wpFab.style.display = 'flex';
-                    if (bottomNav) bottomNav.style.display = 'flex';
-                    
-                    // Navigate
-                    if (S.selectedAuras.length === 0) {
-                        navigate('select');
-                    } else {
-                        navigate('social');
-                        initAppData();
-                    }
-                    
-                    console.log('✅ Winchu · Nexus ready');
-                    return;
-                }
+function renderPageContent(page, data) {
+    switch(page) {
+        case 'social':
+            if (typeof renderSocial === 'function') renderSocial();
+            if (typeof renderStories === 'function') renderStories();
+            break;
+        case 'videos':
+            if (typeof renderVideos === 'function') renderVideos();
+            break;
+        case 'chat':
+            if (typeof renderChatList === 'function') renderChatList();
+            break;
+        case 'profile':
+            if (typeof renderProfile === 'function') renderProfile();
+            break;
+        case 'home':
+            if (typeof renderHome === 'function') renderHome();
+            break;
+        case 'users':
+            if (typeof renderUsers === 'function') renderUsers();
+            break;
+        case 'wallpapers':
+            if (typeof renderWallpapers === 'function') renderWallpapers();
+            break;
+        case 'select':
+            if (typeof renderAuraGrid === 'function') renderAuraGrid();
+            break;
+        case 'routine':
+            if (typeof renderRoutines === 'function') renderRoutines();
+            break;
+        case 'notifications':
+            if (typeof renderNotifications === 'function') renderNotifications();
+            break;
+        case 'groups':
+            if (typeof renderGroups === 'function') renderGroups();
+            break;
+        case 'bookmarks':
+            if (typeof renderBookmarks === 'function') renderBookmarks();
+            break;
+        case 'userprofile':
+            if (data && typeof renderUserProfile === 'function') {
+                viewingProfile = data;
+                renderUserProfile(data);
             }
-        } catch (e) {
-            console.error('Init error:', e);
-        }
+            break;
+        case 'landing':
+        case 'login':
+        case 'signup':
+            // These pages don't need rendering
+            break;
     }
-    
-    navigate('landing');
-    console.log('👋 Welcome to Winchu · Nexus');
 }
 
 // ============================================================
-// START APP WHEN DOM READY
+// DIALOG SYSTEM
 // ============================================================
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(initApp, 500);
-});
-
-// ============================================================
-// KEYBOARD SHORTCUTS
-// ============================================================
-document.addEventListener('keydown', function(e) {
-    if (e.ctrlKey && e.key === 'k') {
-        e.preventDefault();
-        navigate('users');
-    }
-    if (e.key === 'Escape') {
-        closeDialog();
-        closePostDetail();
-    }
-});
-
-// ============================================================
-// WINDOW RESIZE HANDLER
-// ============================================================
-var resizeTimeout;
-window.addEventListener('resize', function() {
-    clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(function() {
-        var activePage = document.querySelector('.page.active');
-        if (activePage) {
-            var pageId = activePage.id.replace('page-', '');
-            if (pageId === 'videos' && typeof renderVideos === 'function') renderVideos();
-            if (pageId === 'wallpapers' && typeof renderWallpapers === 'function') renderWallpapers();
+function showDialog(options) {
+    return new Promise(function(resolve) {
+        var overlay = document.getElementById('dialogOverlay');
+        var emoji = document.getElementById('dialogEmoji');
+        var title = document.getElementById('dialogTitle');
+        var subtitle = document.getElementById('dialogSubtitle');
+        var input = document.getElementById('dialogInput');
+        var cancelBtn = document.getElementById('dialogCancel');
+        var confirmBtn = document.getElementById('dialogConfirm');
+        var backBtn = document.getElementById('dialogBack');
+        
+        if (!overlay || !emoji || !title || !subtitle || !input || !cancelBtn || !confirmBtn) {
+            console.error('Dialog elements not found');
+            resolve(null);
+            return;
         }
-    }, 250);
-});
-
-// ============================================================
-// ONLINE/OFFLINE HANDLERS
-// ============================================================
-window.addEventListener('online', function() {
-    console.log('📶 Back online');
-    if (S.username) {
-        setupPresence();
-        updateData('users/' + S.username, { online: true });
-        toast('📶 Back online');
-    }
-});
-
-window.addEventListener('offline', function() {
-    console.log('📶 Went offline');
-    if (S.username) {
-        updateData('users/' + S.username, { online: false });
-    }
-    toast('⚠️ You are offline. Some features may not work.');
-});
-
-// ============================================================
-// SERVICE WORKER REGISTRATION
-// ============================================================
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
-            console.log('ServiceWorker registered:', registration.scope);
-        }).catch(function(error) {
-            console.log('ServiceWorker registration failed:', error);
-        });
+        
+        backBtn.style.display = options.showBack ? 'flex' : 'none';
+        input.style.display = options.htmlSubtitle ? 'none' : 'block';
+        cancelBtn.style.display = options.noCancel ? 'none' : 'block';
+        
+        emoji.textContent = options.emoji || '💬';
+        title.textContent = options.title || 'Dialog';
+        
+        if (options.htmlSubtitle) {
+            subtitle.innerHTML = options.htmlSubtitle;
+        } else {
+            subtitle.textContent = options.subtitle || '';
+        }
+        
+        input.value = options.defaultValue || '';
+        input.placeholder = options.placeholder || 'Type here...';
+        input.type = options.type || 'text';
+        
+        cancelBtn.textContent = options.cancelText || 'Cancel';
+        confirmBtn.textContent = options.confirmText || 'Confirm';
+        
+        confirmBtn.className = 'dialog-confirm';
+        if (options.danger) {
+            confirmBtn.className = 'dialog-danger';
+        }
+        
+        overlay.classList.add('active');
+        
+        if (!options.htmlSubtitle) {
+            setTimeout(function() {
+                input.focus();
+                if (options.defaultValue) {
+                    input.select();
+                }
+            }, 100);
+        }
+        
+        var cleanup = function() {
+            overlay.classList.remove('active');
+            cancelBtn.onclick = null;
+            confirmBtn.onclick = null;
+            input.onkeypress = null;
+            overlay.onclick = null;
+            backBtn.onclick = null;
+        };
+        
+        cancelBtn.onclick = function(e) { e.preventDefault(); cleanup(); resolve(null); };
+        confirmBtn.onclick = function(e) { e.preventDefault(); cleanup(); resolve(options.htmlSubtitle ? 'close' : input.value); };
+        input.onkeypress = function(e) { if (e.key === 'Enter' && !options.htmlSubtitle) { e.preventDefault(); cleanup(); resolve(input.value); } };
+        overlay.onclick = function(e) { if (e.target === overlay && !options.noOverlayClose) { cleanup(); resolve(null); } };
+        backBtn.onclick = function(e) { e.preventDefault(); cleanup(); resolve(null); };
     });
+}
+
+// ============================================================
+// CLOSE DIALOG
+// ============================================================
+function closeDialog() {
+    var overlay = document.getElementById('dialogOverlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+    }
+}
+
+// ============================================================
+// POST DETAIL VIEW
+// ============================================================
+function viewPostDetail(postId) {
+    var post = (S.socialPosts || []).find(function(p) { return p.id === postId; });
+    
+    if (!post) { toast('Post not found'); return; }
+    
+    var overlay = document.getElementById('postDetailOverlay');
+    var body = document.getElementById('postDetailBody');
+    
+    if (!overlay || !body) return;
+    
+    if (!post.likes) post.likes = [];
+    if (!post.comments) post.comments = [];
+    
+    var liked = post.likes.indexOf(S.username) > -1;
+    var bookmarked = (S.bookmarks || []).some(function(b) { return b.id === postId; });
+    var likeCount = post.likes.length;
+    var commentCount = post.comments.length;
+    var timeAgo = typeof timeSince === 'function' ? timeSince(new Date(post.time)) : 'recently';
+    
+    var avatarDisplay = '';
+    if (post.avatar && (post.avatar.startsWith('data:') || post.avatar.includes('http'))) {
+        avatarDisplay = '<img src="' + post.avatar + '" style="width:36px;height:36px;object-fit:cover;border-radius:50%;" />';
+    } else {
+        var color = typeof getColor === 'function' ? getColor(post.author) : '#6366f1';
+        avatarDisplay = '<div style="width:36px;height:36px;border-radius:50%;background:' + color + ';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;">' + post.author.charAt(0).toUpperCase() + '</div>';
+    }
+    
+    var html = '';
+    html += '<button class="post-detail-back" onclick="closePostDetail()">← <span>Back</span></button>';
+    
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;">';
+    html += '<div class="profile-bubble" onclick="closePostDetail();viewUserProfile(\'' + post.author + '\')">';
+    html += '<div class="pb-avatar">' + avatarDisplay + '</div>';
+    html += '<span class="pb-name">' + escapeHtml(post.author) + '</span>';
+    html += '</div>';
+    html += '<span style="font-size:11px;color:#94a3b8;margin-left:auto;">' + timeAgo + '</span>';
+    if (post.author === S.username) {
+        html += '<button class="btn-sm btn-danger" onclick="deletePost(\'' + post.id + '\');closePostDetail();">🗑️</button>';
+    }
+    html += '</div>';
+    
+    if (post.image) {
+        html += '<img src="' + post.image + '" style="width:100%;max-height:60vh;object-fit:contain;border-radius:12px;margin:8px 0;background:#000;" />';
+    }
+    
+    if (post.text) {
+        html += '<div style="padding:8px 0;"><p style="font-size:15px;">' + escapeHtml(post.text) + '</p></div>';
+    }
+    
+    html += '<div style="display:flex;align-items:center;gap:14px;padding:8px 0;">';
+    html += '<button class="ig-post-action' + (liked ? ' liked' : '') + '" onclick="likePost(\'' + post.id + '\');setTimeout(function(){viewPostDetail(\'' + post.id + '\');},300);" style="font-size:22px;">' + (liked ? '❤️' : '🤍') + '</button>';
+    html += '<span style="font-weight:600;">' + likeCount + '</span>';
+    html += '<button class="ig-post-action" onclick="commentOnPost(\'' + post.id + '\');setTimeout(function(){viewPostDetail(\'' + post.id + '\');},500);" style="font-size:22px;">💬</button>';
+    html += '<span style="font-weight:600;">' + commentCount + '</span>';
+    html += '<button class="ig-post-action' + (bookmarked ? ' bookmarked' : '') + '" onclick="bookmarkItem(\'' + post.id + '\',\'post\');closePostDetail();" style="font-size:22px;">🔖</button>';
+    if (post.image) {
+        html += '<button class="ig-post-action" onclick="downloadMedia(\'' + post.image + '\')" style="font-size:22px;">⬇️</button>';
+    }
+    html += '</div>';
+    
+    html += '<div style="margin-top:12px;border-top:1px solid rgba(0,0,0,0.1);padding-top:12px;"><strong>Comments (' + commentCount + ')</strong></div>';
+    if (post.comments.length > 0) {
+        post.comments.forEach(function(c) {
+            html += '<div style="padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.05);"><strong>' + escapeHtml(c.username) + '</strong> <span style="font-size:10px;color:#94a3b8;">' + timeSince(new Date(c.time)) + '</span><br>' + escapeHtml(c.text) + '</div>';
+        });
+    } else {
+        html += '<div style="color:#94a3b8;text-align:center;padding:16px;">No comments yet</div>';
+    }
+    
+    body.innerHTML = html;
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+// ============================================================
+// CLOSE POST DETAIL
+// ============================================================
+function closePostDetail() {
+    var overlay = document.getElementById('postDetailOverlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+    }
+    document.body.style.overflow = '';
+}
+
+// ============================================================
+// BACK BUTTON HANDLER (mobile)
+// ============================================================
+window.addEventListener('popstate', function(e) {
+    if (S.username) {
+        navigate('social');
+    } else {
+        navigate('landing');
+    }
+});
+
+// ============================================================
+// INITIALIZE NAVIGATION
+// ============================================================
+function initNavigation() {
+    if (window.history && window.history.pushState) {
+        window.history.pushState({ page: 'landing' }, '', window.location.href);
+    }
+    console.log('🧭 Navigation initialized');
 }
 
 // ============================================================
 // EXPOSE FUNCTIONS GLOBALLY
 // ============================================================
-window.initApp = initApp;
-window.initAppData = initAppData;
-window.setupPostsListener = setupPostsListener;
-window.setupVideosListener = setupVideosListener;
-window.setupNotifListener = setupNotifListener;
-window.setupGroupsListener = setupGroupsListener;
-window.updateNotifBadge = updateNotifBadge;
-window.markAllNotifsRead = markAllNotifsRead;
-window.addNotification = addNotification;
+window.navigate = navigate;
+window.showDialog = showDialog;
+window.closeDialog = closeDialog;
+window.viewPostDetail = viewPostDetail;
+window.closePostDetail = closePostDetail;
 
-console.log('⚡ Winchu · Nexus Core Loaded - Version 2.0');
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', function() {
+    initNavigation();
+});
+
+console.log('🧭 Navigation module loaded');

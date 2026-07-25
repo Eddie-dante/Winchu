@@ -1,4 +1,8 @@
-// App Initialization - Complete
+// App Initialization - Complete (No auto diary redirect)
+
+var postsListener = null;
+var videosListener = null;
+var notifListener = null;
 
 // ============================================================
 // INITIALIZE ALL APP DATA
@@ -6,19 +10,12 @@
 function initAppData() {
     console.log('=== INITIALIZING APP DATA ===');
     
-    // Show loading indicator
-    toast('Loading your feed...');
-    
     // Load all posts from Firebase
-    getRef('posts').orderByChild('time').limitToLast(200).once('value').then(function(snapshot) {
+    firebase.database().ref('posts').orderByChild('time').limitToLast(200).once('value').then(function(snapshot) {
         var data = snapshot.val();
         S.socialPosts = [];
-        
         if (data) {
-            var keys = Object.keys(data);
-            console.log('Found ' + keys.length + ' posts in database');
-            
-            keys.forEach(function(key) {
+            Object.keys(data).forEach(function(key) {
                 var post = data[key];
                 if (post && post.author) {
                     post.id = key;
@@ -27,12 +24,8 @@ function initAppData() {
                     S.socialPosts.push(post);
                 }
             });
-            
-            S.socialPosts.sort(function(a, b) {
-                return new Date(b.time) - new Date(a.time);
-            });
+            S.socialPosts.sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
         }
-        
         console.log('Loaded ' + S.socialPosts.length + ' posts');
         if (typeof renderSocial === 'function') renderSocial();
         if (typeof renderProfile === 'function') renderProfile();
@@ -43,15 +36,11 @@ function initAppData() {
     });
     
     // Load all videos from Firebase
-    getRef('videos').orderByChild('time').limitToLast(100).once('value').then(function(snapshot) {
+    firebase.database().ref('videos').orderByChild('time').limitToLast(100).once('value').then(function(snapshot) {
         var data = snapshot.val();
         S.videoData = [];
-        
         if (data) {
-            var keys = Object.keys(data);
-            console.log('Found ' + keys.length + ' videos in database');
-            
-            keys.forEach(function(key) {
+            Object.keys(data).forEach(function(key) {
                 var video = data[key];
                 if (video && video.author) {
                     video.id = key;
@@ -60,12 +49,8 @@ function initAppData() {
                     S.videoData.push(video);
                 }
             });
-            
-            S.videoData.sort(function(a, b) {
-                return new Date(b.time) - new Date(a.time);
-            });
+            S.videoData.sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
         }
-        
         console.log('Loaded ' + S.videoData.length + ' videos');
         if (typeof renderVideos === 'function') renderVideos();
     }).catch(function(error) {
@@ -73,10 +58,9 @@ function initAppData() {
     });
     
     // Load groups
-    getRef('groups').once('value').then(function(snapshot) {
+    firebase.database().ref('groups').once('value').then(function(snapshot) {
         var data = snapshot.val();
         S.groups = [];
-        
         if (data) {
             Object.keys(data).forEach(function(key) {
                 var group = data[key];
@@ -86,7 +70,6 @@ function initAppData() {
                 }
             });
         }
-        
         console.log('Loaded ' + S.groups.length + ' groups');
         if (typeof renderGroups === 'function') renderGroups();
         if (typeof renderChatList === 'function') renderChatList();
@@ -94,28 +77,31 @@ function initAppData() {
         console.error('Error loading groups:', error);
     });
     
-    // Load diary entries
-    getRef('diary/' + S.username).orderByKey().limitToLast(100).once('value').then(function(snapshot) {
+    // Load diary entries (data only, no redirect)
+    firebase.database().ref('diary/' + S.username).orderByKey().limitToLast(100).once('value').then(function(snapshot) {
         var data = snapshot.val();
         S.diary = [];
         if (data) {
             S.diary = Object.values(data).reverse();
         }
-        if (typeof renderDiary === 'function') renderDiary();
+        console.log('Loaded ' + S.diary.length + ' diary entries');
+        // Update diary count on dashboard
+        var diaryCount = document.getElementById('diaryCount');
+        if (diaryCount) diaryCount.textContent = S.diary.length;
     });
     
     // Load routines
-    getRef('routines/' + S.username).orderByKey().limitToLast(100).once('value').then(function(snapshot) {
+    firebase.database().ref('routines/' + S.username).orderByKey().limitToLast(100).once('value').then(function(snapshot) {
         var data = snapshot.val();
         S.routines = [];
         if (data) {
             S.routines = Object.values(data).reverse();
         }
-        if (typeof renderRoutines === 'function') renderRoutines();
+        console.log('Loaded ' + S.routines.length + ' routines');
     });
     
     // Load notifications
-    getRef('notifications/' + S.username).orderByChild('time').limitToLast(50).once('value').then(function(snapshot) {
+    firebase.database().ref('notifications/' + S.username).orderByChild('time').limitToLast(50).once('value').then(function(snapshot) {
         var data = snapshot.val();
         S.notifications = [];
         if (data) {
@@ -123,15 +109,13 @@ function initAppData() {
                 var notif = data[key];
                 if (notif) { notif.id = key; S.notifications.push(notif); }
             });
-            S.notifications.sort(function(a, b) {
-                return new Date(b.time) - new Date(a.time);
-            });
+            S.notifications.sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
         }
         updateNotifBadge();
     });
     
     // Load bookmarks
-    getRef('users/' + S.username + '/bookmarks').once('value').then(function(snapshot) {
+    firebase.database().ref('users/' + S.username + '/bookmarks').once('value').then(function(snapshot) {
         var data = snapshot.val();
         S.bookmarks = data || [];
     });
@@ -167,12 +151,11 @@ function initAppData() {
 function setupPostsListener() {
     if (postsListener) { postsListener.off(); postsListener = null; }
     
-    postsListener = getRef('posts');
+    postsListener = firebase.database().ref('posts');
     
     postsListener.on('child_added', function(snapshot) {
         var post = snapshot.val();
         if (!post || !post.author) return;
-        
         post.id = snapshot.key;
         if (!post.likes) post.likes = [];
         if (!post.comments) post.comments = [];
@@ -213,7 +196,7 @@ function setupPostsListener() {
 function setupVideosListener() {
     if (videosListener) { videosListener.off(); videosListener = null; }
     
-    videosListener = getRef('videos');
+    videosListener = firebase.database().ref('videos');
     
     videosListener.on('child_added', function(snapshot) {
         var video = snapshot.val();
@@ -252,7 +235,7 @@ function setupNotifListener() {
     if (notifListener) { notifListener.off(); notifListener = null; }
     if (!S.username) return;
     
-    notifListener = getRef('notifications/' + S.username).orderByChild('time').limitToLast(50);
+    notifListener = firebase.database().ref('notifications/' + S.username).orderByChild('time').limitToLast(50);
     
     notifListener.on('child_added', function(snapshot) {
         var notif = snapshot.val();
@@ -272,7 +255,7 @@ function setupNotifListener() {
 // SETUP GROUPS REAL-TIME LISTENER
 // ============================================================
 function setupGroupsListener() {
-    getRef('groups').on('child_added', function(snapshot) {
+    firebase.database().ref('groups').on('child_added', function(snapshot) {
         var group = snapshot.val();
         group.id = snapshot.key;
         if (group.members && group.members.indexOf(S.username) > -1) {
@@ -284,7 +267,7 @@ function setupGroupsListener() {
         }
     });
     
-    getRef('groups').on('child_changed', function(snapshot) {
+    firebase.database().ref('groups').on('child_changed', function(snapshot) {
         var group = snapshot.val();
         group.id = snapshot.key;
         if (group.members && group.members.indexOf(S.username) > -1) {
@@ -298,7 +281,7 @@ function setupGroupsListener() {
         if (typeof renderChatList === 'function') renderChatList();
     });
     
-    getRef('groups').on('child_removed', function(snapshot) {
+    firebase.database().ref('groups').on('child_removed', function(snapshot) {
         S.groups = S.groups.filter(function(g) { return g.id !== snapshot.key; });
         if (typeof renderGroups === 'function') renderGroups();
         if (typeof renderChatList === 'function') renderChatList();
@@ -396,7 +379,7 @@ function initApp() {
                     setupPresence();
                     
                     // Load user data from Firebase
-                    getRef('users/' + S.username).once('value').then(function(snapshot) {
+                    firebase.database().ref('users/' + S.username).once('value').then(function(snapshot) {
                         if (snapshot.exists()) {
                             var userData = snapshot.val();
                             S.name = userData.name || '';
@@ -476,8 +459,8 @@ window.addEventListener('resize', function() {
         var activePage = document.querySelector('.page.active');
         if (activePage) {
             var pageId = activePage.id.replace('page-', '');
-            if (pageId === 'videos') renderVideos();
-            if (pageId === 'wallpapers') renderWallpapers();
+            if (pageId === 'videos' && typeof renderVideos === 'function') renderVideos();
+            if (pageId === 'wallpapers' && typeof renderWallpapers === 'function') renderWallpapers();
         }
     }, 250);
 });
