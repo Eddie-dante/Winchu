@@ -32,6 +32,7 @@
             aspect-ratio: 3 / 2;
             perspective: 2000px;
             cursor: default;
+            position: relative;
         }
 
         .book {
@@ -597,6 +598,10 @@
                 height: 46px;
                 font-size: 1.3rem;
             }
+            .back-btn {
+                font-size: 0.7rem;
+                padding: 6px 14px;
+            }
         }
 
         .diary-entry::-webkit-scrollbar {
@@ -677,6 +682,145 @@
         #timeInput:focus {
             border-bottom-color: #4a7a9a;
         }
+
+        /* Back to Winchu button */
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 60;
+            background: rgba(10, 20, 35, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(180, 215, 255, 0.2);
+            color: #e8f0f8;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-family: 'Playfair Display', serif;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-btn:hover {
+            background: rgba(74, 122, 154, 0.9);
+            transform: scale(1.05);
+            border-color: #4a7a9a;
+        }
+
+        .back-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Unlock modal with password */
+        .unlock-modal {
+            position: absolute;
+            inset: 0;
+            z-index: 50;
+            background: rgba(10, 20, 35, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 16px 4px 4px 16px;
+            padding: 2rem;
+        }
+
+        .unlock-modal.hidden {
+            display: none;
+        }
+
+        .unlock-box {
+            background: #f0ece6;
+            padding: 2rem 2.2rem;
+            border-radius: 24px;
+            box-shadow: 0 30px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(180, 215, 255, 0.2);
+            text-align: center;
+            max-width: 340px;
+            width: 100%;
+            border: 1px solid #c6d0dc;
+            font-family: 'Cormorant Garamond', serif;
+        }
+
+        .unlock-box h2 {
+            color: #1a3a5c;
+            font-family: 'Playfair Display', serif;
+            font-weight: 400;
+            letter-spacing: 1px;
+            margin-bottom: 0.2rem;
+            font-size: 1.6rem;
+        }
+
+        .unlock-box p {
+            color: #5a6a7a;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            font-weight: 400;
+            font-family: 'Cormorant Garamond', serif;
+        }
+
+        .unlock-input-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .unlock-input-group input {
+            width: 48px;
+            height: 56px;
+            text-align: center;
+            font-size: 1.6rem;
+            font-family: 'Playfair Display', serif;
+            border: 1px solid #b0bcc8;
+            border-radius: 12px;
+            background: #ffffff;
+            color: #1a3a5c;
+            outline: none;
+            transition: 0.15s;
+            font-weight: 400;
+        }
+
+        .unlock-input-group input:focus {
+            border-color: #4a7a9a;
+            box-shadow: 0 0 0 3px rgba(74, 122, 154, 0.15);
+        }
+
+        .unlock-submit {
+            background: #4a7a9a;
+            border: none;
+            color: #e8f0f8;
+            font-weight: 400;
+            font-size: 0.9rem;
+            padding: 10px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-family: 'Playfair Display', serif;
+            letter-spacing: 1px;
+            transition: 0.12s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 3px 0 #1a3a5c;
+            width: 100%;
+        }
+
+        .unlock-submit:active {
+            transform: translateY(3px);
+            box-shadow: 0 0px 0 #1a3a5c;
+        }
+
+        .unlock-error {
+            color: #b55a4a;
+            font-size: 0.8rem;
+            margin-top: 0.4rem;
+            min-height: 1.2rem;
+            font-weight: 400;
+            font-family: 'Cormorant Garamond', serif;
+        }
     </style>
 </head>
 <body>
@@ -685,6 +829,11 @@
     <div class="toast" id="toast"></div>
 
     <div class="book-wrapper">
+        <!-- Back to Winchu button -->
+        <a href="https://winchu-alpha.vercel.app" class="back-btn" id="backBtn">
+            ← Winchu
+        </a>
+
         <div class="book closed" id="diaryBook">
 
             <!-- COVER FRONT -->
@@ -732,7 +881,7 @@
                 <span class="lock-status" id="lockStatus">locked</span>
             </div>
 
-            <!-- PIN MODAL -->
+            <!-- PIN SETUP MODAL -->
             <div class="pin-modal" id="pinModal">
                 <div class="pin-box">
                     <h2>🔐 set PIN</h2>
@@ -745,6 +894,22 @@
                     </div>
                     <button class="pin-submit" id="pinSubmit">set PIN &amp; open</button>
                     <div class="pin-error" id="pinError"></div>
+                </div>
+            </div>
+
+            <!-- UNLOCK MODAL -->
+            <div class="unlock-modal hidden" id="unlockModal">
+                <div class="unlock-box">
+                    <h2>🔐 enter PIN</h2>
+                    <p>Enter your 4-digit code</p>
+                    <div class="unlock-input-group">
+                        <input type="password" maxlength="1" class="unlock-digit" data-index="0" />
+                        <input type="password" maxlength="1" class="unlock-digit" data-index="1" />
+                        <input type="password" maxlength="1" class="unlock-digit" data-index="2" />
+                        <input type="password" maxlength="1" class="unlock-digit" data-index="3" />
+                    </div>
+                    <button class="unlock-submit" id="unlockSubmit">unlock diary</button>
+                    <div class="unlock-error" id="unlockError"></div>
                 </div>
             </div>
 
@@ -764,6 +929,10 @@
             const pinInputs = document.querySelectorAll('.pin-digit');
             const pinSubmit = document.getElementById('pinSubmit');
             const pinError = document.getElementById('pinError');
+            const unlockModal = document.getElementById('unlockModal');
+            const unlockInputs = document.querySelectorAll('.unlock-digit');
+            const unlockSubmit = document.getElementById('unlockSubmit');
+            const unlockError = document.getElementById('unlockError');
             const coverUserName = document.getElementById('coverUserName');
 
             const pageDate = document.getElementById('pageDate');
@@ -833,7 +1002,6 @@
             // Render page
             function renderPage(index) {
                 if (index >= pages.length) {
-                    // If we're beyond the last page, add a new one
                     index = addNewPage();
                 }
                 const p = pages[index];
@@ -910,11 +1078,9 @@
 
             function navigatePage(direction) {
                 if (isLocked) return;
-                // Save current before navigating
                 saveCurrentEntry();
                 let newIndex = currentPage + direction;
 
-                // If going forward beyond last page, add new page
                 if (newIndex >= pages.length) {
                     newIndex = addNewPage();
                 }
@@ -924,19 +1090,16 @@
                 updateUI();
             }
 
-            // Lock toggle
+            // Lock toggle - now shows unlock modal
             function toggleLock() {
                 if (isLocked) {
                     if (!pin) {
                         pinModal.classList.remove('hidden');
                         return;
                     }
-                    // Unlock
-                    isLocked = false;
-                    openBookWithAnimation();
-                    setTimeout(() => {
-                        showToast('🔓 Diary unlocked · you can edit');
-                    }, 500);
+                    // Show unlock modal instead of directly unlocking
+                    unlockModal.classList.remove('hidden');
+                    unlockInputs[0].focus();
                 } else {
                     // Lock
                     saveCurrentEntry();
@@ -985,7 +1148,41 @@
                 }, 500);
             }
 
-            // PIN input auto-focus
+            // Handle unlock
+            function handleUnlock() {
+                let code = '';
+                unlockInputs.forEach(inp => {
+                    const val = inp.value.trim();
+                    if (val.length === 1 && /[0-9]/.test(val)) {
+                        code += val;
+                    } else {
+                        code = '';
+                    }
+                });
+
+                if (code.length !== 4) {
+                    unlockError.textContent = '❌ enter exactly 4 digits';
+                    return;
+                }
+
+                if (code === pin) {
+                    // Correct PIN
+                    unlockModal.classList.add('hidden');
+                    unlockError.textContent = '';
+                    unlockInputs.forEach(inp => inp.value = '');
+                    isLocked = false;
+                    openBookWithAnimation();
+                    setTimeout(() => {
+                        showToast('🔓 Diary unlocked');
+                    }, 500);
+                } else {
+                    unlockError.textContent = '❌ wrong PIN';
+                    unlockInputs.forEach(inp => inp.value = '');
+                    unlockInputs[0].focus();
+                }
+            }
+
+            // PIN input auto-focus for setup
             pinInputs.forEach((inp, idx) => {
                 inp.addEventListener('input', function() {
                     if (this.value.length === 1 && idx < 3) {
@@ -1002,10 +1199,28 @@
                 });
             });
 
+            // Unlock PIN input auto-focus
+            unlockInputs.forEach((inp, idx) => {
+                inp.addEventListener('input', function() {
+                    if (this.value.length === 1 && idx < 3) {
+                        unlockInputs[idx + 1].focus();
+                    }
+                });
+                inp.addEventListener('keydown', function(e) {
+                    if (e.key === 'Backspace' && this.value === '' && idx > 0) {
+                        unlockInputs[idx - 1].focus();
+                    }
+                    if (e.key === 'Enter') {
+                        unlockSubmit.click();
+                    }
+                });
+            });
+
             // Events
             toggleBtn.addEventListener('click', toggleLock);
             lockIcon.addEventListener('click', toggleLock);
             pinSubmit.addEventListener('click', setupPin);
+            unlockSubmit.addEventListener('click', handleUnlock);
 
             prevBtn.addEventListener('click', () => navigatePage(-1));
             nextBtn.addEventListener('click', () => navigatePage(1));
@@ -1042,9 +1257,10 @@
 
             // Prevent selection on book, but allow text selection in diary entry
             book.addEventListener('mousedown', (e) => {
-                if (e.target.closest('.lock-area') || e.target.closest('.pin-modal')) return;
+                if (e.target.closest('.lock-area') || e.target.closest('.pin-modal') || e.target.closest('.unlock-modal')) return;
                 if (e.target.closest('.page-nav')) return;
                 if (e.target.closest('.diary-entry') || e.target.closest('#timeInput')) return;
+                if (e.target.closest('.back-btn')) return;
                 e.preventDefault();
             });
 
