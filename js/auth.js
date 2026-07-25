@@ -1,4 +1,4 @@
-// Authentication Module - Complete with signup, login, logout, password reset
+// Auth Module - Complete (Navigates to social, NOT diary)
 
 // ============================================================
 // HANDLE SIGNUP
@@ -21,7 +21,6 @@ function handleSignup() {
     
     console.log('Signup attempt for:', usernameVal);
     
-    // Validation
     if (!nameVal || !usernameVal || !passwordVal) {
         toast('Please fill all fields');
         return;
@@ -42,10 +41,9 @@ function handleSignup() {
         return;
     }
     
-    // Check if username exists
     toast('Checking username...');
     
-    getRef('users/' + usernameVal).once('value').then(function(snapshot) {
+    firebase.database().ref('users/' + usernameVal).once('value').then(function(snapshot) {
         if (snapshot.exists()) {
             toast('Username already taken. Please choose another.');
             throw new Error('Username taken');
@@ -69,12 +67,11 @@ function handleSignup() {
             online: true
         };
         
-        return setData('users/' + usernameVal, userData);
+        return firebase.database().ref('users/' + usernameVal).set(userData);
         
     }).then(function() {
         console.log('Account created successfully for:', usernameVal);
         
-        // Set session state
         S.username = usernameVal;
         S.name = nameVal;
         S.bio = 'Building my energy. One aura at a time. ⚡';
@@ -92,27 +89,18 @@ function handleSignup() {
         S.videoData = [];
         S.socialPosts = [];
         
-        // Save state
         saveState();
-        localStorage.setItem('wa', JSON.stringify({
-            username: usernameVal,
-            timestamp: Date.now()
-        }));
+        localStorage.setItem('wa', JSON.stringify({ username: usernameVal, timestamp: Date.now() }));
         
-        // Setup presence
         setupPresence();
         
-        // Clear form
         nameEl.value = '';
         usernameEl.value = '';
         passwordEl.value = '';
         
         toast('Account created successfully! 🎉');
         
-        // Navigate to aura selection
-        setTimeout(function() {
-            navigate('select');
-        }, 500);
+        setTimeout(function() { navigate('select'); }, 500);
         
     }).catch(function(error) {
         if (error.message !== 'Username taken') {
@@ -123,7 +111,7 @@ function handleSignup() {
 }
 
 // ============================================================
-// HANDLE LOGIN
+// HANDLE LOGIN - Goes to SOCIAL, not diary
 // ============================================================
 function handleLogin() {
     console.log('=== LOGIN STARTED ===');
@@ -148,7 +136,7 @@ function handleLogin() {
     
     toast('Logging in...');
     
-    getRef('users/' + usernameVal).once('value').then(function(snapshot) {
+    firebase.database().ref('users/' + usernameVal).once('value').then(function(snapshot) {
         if (!snapshot.exists()) {
             console.log('User not found:', usernameVal);
             toast('User not found. Please check your username or create an account.');
@@ -166,7 +154,6 @@ function handleLogin() {
         
         console.log('Login successful for:', usernameVal);
         
-        // Set session state
         S.username = usernameVal;
         S.name = userData.name || '';
         S.bio = userData.bio || 'Building my energy. One aura at a time. ⚡';
@@ -184,21 +171,14 @@ function handleLogin() {
         S.videoData = [];
         S.socialPosts = [];
         
-        // Save state
         saveState();
-        localStorage.setItem('wa', JSON.stringify({
-            username: usernameVal,
-            timestamp: Date.now()
-        }));
+        localStorage.setItem('wa', JSON.stringify({ username: usernameVal, timestamp: Date.now() }));
         
-        // Setup presence
         setupPresence();
         
-        // Clear form
         usernameEl.value = '';
         passwordEl.value = '';
         
-        // Apply wallpaper if set
         if (S.wallpaper) {
             document.body.style.backgroundImage = 'url(' + S.wallpaper + ')';
             document.body.style.backgroundSize = 'cover';
@@ -206,20 +186,14 @@ function handleLogin() {
             document.body.style.backgroundAttachment = 'fixed';
         }
         
-        // Update online status
-        updateData('users/' + usernameVal, {
-            online: true,
-            last_seen: new Date().toISOString()
-        });
+        firebase.database().ref('users/' + usernameVal).update({ online: true, last_seen: new Date().toISOString() });
         
-        // Load user data
         loadUserDataFromFirebase(usernameVal);
         
-        // Show welcome
         var displayName = S.name || S.username;
         toast('Welcome back, ' + displayName + '! ✨');
         
-        // Navigate
+        // NAVIGATE TO SOCIAL - NOT DIARY
         if (S.selectedAuras.length === 0) {
             setTimeout(function() { navigate('select'); }, 500);
         } else {
@@ -238,17 +212,12 @@ function handleLogin() {
 function logout() {
     console.log('=== LOGOUT STARTED ===');
     
-    // Update online status
     if (S.username) {
-        updateData('users/' + S.username, {
-            online: false,
-            last_seen: new Date().toISOString()
-        }).catch(function(err) {
+        firebase.database().ref('users/' + S.username).update({ online: false, last_seen: new Date().toISOString() }).catch(function(err) {
             console.error('Error updating status:', err);
         });
     }
     
-    // Clear state
     S = {
         username: null, name: '', bio: 'Building my energy. One aura at a time. ⚡',
         wallpaper: null, selectedAuras: [], avatar: null, friends: [],
@@ -260,23 +229,19 @@ function logout() {
     chatMessages = [];
     viewingProfile = null;
     
-    // Clear storage
     localStorage.removeItem('ws');
     localStorage.removeItem('wa');
     
-    // Remove listeners
     if (chatListener) { chatListener.off(); chatListener = null; }
     if (postsListener) { postsListener.off(); postsListener = null; }
     if (videosListener) { videosListener.off(); videosListener = null; }
     if (notifListener) { notifListener.off(); notifListener = null; }
     
-    // Reset background
     document.body.style.backgroundImage = "url('https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1920&q=80')";
     document.body.style.backgroundSize = 'cover';
     document.body.style.backgroundPosition = 'center';
     document.body.style.backgroundAttachment = 'fixed';
     
-    // Hide UI
     var wpFab = document.getElementById('wpFab');
     var bottomNav = document.getElementById('bottomNav');
     if (wpFab) wpFab.style.display = 'none';
@@ -299,7 +264,7 @@ function confirmSelection() {
     }
     
     if (S.username) {
-        setData('users/' + S.username + '/selected_auras', S.selectedAuras).then(function() {
+        firebase.database().ref('users/' + S.username + '/selected_auras').set(S.selectedAuras).then(function() {
             console.log('Auras saved to Firebase');
         }).catch(function(err) {
             console.error('Error saving auras:', err);
@@ -314,10 +279,8 @@ function confirmSelection() {
     
     toast('Auras activated: ' + auraNames + ' ✨');
     
-    setTimeout(function() {
-        navigate('social');
-        initAppData();
-    }, 500);
+    // GO TO SOCIAL AFTER AURA SELECTION
+    setTimeout(function() { navigate('social'); initAppData(); }, 500);
 }
 
 // ============================================================
@@ -327,50 +290,30 @@ function resetPassword() {
     console.log('=== PASSWORD RESET ===');
     
     showDialog({
-        emoji: '🔑',
-        title: 'Reset Password',
-        subtitle: 'Enter your username to reset your password',
-        placeholder: 'Your username...',
-        confirmText: 'Next →'
+        emoji: '🔑', title: 'Reset Password', subtitle: 'Enter your username to reset your password',
+        placeholder: 'Your username...', confirmText: 'Next →'
     }).then(function(username) {
         if (!username || !username.trim()) return;
         
         var usernameVal = username.trim();
         
-        getRef('users/' + usernameVal).once('value').then(function(snapshot) {
-            if (!snapshot.exists()) {
-                toast('User not found. Please check your username.');
-                return;
-            }
+        firebase.database().ref('users/' + usernameVal).once('value').then(function(snapshot) {
+            if (!snapshot.exists()) { toast('User not found. Please check your username.'); return; }
             
             showDialog({
-                emoji: '🔐',
-                title: 'New Password',
-                subtitle: 'Enter your new password (minimum 6 characters)',
-                placeholder: 'New password...',
-                confirmText: 'Save Password'
+                emoji: '🔐', title: 'New Password', subtitle: 'Enter your new password (minimum 6 characters)',
+                placeholder: 'New password...', confirmText: 'Save Password'
             }).then(function(newPassword) {
                 if (!newPassword || !newPassword.trim()) return;
-                
                 var passwordVal = newPassword.trim();
+                if (passwordVal.length < 6) { toast('Password must be at least 6 characters'); return; }
                 
-                if (passwordVal.length < 6) {
-                    toast('Password must be at least 6 characters');
-                    return;
-                }
-                
-                setData('users/' + usernameVal + '/password', passwordVal).then(function() {
+                firebase.database().ref('users/' + usernameVal + '/password').set(passwordVal).then(function() {
                     toast('Password reset successfully! Please log in with your new password.');
                     setTimeout(function() { navigate('login'); }, 1000);
-                }).catch(function(error) {
-                    console.error('Reset error:', error);
-                    toast('Error resetting password. Please try again.');
-                });
+                }).catch(function(error) { console.error('Reset error:', error); toast('Error resetting password.'); });
             });
-        }).catch(function(error) {
-            console.error('Reset error:', error);
-            toast('Error. Please check your connection.');
-        });
+        }).catch(function(error) { console.error('Reset error:', error); toast('Error. Please check your connection.'); });
     });
 }
 
@@ -378,75 +321,41 @@ function resetPassword() {
 // DELETE ACCOUNT
 // ============================================================
 function deleteAccount() {
-    console.log('=== ACCOUNT DELETION ===');
-    
     showDialog({
-        emoji: '⚠️',
-        title: 'Delete Account',
-        subtitle: 'This action cannot be undone. All your data will be permanently deleted.',
-        confirmText: 'Delete My Account',
-        danger: true,
-        cancelText: 'Cancel'
+        emoji: '⚠️', title: 'Delete Account', subtitle: 'This action cannot be undone. All your data will be permanently deleted.',
+        confirmText: 'Delete My Account', danger: true, cancelText: 'Cancel'
     }).then(function(result) {
         if (result === null) return;
         
         showDialog({
-            emoji: '🔐',
-            title: 'Confirm Password',
-            subtitle: 'Enter your password to confirm deletion',
-            placeholder: 'Your password...',
-            confirmText: 'Confirm Delete',
-            danger: true
+            emoji: '🔐', title: 'Confirm Password', subtitle: 'Enter your password to confirm deletion',
+            placeholder: 'Your password...', confirmText: 'Confirm Delete', danger: true
         }).then(function(password) {
             if (!password) return;
             
-            getRef('users/' + S.username).once('value').then(function(snapshot) {
+            firebase.database().ref('users/' + S.username).once('value').then(function(snapshot) {
                 var userData = snapshot.val();
-                
-                if (userData.password !== password) {
-                    toast('Incorrect password');
-                    return;
-                }
+                if (userData.password !== password) { toast('Incorrect password'); return; }
                 
                 toast('Deleting account...');
+                firebase.database().ref('users/' + S.username).remove();
+                firebase.database().ref('diary/' + S.username).remove();
+                firebase.database().ref('routines/' + S.username).remove();
+                firebase.database().ref('notifications/' + S.username).remove();
                 
-                // Delete user data
-                removeData('users/' + S.username);
-                removeData('diary/' + S.username);
-                removeData('routines/' + S.username);
-                removeData('notifications/' + S.username);
-                
-                // Delete posts
-                getRef('posts').once('value').then(function(postSnapshot) {
+                firebase.database().ref('posts').once('value').then(function(postSnapshot) {
                     var posts = postSnapshot.val();
-                    if (posts) {
-                        Object.keys(posts).forEach(function(key) {
-                            if (posts[key].author === S.username) {
-                                removeData('posts/' + key);
-                            }
-                        });
-                    }
+                    if (posts) { Object.keys(posts).forEach(function(key) { if (posts[key].author === S.username) firebase.database().ref('posts/' + key).remove(); }); }
                 });
                 
-                // Delete videos
-                getRef('videos').once('value').then(function(videoSnapshot) {
+                firebase.database().ref('videos').once('value').then(function(videoSnapshot) {
                     var videos = videoSnapshot.val();
-                    if (videos) {
-                        Object.keys(videos).forEach(function(key) {
-                            if (videos[key].author === S.username) {
-                                removeData('videos/' + key);
-                            }
-                        });
-                    }
+                    if (videos) { Object.keys(videos).forEach(function(key) { if (videos[key].author === S.username) firebase.database().ref('videos/' + key).remove(); }); }
                 });
                 
                 toast('Account deleted. Goodbye! 👋');
                 setTimeout(function() { logout(); }, 1500);
-                
-            }).catch(function(error) {
-                console.error('Delete error:', error);
-                toast('Error deleting account.');
-            });
+            }).catch(function(error) { console.error('Delete error:', error); toast('Error deleting account.'); });
         });
     });
 }
@@ -456,66 +365,30 @@ function deleteAccount() {
 // ============================================================
 function loadUserDataFromFirebase(username) {
     if (!username) return;
-    
-    getRef('users/' + username).once('value').then(function(snapshot) {
-        if (snapshot.exists()) {
-            var data = snapshot.val();
-            S.name = data.name || '';
-            S.bio = data.bio || S.bio;
-            S.avatar = data.avatar || null;
-            S.wallpaper = data.wallpaper || null;
-            S.friends = data.friends || [];
-            S.bookmarks = data.bookmarks || [];
-            saveState();
-        }
-    }).catch(function(error) {
-        console.error('Load user error:', error);
-    });
+    firebase.database().ref('users/' + username).once('value').then(function(snapshot) {
+        if (snapshot.exists()) { var data = snapshot.val(); S.name = data.name || ''; S.bio = data.bio || S.bio; S.avatar = data.avatar || null; S.wallpaper = data.wallpaper || null; S.friends = data.friends || []; S.bookmarks = data.bookmarks || []; saveState(); }
+    }).catch(function(error) { console.error('Load user error:', error); });
 }
 
 // ============================================================
-// CHANGE PASSWORD (when logged in)
+// CHANGE PASSWORD
 // ============================================================
 function changePassword() {
-    showDialog({
-        emoji: '🔐',
-        title: 'Change Password',
-        subtitle: 'Enter your current password',
-        placeholder: 'Current password...',
-        confirmText: 'Next →'
-    }).then(function(currentPass) {
+    showDialog({ emoji: '🔐', title: 'Change Password', subtitle: 'Enter your current password', placeholder: 'Current password...', confirmText: 'Next →' }).then(function(currentPass) {
         if (!currentPass) return;
-        
-        getRef('users/' + S.username).once('value').then(function(snapshot) {
+        firebase.database().ref('users/' + S.username).once('value').then(function(snapshot) {
             var userData = snapshot.val();
-            
-            if (userData.password !== currentPass) {
-                toast('Incorrect current password');
-                return;
-            }
-            
-            showDialog({
-                emoji: '🔑',
-                title: 'New Password',
-                subtitle: 'Enter new password (6+ characters)',
-                placeholder: 'New password...',
-                confirmText: 'Save'
-            }).then(function(newPass) {
-                if (!newPass || newPass.trim().length < 6) {
-                    toast('Password must be at least 6 characters');
-                    return;
-                }
-                
-                setData('users/' + S.username + '/password', newPass.trim()).then(function() {
-                    toast('Password changed! 🔐');
-                });
+            if (userData.password !== currentPass) { toast('Incorrect current password'); return; }
+            showDialog({ emoji: '🔑', title: 'New Password', subtitle: 'Enter new password (6+ characters)', placeholder: 'New password...', confirmText: 'Save' }).then(function(newPass) {
+                if (!newPass || newPass.trim().length < 6) { toast('Password must be at least 6 characters'); return; }
+                firebase.database().ref('users/' + S.username + '/password').set(newPass.trim()).then(function() { toast('Password changed! 🔐'); });
             });
         });
     });
 }
 
 // ============================================================
-// EXPOSE FUNCTIONS GLOBALLY
+// EXPOSE GLOBALLY
 // ============================================================
 window.handleSignup = handleSignup;
 window.handleLogin = handleLogin;
@@ -526,4 +399,4 @@ window.deleteAccount = deleteAccount;
 window.changePassword = changePassword;
 window.loadUserDataFromFirebase = loadUserDataFromFirebase;
 
-console.log('🔐 Auth module loaded');
+console.log('🔐 Auth module loaded - Navigates to SOCIAL');
