@@ -108,6 +108,11 @@ function initAppData() {
     if (typeof initWallpapers === 'function') initWallpapers();
     setupPresence();
     
+    // Initialize AI after data loads
+    if (typeof initAI === 'function') {
+        setTimeout(initAI, 1500);
+    }
+    
     setInterval(function() { 
         if (S && S.username) 
             updateData('users/' + S.username, { 
@@ -379,6 +384,12 @@ function initApp() {
                     }
                     document.getElementById('wpFab').style.display = 'flex';
                     document.getElementById('bottomNav').style.display = 'flex';
+                    
+                    // Initialize AI
+                    if (typeof initAI === 'function') {
+                        setTimeout(initAI, 1500);
+                    }
+                    
                     if (S.selectedAuras.length === 0) { 
                         navigate('select'); 
                     } else { 

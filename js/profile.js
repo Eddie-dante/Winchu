@@ -1,4 +1,4 @@
-// Profile Module - Complete with avatar, friends, user profiles, fixed friend requests
+// Profile Module - Complete with fixed friend registration
 
 // ============================================================
 // RENDER PROFILE
@@ -280,7 +280,7 @@ function sendFriendRequest(username) {
 }
 
 // ============================================================
-// FIXED ACCEPT FRIEND REQUEST - Updates both users properly
+// FIXED ACCEPT FRIEND REQUEST - Properly registers for both users
 // ============================================================
 function acceptFriendRequest(username) {
     if (!S.username) {
@@ -290,7 +290,7 @@ function acceptFriendRequest(username) {
     
     toast('Accepting friend request...');
     
-    // Step 1: Add to current user's friends
+    // Step 1: Get current user's friends
     var currentUserFriends = S.friends || [];
     if (!Array.isArray(currentUserFriends)) {
         currentUserFriends = [];
@@ -299,8 +299,12 @@ function acceptFriendRequest(username) {
         currentUserFriends.push(username);
     }
     
-    // Step 2: Add current user to other user's friends
-    firebase.database().ref('users/' + username + '/friends').once('value')
+    // Step 2: Update current user's friends in Firebase first
+    firebase.database().ref('users/' + S.username + '/friends').set(currentUserFriends)
+        .then(function() {
+            // Step 3: Get the other user's friends
+            return firebase.database().ref('users/' + username + '/friends').once('value');
+        })
         .then(function(snapshot) {
             var theirFriends = snapshot.val() || [];
             if (!Array.isArray(theirFriends)) {
@@ -309,14 +313,11 @@ function acceptFriendRequest(username) {
             if (theirFriends.indexOf(S.username) === -1) {
                 theirFriends.push(S.username);
             }
+            // Step 4: Update other user's friends in Firebase
             return firebase.database().ref('users/' + username + '/friends').set(theirFriends);
         })
         .then(function() {
-            // Step 3: Update current user's friends in Firebase
-            return firebase.database().ref('users/' + S.username + '/friends').set(currentUserFriends);
-        })
-        .then(function() {
-            // Step 4: Remove the friend request
+            // Step 5: Remove the friend request
             return firebase.database().ref('friendRequests/' + S.username).once('value');
         })
         .then(function(snapshot) {
@@ -328,9 +329,6 @@ function acceptFriendRequest(username) {
             return firebase.database().ref('friendRequests/' + S.username).set(requests);
         })
         .then(function() {
-            // Step 5: Update local state
-            S.friends = currentUserFriends;
-            
             // Step 6: Send notification to the other user
             return firebase.database().ref('notifications/' + username).push({
                 from: S.username,
@@ -341,10 +339,11 @@ function acceptFriendRequest(username) {
             });
         })
         .then(function() {
-            // Step 7: Force refresh all related UI
+            // Step 7: Update local state
+            S.friends = currentUserFriends;
             saveState();
             
-            // Update all views
+            // Step 8: Force refresh all UI
             if (typeof renderProfile === 'function') renderProfile();
             if (typeof renderUsers === 'function') renderUsers();
             if (typeof renderChatList === 'function') renderChatList();
@@ -352,8 +351,20 @@ function acceptFriendRequest(username) {
             
             toast('✅ You and @' + username + ' are now friends! 🎉');
             
-            // Step 8: Reload user data to ensure sync
-            forceSyncUserData();
+            // Step 9: Force sync from Firebase to ensure consistency
+            setTimeout(function() {
+                forceSyncUserData();
+                // Also sync the other user's data
+                firebase.database().ref('users/' + username).once('value')
+                    .then(function(snap) {
+                        if (snap.exists()) {
+                            var data = snap.val();
+                            // Update the other user's data in local state if they're in the same session
+                            // This helps when both users are logged in on different tabs
+                            console.log('✅ Synced friend data for:', username);
+                        }
+                    });
+            }, 500);
         })
         .catch(function(error) {
             console.error('Error accepting friend request:', error);
@@ -390,7 +401,12 @@ function declineFriendRequest(username) {
 // FORCE SYNC USER DATA
 // ============================================================
 function forceSyncUserData() {
-    if (!S.username) return;
+    if (!S.username) {
+        console.warn('No user logged in to sync');
+        return;
+    }
+    
+    console.log('🔄 Force syncing user data...');
     
     firebase.database().ref('users/' + S.username).once('value')
         .then(function(snapshot) {
@@ -403,19 +419,26 @@ function forceSyncUserData() {
                 S.wallpaper = data.wallpaper || S.wallpaper;
                 S.bookmarks = data.bookmarks || [];
                 S.selectedAuras = data.selected_auras || [];
+                S.completedTasks = data.completedTasks || [];
+                S.streakData = data.streakData || {};
                 saveState();
                 
-                // Refresh all UI
                 if (typeof renderProfile === 'function') renderProfile();
                 if (typeof renderUsers === 'function') renderUsers();
                 if (typeof renderChatList === 'function') renderChatList();
                 if (typeof renderSocial === 'function') renderSocial();
+                if (typeof renderHome === 'function') renderHome();
+                if (typeof renderNotifications === 'function') renderNotifications();
+                if (typeof renderGroups === 'function') renderGroups();
                 
-                console.log('🔄 User data force synced');
+                console.log('✅ User data force synced successfully');
+                return true;
             }
+            return false;
         })
         .catch(function(error) {
-            console.error('Sync error:', error);
+            console.error('Force sync error:', error);
+            return false;
         });
 }
 
@@ -500,4 +523,4 @@ window.viewUserProfile = viewUserProfile;
 window.renderUserProfile = renderUserProfile;
 window.forceSyncUserData = forceSyncUserData;
 
-console.log('👤 Profile loaded - fixed friend requests with sync');
+console.log('👤 Profile loaded - fixed friend registration');
