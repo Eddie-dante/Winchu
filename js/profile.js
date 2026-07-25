@@ -78,6 +78,7 @@ function renderProfileRequests() {
     if (!section) return;
     firebase.database().ref('friendRequests/' + S.username).once('value').then(function(snapshot) {
         var requests = snapshot.val() || [];
+        if (!Array.isArray(requests)) requests = [];
         if (requests.length === 0) { section.style.display = 'none'; return; }
         section.style.display = 'block';
         var html = '<div style="background:rgba(99,102,241,0.1);border-radius:12px;padding:12px;margin-bottom:8px;"><strong style="font-size:12px;">🔔 Friend Requests (' + requests.length + ')</strong>';
@@ -92,47 +93,110 @@ function renderProfileRequests() {
 
 function editName() {
     showDialog({ emoji: '✏️', title: 'Edit Display Name', placeholder: 'Your display name...', defaultValue: S.name || '', confirmText: 'Save Name' }).then(function(result) {
-        if (result !== null) { S.name = result.trim(); if (S.username) { firebase.database().ref('users/' + S.username + '/name').set(S.name); updateAllPostsAuthorName(S.name); } saveState(); renderProfile(); updateProfileAvatar(); updatePostAvatarInComposer(); toast('Name updated! ✏️'); }
+        if (result !== null) { 
+            S.name = result.trim(); 
+            if (S.username) { 
+                firebase.database().ref('users/' + S.username + '/name').set(S.name); 
+                updateAllPostsAuthorName(S.name); 
+            } 
+            saveState(); 
+            renderProfile(); 
+            updateProfileAvatar(); 
+            updatePostAvatarInComposer(); 
+            toast('Name updated! ✏️'); 
+        }
     });
 }
 
 function editProfile() {
     showDialog({ emoji: '📝', title: 'Edit Bio', placeholder: 'Write a short bio...', defaultValue: S.bio || '', confirmText: 'Save Bio' }).then(function(result) {
-        if (result !== null) { S.bio = result.trim() || 'Building my energy. One aura at a time. ⚡'; if (S.username) firebase.database().ref('users/' + S.username + '/bio').set(S.bio); saveState(); renderProfile(); toast('Bio updated! 📝'); }
+        if (result !== null) { 
+            S.bio = result.trim() || 'Building my energy. One aura at a time. ⚡'; 
+            if (S.username) firebase.database().ref('users/' + S.username + '/bio').set(S.bio); 
+            saveState(); 
+            renderProfile(); 
+            toast('Bio updated! 📝'); 
+        }
     });
 }
 
 function handleAvatarSelect(event) {
-    var file = event.target.files[0]; if (!file) return;
-    if (!file.type.startsWith('image/')) { toast('Select an image file'); event.target.value = ''; return; }
-    if (file.size > 10*1024*1024) { toast('Max 10MB'); event.target.value = ''; return; }
+    var file = event.target.files[0]; 
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { 
+        toast('Select an image file'); 
+        event.target.value = ''; 
+        return; 
+    }
+    if (file.size > 10*1024*1024) { 
+        toast('Max 10MB'); 
+        event.target.value = ''; 
+        return; 
+    }
     toast('Uploading...');
     var reader = new FileReader();
-    reader.onload = function(e) { S.avatar = e.target.result; if (S.username) firebase.database().ref('users/' + S.username + '/avatar').set(S.avatar); updateAllPostsAvatar(S.avatar); updateProfileAvatar(); updatePostAvatarInComposer(); saveState(); toast('✅ Avatar updated!'); };
+    reader.onload = function(e) { 
+        S.avatar = e.target.result; 
+        if (S.username) firebase.database().ref('users/' + S.username + '/avatar').set(S.avatar); 
+        updateAllPostsAvatar(S.avatar); 
+        updateProfileAvatar(); 
+        updatePostAvatarInComposer(); 
+        saveState(); 
+        toast('✅ Avatar updated!'); 
+    };
     reader.readAsDataURL(file);
 }
 
 function updateAllPostsAvatar(avatarUrl) {
-    (S.socialPosts || []).forEach(function(post) { if (post.author === S.username) post.avatar = avatarUrl; });
-    firebase.database().ref('posts').once('value').then(function(snapshot) { var data = snapshot.val(); if (data) { Object.keys(data).forEach(function(key) { if (data[key].author === S.username) firebase.database().ref('posts/' + key + '/avatar').set(avatarUrl); }); } });
+    (S.socialPosts || []).forEach(function(post) { 
+        if (post.author === S.username) post.avatar = avatarUrl; 
+    });
+    firebase.database().ref('posts').once('value').then(function(snapshot) { 
+        var data = snapshot.val(); 
+        if (data) { 
+            Object.keys(data).forEach(function(key) { 
+                if (data[key].author === S.username) 
+                    firebase.database().ref('posts/' + key + '/avatar').set(avatarUrl); 
+            }); 
+        } 
+    });
 }
 
 function updateAllPostsAuthorName(newName) {
-    (S.socialPosts || []).forEach(function(post) { if (post.author === S.username) post.author = newName; });
-    firebase.database().ref('posts').once('value').then(function(snapshot) { var data = snapshot.val(); if (data) { Object.keys(data).forEach(function(key) { if (data[key].author === S.username) firebase.database().ref('posts/' + key + '/author').set(newName); }); } });
+    (S.socialPosts || []).forEach(function(post) { 
+        if (post.author === S.username) post.author = newName; 
+    });
+    firebase.database().ref('posts').once('value').then(function(snapshot) { 
+        var data = snapshot.val(); 
+        if (data) { 
+            Object.keys(data).forEach(function(key) { 
+                if (data[key].author === S.username) 
+                    firebase.database().ref('posts/' + key + '/author').set(newName); 
+            }); 
+        } 
+    });
 }
 
 // ============================================================
 // RENDER USERS LIST
 // ============================================================
 function renderUsers() {
-    var container = document.getElementById('usersList'); if (!container) return;
-    if (!S.username) { container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">Please log in</p>'; return; }
+    var container = document.getElementById('usersList'); 
+    if (!container) return;
+    if (!S.username) { 
+        container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">Please log in</p>'; 
+        return; 
+    }
     firebase.database().ref('friendRequests/' + S.username).once('value').then(function(reqSnapshot) {
         var pendingRequests = reqSnapshot.val() || [];
+        if (!Array.isArray(pendingRequests)) pendingRequests = [];
         firebase.database().ref('users').once('value').then(function(snapshot) {
-            var users = snapshot.val() || {}; var usernames = Object.keys(users);
-            if (usernames.length === 0) { container.innerHTML = '<p style="color:#94a3b8;text-align:center;">No users found.</p>'; return; }
+            var users = snapshot.val() || {}; 
+            var usernames = Object.keys(users);
+            if (usernames.length === 0) { 
+                container.innerHTML = '<p style="color:#94a3b8;text-align:center;">No users found.</p>'; 
+                return; 
+            }
             var html = '';
             if (pendingRequests.length > 0) {
                 html += '<div style="margin-bottom:16px;padding:12px;background:rgba(99,102,241,0.1);border-radius:14px;"><strong style="font-size:13px;">🔔 Pending Requests (' + pendingRequests.length + ')</strong>';
@@ -159,78 +223,210 @@ function renderUsers() {
 }
 
 // ============================================================
-// SEND FRIEND REQUEST
+// FIXED SEND FRIEND REQUEST
 // ============================================================
 function sendFriendRequest(username) {
-    if (!S.username) { toast('Please log in'); return; }
-    if (username === S.username) { toast('Cannot add yourself'); return; }
-    if ((S.friends || []).indexOf(username) > -1) { toast('Already friends'); return; }
-    firebase.database().ref('friendRequests/' + username).once('value').then(function(snapshot) {
-        var requests = snapshot.val() || [];
-        if (requests.indexOf(S.username) > -1) { toast('Request already sent'); return; }
-        requests.push(S.username);
-        return firebase.database().ref('friendRequests/' + username).set(requests);
-    }).then(function() {
-        toast('Friend request sent! 📨');
-        firebase.database().ref('notifications/' + username).push({ from: S.username, message: 'sent you a friend request', type: 'friend_request', time: new Date().toISOString(), read: false });
-    });
-}
-
-// ============================================================
-// ACCEPT FRIEND REQUEST - FIXED MUTUAL FRIENDSHIP
-// ============================================================
-function acceptFriendRequest(username) {
-    if (!S.username) return;
-    
-    // Add to current user's friends
-    if (S.friends.indexOf(username) === -1) {
-        S.friends.push(username);
+    if (!S.username) {
+        toast('Please log in');
+        return;
     }
     
-    // Save current user's friends
-    firebase.database().ref('users/' + S.username + '/friends').set(S.friends).then(function() {
-        // Add current user to other person's friends
-        return firebase.database().ref('users/' + username + '/friends').once('value');
-    }).then(function(snapshot) {
-        var theirFriends = snapshot.val() || [];
-        if (theirFriends.indexOf(S.username) === -1) {
-            theirFriends.push(S.username);
-            return firebase.database().ref('users/' + username + '/friends').set(theirFriends);
-        }
-    }).then(function() {
-        // Remove friend request
-        return firebase.database().ref('friendRequests/' + S.username).once('value');
-    }).then(function(snapshot) {
-        var requests = snapshot.val() || [];
-        requests = requests.filter(function(r) { return r !== username; });
-        return firebase.database().ref('friendRequests/' + S.username).set(requests);
-    }).then(function() {
-        // Notify sender
-        firebase.database().ref('notifications/' + username).push({
-            from: S.username, message: 'accepted your friend request', type: 'friend_accept', time: new Date().toISOString(), read: false
+    if (username === S.username) {
+        toast('Cannot add yourself');
+        return;
+    }
+    
+    // Check if already friends
+    if ((S.friends || []).indexOf(username) > -1) {
+        toast('Already friends');
+        return;
+    }
+    
+    // Check if request already sent
+    firebase.database().ref('friendRequests/' + username).once('value')
+        .then(function(snapshot) {
+            var requests = snapshot.val() || [];
+            if (!Array.isArray(requests)) {
+                requests = [];
+            }
+            
+            if (requests.indexOf(S.username) > -1) {
+                toast('Friend request already sent');
+                return;
+            }
+            
+            requests.push(S.username);
+            return firebase.database().ref('friendRequests/' + username).set(requests);
+        })
+        .then(function() {
+            // Send notification
+            return firebase.database().ref('notifications/' + username).push({
+                from: S.username,
+                message: 'sent you a friend request',
+                type: 'friend_request',
+                time: new Date().toISOString(),
+                read: false
+            });
+        })
+        .then(function() {
+            toast('Friend request sent! 📨');
+            if (typeof renderUsers === 'function') renderUsers();
+            if (typeof renderProfile === 'function') renderProfile();
+        })
+        .catch(function(error) {
+            console.error('Error sending friend request:', error);
+            toast('Error sending friend request. Please try again.');
         });
-        saveState(); renderChatList(); renderProfile(); renderUsers();
-        toast('✅ You and @' + username + ' are now friends!');
-    }).catch(function(error) { console.error('Error:', error); });
 }
 
 // ============================================================
-// DECLINE FRIEND REQUEST
+// FIXED ACCEPT FRIEND REQUEST - Updates both users properly
+// ============================================================
+function acceptFriendRequest(username) {
+    if (!S.username) {
+        toast('Please log in');
+        return;
+    }
+    
+    toast('Accepting friend request...');
+    
+    // Step 1: Add to current user's friends
+    var currentUserFriends = S.friends || [];
+    if (!Array.isArray(currentUserFriends)) {
+        currentUserFriends = [];
+    }
+    if (currentUserFriends.indexOf(username) === -1) {
+        currentUserFriends.push(username);
+    }
+    
+    // Step 2: Add current user to other user's friends
+    firebase.database().ref('users/' + username + '/friends').once('value')
+        .then(function(snapshot) {
+            var theirFriends = snapshot.val() || [];
+            if (!Array.isArray(theirFriends)) {
+                theirFriends = [];
+            }
+            if (theirFriends.indexOf(S.username) === -1) {
+                theirFriends.push(S.username);
+            }
+            return firebase.database().ref('users/' + username + '/friends').set(theirFriends);
+        })
+        .then(function() {
+            // Step 3: Update current user's friends in Firebase
+            return firebase.database().ref('users/' + S.username + '/friends').set(currentUserFriends);
+        })
+        .then(function() {
+            // Step 4: Remove the friend request
+            return firebase.database().ref('friendRequests/' + S.username).once('value');
+        })
+        .then(function(snapshot) {
+            var requests = snapshot.val() || [];
+            if (!Array.isArray(requests)) {
+                requests = [];
+            }
+            requests = requests.filter(function(r) { return r !== username; });
+            return firebase.database().ref('friendRequests/' + S.username).set(requests);
+        })
+        .then(function() {
+            // Step 5: Update local state
+            S.friends = currentUserFriends;
+            
+            // Step 6: Send notification to the other user
+            return firebase.database().ref('notifications/' + username).push({
+                from: S.username,
+                message: 'accepted your friend request',
+                type: 'friend_accept',
+                time: new Date().toISOString(),
+                read: false
+            });
+        })
+        .then(function() {
+            // Step 7: Force refresh all related UI
+            saveState();
+            
+            // Update all views
+            if (typeof renderProfile === 'function') renderProfile();
+            if (typeof renderUsers === 'function') renderUsers();
+            if (typeof renderChatList === 'function') renderChatList();
+            if (typeof renderSocial === 'function') renderSocial();
+            
+            toast('✅ You and @' + username + ' are now friends! 🎉');
+            
+            // Step 8: Reload user data to ensure sync
+            forceSyncUserData();
+        })
+        .catch(function(error) {
+            console.error('Error accepting friend request:', error);
+            toast('Error accepting friend request. Please try again.');
+        });
+}
+
+// ============================================================
+// FIXED DECLINE FRIEND REQUEST
 // ============================================================
 function declineFriendRequest(username) {
     if (!S.username) return;
-    firebase.database().ref('friendRequests/' + S.username).once('value').then(function(snapshot) {
-        var requests = snapshot.val() || [];
-        requests = requests.filter(function(r) { return r !== username; });
-        return firebase.database().ref('friendRequests/' + S.username).set(requests);
-    }).then(function() { toast('Request declined'); renderProfile(); renderUsers(); });
+    
+    firebase.database().ref('friendRequests/' + S.username).once('value')
+        .then(function(snapshot) {
+            var requests = snapshot.val() || [];
+            if (!Array.isArray(requests)) {
+                requests = [];
+            }
+            requests = requests.filter(function(r) { return r !== username; });
+            return firebase.database().ref('friendRequests/' + S.username).set(requests);
+        })
+        .then(function() {
+            toast('Request declined');
+            if (typeof renderProfile === 'function') renderProfile();
+            if (typeof renderUsers === 'function') renderUsers();
+        })
+        .catch(function(error) {
+            console.error('Error declining request:', error);
+        });
+}
+
+// ============================================================
+// FORCE SYNC USER DATA
+// ============================================================
+function forceSyncUserData() {
+    if (!S.username) return;
+    
+    firebase.database().ref('users/' + S.username).once('value')
+        .then(function(snapshot) {
+            if (snapshot.exists()) {
+                var data = snapshot.val();
+                S.friends = data.friends || [];
+                S.name = data.name || S.name;
+                S.bio = data.bio || S.bio;
+                S.avatar = data.avatar || S.avatar;
+                S.wallpaper = data.wallpaper || S.wallpaper;
+                S.bookmarks = data.bookmarks || [];
+                S.selectedAuras = data.selected_auras || [];
+                saveState();
+                
+                // Refresh all UI
+                if (typeof renderProfile === 'function') renderProfile();
+                if (typeof renderUsers === 'function') renderUsers();
+                if (typeof renderChatList === 'function') renderChatList();
+                if (typeof renderSocial === 'function') renderSocial();
+                
+                console.log('🔄 User data force synced');
+            }
+        })
+        .catch(function(error) {
+            console.error('Sync error:', error);
+        });
 }
 
 // ============================================================
 // VIEW USER PROFILE
 // ============================================================
 function viewUserProfile(username) {
-    if (!username || username === S.username) { navigate('profile'); return; }
+    if (!username || username === S.username) { 
+        navigate('profile'); 
+        return; 
+    }
     viewingProfile = username;
     navigate('userprofile', username);
 }
@@ -238,23 +434,57 @@ function viewUserProfile(username) {
 function renderUserProfile(username) {
     if (!username) return;
     firebase.database().ref('users/' + username).once('value').then(function(snapshot) {
-        if (!snapshot.exists()) { toast('User not found'); return; }
-        var data = snapshot.val(); var color = getColor(username);
+        if (!snapshot.exists()) { 
+            toast('User not found'); 
+            return; 
+        }
+        var data = snapshot.val(); 
+        var color = getColor(username);
         var avatarEl = document.getElementById('viewProfileAvatar');
-        if (avatarEl) { if (data.avatar && (data.avatar.startsWith('data:') || data.avatar.includes('http'))) { avatarEl.innerHTML = '<img src="' + data.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />'; } else { avatarEl.innerHTML = '<div style="width:100%;height:100%;border-radius:50%;background:' + color + ';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:32px;">' + (data.name || username).charAt(0).toUpperCase() + '</div>'; } }
-        var nameEl = document.getElementById('viewProfileName'); if (nameEl) nameEl.textContent = data.name || username;
-        var usernameEl = document.getElementById('viewProfileUsername'); if (usernameEl) usernameEl.textContent = '@' + username;
-        var bioEl = document.getElementById('viewProfileBio'); if (bioEl) bioEl.textContent = data.bio || 'No bio yet';
+        if (avatarEl) { 
+            if (data.avatar && (data.avatar.startsWith('data:') || data.avatar.includes('http'))) { 
+                avatarEl.innerHTML = '<img src="' + data.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />'; 
+            } else { 
+                avatarEl.innerHTML = '<div style="width:100%;height:100%;border-radius:50%;background:' + color + ';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:32px;">' + (data.name || username).charAt(0).toUpperCase() + '</div>'; 
+            } 
+        }
+        var nameEl = document.getElementById('viewProfileName'); 
+        if (nameEl) nameEl.textContent = data.name || username;
+        var usernameEl = document.getElementById('viewProfileUsername'); 
+        if (usernameEl) usernameEl.textContent = '@' + username;
+        var bioEl = document.getElementById('viewProfileBio'); 
+        if (bioEl) bioEl.textContent = data.bio || 'No bio yet';
         var userPosts = (S.socialPosts || []).filter(function(p) { return p.author === username; });
-        var postsEl = document.getElementById('viewProfilePosts'); if (postsEl) postsEl.textContent = userPosts.length;
-        var friendsEl = document.getElementById('viewProfileFriends'); if (friendsEl) friendsEl.textContent = (data.friends || []).length;
+        var postsEl = document.getElementById('viewProfilePosts'); 
+        if (postsEl) postsEl.textContent = userPosts.length;
+        var friendsEl = document.getElementById('viewProfileFriends'); 
+        if (friendsEl) friendsEl.textContent = (data.friends || []).length;
         var actionsEl = document.getElementById('viewProfileActions');
-        if (actionsEl) { if ((S.friends || []).indexOf(username) > -1) { var dmId = [S.username, username].sort().join('_dm_'); actionsEl.innerHTML = '<button class="btn-sm btn-success">✓ Friends</button> <button class="btn-sm" onclick="openChat(\'' + dmId + '\', \'dm\')">💬 Message</button>'; } else { actionsEl.innerHTML = '<button class="btn-sm btn-primary" onclick="sendFriendRequest(\'' + username + '\')">➕ Add Friend</button>'; } }
+        if (actionsEl) { 
+            if ((S.friends || []).indexOf(username) > -1) { 
+                var dmId = [S.username, username].sort().join('_dm_'); 
+                actionsEl.innerHTML = '<button class="btn-sm btn-success">✓ Friends</button> <button class="btn-sm" onclick="openChat(\'' + dmId + '\', \'dm\')">💬 Message</button>'; 
+            } else { 
+                actionsEl.innerHTML = '<button class="btn-sm btn-primary" onclick="sendFriendRequest(\'' + username + '\')">➕ Add Friend</button>'; 
+            } 
+        }
         var gridEl = document.getElementById('viewProfilePostsGrid');
-        if (gridEl) { if (userPosts.length === 0) { gridEl.innerHTML = '<p style="color:#94a3b8;text-align:center;grid-column:1/-1;padding:20px;">No posts yet.</p>'; } else { gridEl.innerHTML = userPosts.slice().sort(function(a, b) { return new Date(b.time) - new Date(a.time); }).map(function(post) { var img = post.image || 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=400&q=80'; return '<div style="aspect-ratio:1;background-image:url(' + img + ');background-size:cover;background-position:center;border-radius:6px;cursor:pointer;" onclick="viewPostDetail(\'' + post.id + '\')"></div>'; }).join(''); } }
+        if (gridEl) { 
+            if (userPosts.length === 0) { 
+                gridEl.innerHTML = '<p style="color:#94a3b8;text-align:center;grid-column:1/-1;padding:20px;">No posts yet.</p>'; 
+            } else { 
+                gridEl.innerHTML = userPosts.slice().sort(function(a, b) { return new Date(b.time) - new Date(a.time); }).map(function(post) { 
+                    var img = post.image || 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=400&q=80'; 
+                    return '<div style="aspect-ratio:1;background-image:url(' + img + ');background-size:cover;background-position:center;border-radius:6px;cursor:pointer;" onclick="viewPostDetail(\'' + post.id + '\')"></div>'; 
+                }).join(''); 
+            } 
+        }
     });
 }
 
+// ============================================================
+// EXPOSE GLOBALLY
+// ============================================================
 window.renderProfile = renderProfile;
 window.updateProfileAvatar = updateProfileAvatar;
 window.updatePostAvatarInComposer = updatePostAvatarInComposer;
@@ -268,5 +498,6 @@ window.acceptFriendRequest = acceptFriendRequest;
 window.declineFriendRequest = declineFriendRequest;
 window.viewUserProfile = viewUserProfile;
 window.renderUserProfile = renderUserProfile;
+window.forceSyncUserData = forceSyncUserData;
 
-console.log('👤 Profile loaded - fixed friend requests');
+console.log('👤 Profile loaded - fixed friend requests with sync');

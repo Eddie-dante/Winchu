@@ -1,4 +1,4 @@
-// Social Feed Module - Fixed likes and comments
+// Social Feed Module - Fixed likes and comments with transactions
 
 var postsListener = null;
 var selectedFile = null;
@@ -6,33 +6,43 @@ var selectedFileData = null;
 var processedPostIds = {};
 
 function setupPostsListener() {
-    if (postsListener) { postsListener.off(); postsListener = null; }
-    S.socialPosts = []; processedPostIds = {};
+    if (postsListener) { 
+        postsListener.off(); 
+        postsListener = null; 
+    }
+    S.socialPosts = []; 
+    processedPostIds = {};
     
     var ref = firebase.database().ref('posts');
     
     ref.orderByChild('time').limitToLast(200).once('value').then(function(snapshot) {
         var data = snapshot.val();
-        S.socialPosts = []; processedPostIds = {};
+        S.socialPosts = []; 
+        processedPostIds = {};
         if (data) {
             Object.keys(data).forEach(function(key) {
                 var post = data[key];
                 if (post && post.author && !processedPostIds[key]) {
                     post.id = key;
-                    // ENSURE likes and comments are ALWAYS arrays
                     if (!Array.isArray(post.likes)) post.likes = [];
                     if (!Array.isArray(post.comments)) post.comments = [];
                     processedPostIds[key] = true;
                     S.socialPosts.push(post);
                 }
             });
-            S.socialPosts.sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
+            S.socialPosts.sort(function(a, b) { 
+                return new Date(b.time) - new Date(a.time); 
+            });
         }
-        renderSocial(); renderProfile(); renderStories(); saveState();
+        renderSocial(); 
+        renderProfile(); 
+        renderStories(); 
+        saveState();
     });
     
     ref.on('child_added', function(snapshot) {
-        var post = snapshot.val(); var key = snapshot.key;
+        var post = snapshot.val(); 
+        var key = snapshot.key;
         if (!post || !post.author || processedPostIds[key]) return;
         post.id = key;
         if (!Array.isArray(post.likes)) post.likes = [];
@@ -41,23 +51,36 @@ function setupPostsListener() {
         if (!S.socialPosts.find(function(p) { return p.id === key; })) {
             S.socialPosts.unshift(post);
             if (S.socialPosts.length > 200) S.socialPosts.pop();
-            S.socialPosts.sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
-            renderSocial(); renderProfile(); renderStories(); saveState();
+            S.socialPosts.sort(function(a, b) { 
+                return new Date(b.time) - new Date(a.time); 
+            });
+            renderSocial(); 
+            renderProfile(); 
+            renderStories(); 
+            saveState();
         }
     });
     
     ref.on('child_changed', function(snapshot) {
-        var post = snapshot.val(); if (!post) return; post.id = snapshot.key;
+        var post = snapshot.val(); 
+        if (!post) return; 
+        post.id = snapshot.key;
         if (!Array.isArray(post.likes)) post.likes = [];
         if (!Array.isArray(post.comments)) post.comments = [];
         var idx = S.socialPosts.findIndex(function(p) { return p.id === post.id; });
-        if (idx > -1) { S.socialPosts[idx] = post; renderSocial(); }
+        if (idx > -1) { 
+            S.socialPosts[idx] = post; 
+            renderSocial(); 
+        }
     });
     
     ref.on('child_removed', function(snapshot) {
         delete processedPostIds[snapshot.key];
-        S.socialPosts = S.socialPosts.filter(function(p) { return p.id !== snapshot.key; });
-        renderSocial(); renderProfile();
+        S.socialPosts = S.socialPosts.filter(function(p) { 
+            return p.id !== snapshot.key; 
+        });
+        renderSocial(); 
+        renderProfile();
     });
     
     console.log('📱 Posts listener active');
@@ -66,10 +89,16 @@ function setupPostsListener() {
 function renderSocial() {
     var feed = document.getElementById('socialFeed');
     if (!feed) return;
-    if (!S.username) { feed.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:30px;">Please log in</p>'; return; }
+    if (!S.username) { 
+        feed.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:30px;">Please log in</p>'; 
+        return; 
+    }
     
     var posts = S.socialPosts || [];
-    if (posts.length === 0) { feed.innerHTML = '<div style="text-align:center;padding:50px;"><div style="font-size:48px;">📸</div><p>No posts yet.</p></div>'; return; }
+    if (posts.length === 0) { 
+        feed.innerHTML = '<div style="text-align:center;padding:50px;"><div style="font-size:48px;">📸</div><p>No posts yet.</p></div>'; 
+        return; 
+    }
     
     var html = '';
     posts.forEach(function(post) {
@@ -98,7 +127,7 @@ function renderSocial() {
         
         html += '<div class="ig-post-actions" onclick="event.stopPropagation();" style="padding:8px 12px;display:flex;align-items:center;gap:14px;">';
         html += '<button class="ig-post-action' + (liked ? ' liked' : '') + '" onclick="likePost(\'' + post.id + '\')" style="font-size:20px;">' + (liked ? '❤️' : '🤍') + '</button>';
-        html += '<span style="font-size:12px;font-weight:600;color:#94a3b8;">' + likeCount + '</span>';
+        html += '<span style="font-size:12px;font-weight:600;color:#94a3b8;" id="likeCount-' + post.id + '">' + likeCount + '</span>';
         html += '<button class="ig-post-action" onclick="commentOnPost(\'' + post.id + '\')" style="font-size:20px;">💬</button>';
         html += '<span style="font-size:12px;font-weight:600;color:#94a3b8;">' + commentCount + '</span>';
         html += '<button class="ig-post-action" onclick="bookmarkItem(\'' + post.id + '\',\'post\')" style="font-size:20px;">🔖</button>';
@@ -111,93 +140,173 @@ function renderSocial() {
 }
 
 function createPost() {
-    if (!S.username) { toast('Please log in'); return; }
+    if (!S.username) { 
+        toast('Please log in'); 
+        return; 
+    }
     var input = document.getElementById('postInput');
     var text = input ? input.value.trim() : '';
-    if (!text && !selectedFileData) { toast('Write something or attach media'); return; }
+    if (!text && !selectedFileData) { 
+        toast('Write something or attach media'); 
+        return; 
+    }
     
     var postData = {
-        author: S.username, avatar: S.avatar || null,
-        text: text || '', image: selectedFileData || null,
-        time: new Date().toISOString(), likes: [], comments: []
+        author: S.username, 
+        avatar: S.avatar || null,
+        text: text || '', 
+        image: selectedFileData || null,
+        time: new Date().toISOString(), 
+        likes: [], 
+        comments: []
     };
     
     var newRef = firebase.database().ref('posts').push();
     newRef.set(postData).then(function() {
         if (input) input.value = '';
-        selectedFile = null; selectedFileData = null;
-        var preview = document.getElementById('filePreview'); if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
-        var fileInput = document.getElementById('postFile'); if (fileInput) fileInput.value = '';
-        renderSocial(); renderProfile(); renderStories(); saveState();
-        toast('📝 Posted!');
-    }).catch(function() { toast('Failed to post'); });
-}
-
-// ============================================================
-// FIXED LIKE POST - Persists correctly
-// ============================================================
-function likePost(postId) {
-    if (!S.username) return;
-    
-    // Get current likes from Firebase FIRST
-    firebase.database().ref('posts/' + postId + '/likes').once('value').then(function(snapshot) {
-        var likes = snapshot.val() || [];
-        // Ensure it's an array
-        if (!Array.isArray(likes)) likes = [];
-        
-        var idx = likes.indexOf(S.username);
-        if (idx > -1) {
-            // Unlike
-            likes.splice(idx, 1);
-        } else {
-            // Like
-            likes.push(S.username);
+        selectedFile = null; 
+        selectedFileData = null;
+        var preview = document.getElementById('filePreview'); 
+        if (preview) { 
+            preview.style.display = 'none'; 
+            preview.innerHTML = ''; 
         }
-        
-        // Save back to Firebase
-        return firebase.database().ref('posts/' + postId + '/likes').set(likes);
-    }).then(function() {
-        // The child_changed listener will update the UI
-        console.log('Like toggled for post:', postId);
-    }).catch(function(error) {
-        console.error('Like error:', error);
+        var fileInput = document.getElementById('postFile'); 
+        if (fileInput) fileInput.value = '';
+        renderSocial(); 
+        renderProfile(); 
+        renderStories(); 
+        saveState();
+        toast('📝 Posted!');
+    }).catch(function() { 
+        toast('Failed to post'); 
     });
 }
 
 // ============================================================
-// FIXED COMMENT ON POST - Persists correctly
+// FIXED LIKE POST - Uses transaction for atomic updates
+// ============================================================
+function likePost(postId) {
+    if (!S.username) {
+        toast('Please log in to like');
+        return;
+    }
+    
+    // Use transaction for atomic update
+    var postRef = firebase.database().ref('posts/' + postId + '/likes');
+    
+    postRef.transaction(function(currentLikes) {
+        // Initialize if null
+        if (currentLikes === null) {
+            currentLikes = [];
+        }
+        
+        // Ensure it's an array
+        if (!Array.isArray(currentLikes)) {
+            currentLikes = [];
+        }
+        
+        var index = currentLikes.indexOf(S.username);
+        
+        if (index !== -1) {
+            // Unlike - remove from array
+            currentLikes.splice(index, 1);
+        } else {
+            // Like - add to array
+            currentLikes.push(S.username);
+        }
+        
+        return currentLikes;
+        
+    }, function(error, committed, snapshot) {
+        if (error) {
+            console.error('Like transaction error:', error);
+            toast('Error processing like');
+        } else if (committed) {
+            // Success - update local state
+            var post = S.socialPosts.find(function(p) { return p.id === postId; });
+            if (post) {
+                var likes = snapshot.val() || [];
+                if (!Array.isArray(likes)) likes = [];
+                post.likes = likes;
+                renderSocial();
+                
+                // Update like count in post detail if open
+                var likeCountEl = document.getElementById('likeCount-' + postId);
+                if (likeCountEl) {
+                    likeCountEl.textContent = likes.length;
+                }
+            }
+        }
+    });
+}
+
+// ============================================================
+// FIXED COMMENT ON POST - Uses transaction
 // ============================================================
 function commentOnPost(postId) {
-    if (!S.username) return;
+    if (!S.username) {
+        toast('Please log in to comment');
+        return;
+    }
     
     showDialog({
-        emoji: '💬', title: 'Add Comment', placeholder: 'Write your comment...', confirmText: 'Post'
+        emoji: '💬',
+        title: 'Add Comment',
+        placeholder: 'Write your comment...',
+        confirmText: 'Post'
     }).then(function(result) {
         if (result && result.trim()) {
-            // Get current comments from Firebase FIRST
-            firebase.database().ref('posts/' + postId + '/comments').once('value').then(function(snapshot) {
-                var comments = snapshot.val() || [];
-                if (!Array.isArray(comments)) comments = [];
+            var comment = {
+                username: S.username,
+                text: result.trim(),
+                time: new Date().toISOString()
+            };
+            
+            // Use transaction for atomic comment addition
+            var commentsRef = firebase.database().ref('posts/' + postId + '/comments');
+            
+            commentsRef.transaction(function(currentComments) {
+                if (currentComments === null) {
+                    currentComments = [];
+                }
+                if (!Array.isArray(currentComments)) {
+                    currentComments = [];
+                }
+                currentComments.push(comment);
+                return currentComments;
                 
-                comments.push({
-                    username: S.username,
-                    text: result.trim(),
-                    time: new Date().toISOString()
-                });
-                
-                // Save back to Firebase
-                return firebase.database().ref('posts/' + postId + '/comments').set(comments);
-            }).then(function() {
-                toast('Comment added! 💬');
-            }).catch(function(error) {
-                console.error('Comment error:', error);
+            }, function(error, committed) {
+                if (error) {
+                    console.error('Comment error:', error);
+                    toast('Error posting comment');
+                } else if (committed) {
+                    toast('Comment added! 💬');
+                    
+                    // Notify post author
+                    var post = S.socialPosts.find(function(p) { return p.id === postId; });
+                    if (post && post.author !== S.username) {
+                        addNotification(
+                            post.author,
+                            'commented on your post: "' + result.trim().substring(0, 50) + '"',
+                            'comment',
+                            postId
+                        );
+                    }
+                }
             });
         }
     });
 }
 
 function deletePost(postId) {
-    showDialog({ emoji: '🗑️', title: 'Delete Post', subtitle: 'Are you sure?', confirmText: 'Delete', danger: true }).then(function(result) {
+    showDialog({ 
+        emoji: '🗑️', 
+        title: 'Delete Post', 
+        subtitle: 'Are you sure?', 
+        confirmText: 'Delete', 
+        danger: true 
+    }).then(function(result) {
         if (result !== null) {
             firebase.database().ref('posts/' + postId).remove().then(function() {
                 toast('Post deleted');
@@ -207,9 +316,14 @@ function deletePost(postId) {
 }
 
 function handleFileSelect(event) {
-    var file = event.target.files[0]; if (!file) return;
+    var file = event.target.files[0]; 
+    if (!file) return;
     var maxSize = file.type.startsWith('video/') ? 50*1024*1024 : 10*1024*1024;
-    if (file.size > maxSize) { toast('File too large'); event.target.value = ''; return; }
+    if (file.size > maxSize) { 
+        toast('File too large'); 
+        event.target.value = ''; 
+        return; 
+    }
     selectedFile = file;
     var reader = new FileReader();
     reader.onload = function(e) {
@@ -224,33 +338,67 @@ function handleFileSelect(event) {
 }
 
 function clearFileSelection() {
-    selectedFile = null; selectedFileData = null;
-    var preview = document.getElementById('filePreview'); if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
-    var fileInput = document.getElementById('postFile'); if (fileInput) fileInput.value = '';
+    selectedFile = null; 
+    selectedFileData = null;
+    var preview = document.getElementById('filePreview'); 
+    if (preview) { 
+        preview.style.display = 'none'; 
+        preview.innerHTML = ''; 
+    }
+    var fileInput = document.getElementById('postFile'); 
+    if (fileInput) fileInput.value = '';
 }
 
-function downloadMedia(url) { if (!url) return; if (url.startsWith('data:')) { var a = document.createElement('a'); a.href = url; a.download = 'media.jpg'; a.click(); } }
+function downloadMedia(url) { 
+    if (!url) return; 
+    if (url.startsWith('data:')) { 
+        var a = document.createElement('a'); 
+        a.href = url; 
+        a.download = 'media.jpg'; 
+        a.click(); 
+    } 
+}
 
 function bookmarkItem(id, type) {
     if (!S.username) return;
     S.bookmarks = S.bookmarks || [];
     var idx = S.bookmarks.findIndex(function(b) { return b.id === id; });
-    if (idx > -1) { S.bookmarks.splice(idx, 1); toast('Removed'); }
-    else { S.bookmarks.push({ id: id, type: type, time: new Date().toISOString() }); toast('Saved! 🔖'); }
+    if (idx > -1) { 
+        S.bookmarks.splice(idx, 1); 
+        toast('Removed'); 
+    } else { 
+        S.bookmarks.push({ id: id, type: type, time: new Date().toISOString() }); 
+        toast('Saved! 🔖'); 
+    }
     firebase.database().ref('users/' + S.username + '/bookmarks').set(S.bookmarks);
-    saveState(); renderSocial(); renderProfile();
+    saveState(); 
+    renderSocial(); 
+    renderProfile();
 }
 
 function renderStories() {
-    var row = document.getElementById('storyRow'); if (!row) return;
+    var row = document.getElementById('storyRow'); 
+    if (!row) return;
     row.innerHTML = '<div class="ig-story" onclick="addStatus()"><div class="ig-story-avatar"><div class="inner" style="display:flex;align-items:center;justify-content:center;font-size:24px;">📸</div></div><span class="ig-story-name">My Status</span><span style="font-size:8px;color:#6366f1;">+ Add</span></div>';
 }
 
 function addStatus() {
     if (!S.username) return;
-    showDialog({ emoji: '📸', title: 'Add Status', placeholder: 'What\'s on your mind?', confirmText: 'Post' }).then(function(text) {
+    showDialog({ 
+        emoji: '📸', 
+        title: 'Add Status', 
+        placeholder: 'What\'s on your mind?', 
+        confirmText: 'Post' 
+    }).then(function(text) {
         if (text !== null && text.trim()) {
-            firebase.database().ref('statuses').push({ author: S.username, avatar: S.avatar || null, text: text.trim(), time: new Date().toISOString(), expires: new Date(Date.now()+86400000).toISOString(), views: [] });
+            firebase.database().ref('statuses').push({ 
+                author: S.username, 
+                avatar: S.avatar || null, 
+                text: text.trim(), 
+                time: new Date().toISOString(), 
+                expires: new Date(Date.now()+86400000).toISOString(), 
+                views: [] 
+            });
             toast('Status added! 📸');
             renderStories();
         }
@@ -267,4 +415,4 @@ window.deletePost = deletePost;
 window.downloadMedia = downloadMedia;
 window.bookmarkItem = bookmarkItem;
 
-console.log('📱 Social loaded - likes and comments fixed');
+console.log('📱 Social loaded - likes and comments fixed with transactions');
