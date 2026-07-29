@@ -140,11 +140,7 @@ function renderVideos() {
         
         html += '<div class="video-slide" style="background:#000;height:100vh;width:100%;position:relative;overflow:hidden;" data-video-id="' + video.id + '">';
         
-        // Create video element with clear play button overlay for PC
-        html += '<div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;z-index:2;pointer-events:none;" id="playOverlay-' + video.id + '">';
-        html += '<div style="background:rgba(0,0,0,0.5);border-radius:50%;width:80px;height:80px;display:flex;align-items:center;justify-content:center;font-size:40px;color:#fff;border:2px solid rgba(255,255,255,0.3);pointer-events:none;" class="play-icon">▶</div>';
-        html += '</div>';
-        
+        // Create video element with proper attributes
         if (videoSrc) {
             html += '<video ';
             html += 'id="video-' + video.id + '" ';
@@ -155,7 +151,7 @@ function renderVideos() {
             html += 'x5-playsinline ';
             html += 'preload="auto" ';
             html += 'style="width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;background:#000;cursor:pointer;z-index:1;" ';
-            html += 'onclick="playVideo(this, \'' + video.id + '\')" ';
+            html += 'onclick="toggleVideoPlay(this, \'' + video.id + '\')" ';
             html += '></video>';
         } else {
             html += '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.5rem;background:#1a1a1a;flex-direction:column;z-index:1;position:relative;">' +
@@ -218,49 +214,37 @@ function renderVideos() {
 }
 
 // ============================================================
-// PLAY VIDEO - NEW FUNCTION
+// TOGGLE VIDEO PLAY - FIXED VOLUME
 // ============================================================
-function playVideo(videoElement, videoId) {
-    console.log('🎬 playVideo called for:', videoId);
-    
+function toggleVideoPlay(videoElement, videoId) {
     if (!videoElement) return;
     
-    // Hide play overlay
-    var overlay = document.getElementById('playOverlay-' + videoId);
-    if (overlay) {
-        overlay.style.display = 'none';
-    }
+    console.log('🎬 toggleVideoPlay called for:', videoId);
     
+    // Check if video is currently playing
     if (videoElement.paused) {
-        // Try to play with sound
+        // UNMUTE FIRST, THEN PLAY
         videoElement.muted = false;
-        videoElement.play().then(function() {
-            console.log('▶️ Video playing with sound');
-        }).catch(function(error) {
-            console.log('⚠️ Autoplay blocked:', error.message);
-            // If autoplay blocked, play muted
-            videoElement.muted = true;
-            videoElement.play().catch(function() {});
-            toast('🔊 Tap again for sound');
-            // Show overlay again if muted
-            setTimeout(function() {
-                if (overlay) {
-                    overlay.style.display = 'flex';
-                }
-            }, 500);
-        });
+        videoElement.play()
+            .then(function() {
+                console.log('▶️ Video playing with sound ON');
+            })
+            .catch(function(error) {
+                console.log('⚠️ Autoplay blocked:', error.message);
+                // If blocked, play muted and show message
+                videoElement.muted = true;
+                videoElement.play().catch(function() {});
+                toast('🔊 Tap the video again to enable sound');
+            });
     } else {
+        // Pause the video
         videoElement.pause();
         console.log('⏸️ Video paused');
-        // Show overlay when paused
-        if (overlay) {
-            overlay.style.display = 'flex';
-        }
     }
 }
 
 // ============================================================
-// VIDEO AUTOPLAY
+// VIDEO AUTOPLAY - FIXED
 // ============================================================
 function setupVideoAutoplay(container) {
     if (!container) {
@@ -271,6 +255,25 @@ function setupVideoAutoplay(container) {
     var videos = container.querySelectorAll('video');
     if (videos.length === 0) return;
     
+    // Check if mobile
+    var isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    videos.forEach(function(video, index) {
+        // Extract video ID from element
+        var videoId = video.id.replace('video-', '');
+        
+        if (isMobile) {
+            // Mobile: autoplay muted
+            video.muted = true;
+            video.play().catch(function() {});
+        } else {
+            // PC: autoplay muted
+            video.muted = true;
+            video.play().catch(function() {});
+        }
+    });
+    
+    // Intersection Observer for all devices
     var observer = new IntersectionObserver(function(entries) {
         entries.forEach(function(entry) {
             var video = entry.target;
@@ -278,12 +281,6 @@ function setupVideoAutoplay(container) {
                 // Video is visible - play muted
                 video.muted = true;
                 video.play().catch(function() {});
-                // Hide play overlay when autoplaying
-                var videoId = video.id.replace('video-', '');
-                var overlay = document.getElementById('playOverlay-' + videoId);
-                if (overlay) {
-                    overlay.style.display = 'none';
-                }
             } else {
                 video.pause();
             }
@@ -293,15 +290,6 @@ function setupVideoAutoplay(container) {
     videos.forEach(function(v) {
         observer.observe(v);
     });
-}
-
-// ============================================================
-// TOGGLE VIDEO PLAY - LEGACY FUNCTION
-// ============================================================
-function toggleVideoPlay(el) {
-    if (!el) return;
-    var videoId = el.id.replace('video-', '');
-    playVideo(el, videoId);
 }
 
 // ============================================================
@@ -632,6 +620,5 @@ window.deleteVideoComment = deleteVideoComment;
 window.deleteVideo = deleteVideo;
 window.downloadVideo = downloadVideo;
 window.toggleVideoPlay = toggleVideoPlay;
-window.playVideo = playVideo;
 
 console.log('🎬 Videos module loaded (PC & Mobile optimized)');
