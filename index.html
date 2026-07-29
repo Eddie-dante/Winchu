@@ -12,71 +12,31 @@
     <title>Winchu · Nexus</title>
 
     <!-- ============================================================ -->
-    <!-- SOURCE CODE PROTECTION - RE-ENABLED -->
+    <!-- SOURCE CODE PROTECTION - DISABLED FOR DEBUGGING -->
     <!-- ============================================================ -->
+    <!-- 
     <script>
-        // Disable right-click
-        document.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
-            return false;
-        });
-
-        // Disable keyboard shortcuts for developer tools
+        document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; });
         document.addEventListener('keydown', function(e) {
-            // F12
-            if (e.keyCode === 123) {
-                e.preventDefault();
-                return false;
-            }
-            // Ctrl+Shift+I
-            if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
-                e.preventDefault();
-                return false;
-            }
-            // Ctrl+Shift+J
-            if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
-                e.preventDefault();
-                return false;
-            }
-            // Ctrl+U
-            if (e.ctrlKey && e.keyCode === 85) {
-                e.preventDefault();
-                return false;
-            }
-            // Ctrl+S
-            if (e.ctrlKey && e.keyCode === 83) {
-                e.preventDefault();
-                return false;
-            }
-            // Ctrl+P
-            if (e.ctrlKey && e.keyCode === 80) {
-                e.preventDefault();
-                return false;
-            }
-            // Ctrl+Shift+C
-            if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
-                e.preventDefault();
-                return false;
-            }
+            if (e.keyCode === 123) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 73) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 74) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.keyCode === 85) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.keyCode === 83) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.keyCode === 80) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 67) { e.preventDefault(); return false; }
         });
-
-        // Detect developer tools
         (function() {
             var threshold = 160;
             setInterval(function() {
                 if (window.outerWidth - window.innerWidth > threshold ||
                     window.outerHeight - window.innerHeight > threshold) {
-                    document.body.innerHTML = `
-                        <div style="text-align:center;padding:50px;font-family:sans-serif;background:#0f172a;color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;">
-                            <h1 style="font-size:2rem;margin-bottom:20px;">⚠️ Developer Tools Detected</h1>
-                            <p style="color:#94a3b8;">Please close developer tools to continue.</p>
-                            <button onclick="location.reload()" style="margin-top:20px;padding:12px 30px;background:#6366f1;color:#fff;border:none;border-radius:12px;font-size:16px;cursor:pointer;">🔄 Reload Page</button>
-                        </div>
-                    `;
+                    document.body.innerHTML = '<div style="text-align:center;padding:50px;font-family:sans-serif;background:#0f172a;color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;"><h1 style="font-size:2rem;margin-bottom:20px;">⚠️ Developer Tools Detected</h1><p style="color:#94a3b8;">Please close developer tools to continue.</p><button onclick="location.reload()" style="margin-top:20px;padding:12px 30px;background:#6366f1;color:#fff;border:none;border-radius:12px;font-size:16px;cursor:pointer;">🔄 Reload Page</button></div>';
                 }
             }, 1000);
         })();
     </script>
+    -->
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -410,7 +370,7 @@
     <script src="js/ai.js"></script>
 
     <!-- ============================================================ -->
-    <!-- DEBUG: Check functions -->
+    <!-- DEBUG CONSOLE CHECK -->
     <!-- ============================================================ -->
     <script>
     console.log('🔍 AFTER SCRIPTS LOADED:');
@@ -419,6 +379,7 @@
     console.log('  - toast:', typeof toast);
     console.log('  - navigate:', typeof navigate);
     console.log('  - firebase:', typeof firebase);
+    console.log('✅ Console is enabled for debugging!');
     </script>
 </body>
 </html>
