@@ -1,4 +1,9 @@
-var CACHE_NAME = 'winchu-nexus-v2';
+// ============================================================
+// SERVICE WORKER - Force update
+// ============================================================
+
+var CACHE_NAME = 'winchu-nexus-v3'; // ← CHANGED VERSION NUMBER
+
 var urlsToCache = [
     '/',
     '/index.html',
