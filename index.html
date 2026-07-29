@@ -10,28 +10,6 @@
     <link rel="manifest" href="/manifest.json" />
     <title>Winchu · Nexus</title>
 
-    <!-- Source Code Protection -->
-    <script>
-        document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; });
-        document.addEventListener('keydown', function(e) {
-            if (e.keyCode === 123) { e.preventDefault(); return false; }
-            if (e.ctrlKey && e.shiftKey && e.keyCode === 73) { e.preventDefault(); return false; }
-            if (e.ctrlKey && e.shiftKey && e.keyCode === 74) { e.preventDefault(); return false; }
-            if (e.ctrlKey && e.keyCode === 85) { e.preventDefault(); return false; }
-            if (e.ctrlKey && e.keyCode === 83) { e.preventDefault(); return false; }
-            if (e.ctrlKey && e.keyCode === 80) { e.preventDefault(); return false; }
-            if (e.ctrlKey && e.shiftKey && e.keyCode === 67) { e.preventDefault(); return false; }
-        });
-        (function() {
-            var t = 160;
-            setInterval(function() {
-                if (window.outerWidth - window.innerWidth > t || window.outerHeight - window.innerHeight > t) {
-                    document.body.innerHTML = '<div style="text-align:center;padding:50px;font-family:sans-serif;"><h1>⚠️ Developer Tools Detected</h1><p>Please close developer tools to continue.</p></div>';
-                }
-            }, 1000);
-        })();
-    </script>
-
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -43,21 +21,6 @@
     <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-    <!-- ============================================================ -->
-    <!-- DEBUG CONSOLE PANEL -->
-    <!-- ============================================================ -->
-    <div id="debugPanel" style="position:fixed;bottom:80px;left:0;right:0;z-index:99999;background:rgba(0,0,0,0.95);color:#0f0;font-size:12px;padding:10px;max-height:200px;overflow-y:auto;display:none;font-family:monospace;border-top:2px solid #0f0;">
-        <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
-            <strong>🔍 DEBUG CONSOLE</strong>
-            <div>
-                <button onclick="clearDebug()" style="background:#ff0;color:#000;border:none;padding:2px 10px;border-radius:4px;cursor:pointer;margin-right:5px;">Clear</button>
-                <button onclick="document.getElementById('debugPanel').style.display='none'" style="background:red;color:#fff;border:none;padding:2px 10px;border-radius:4px;cursor:pointer;">✕</button>
-            </div>
-        </div>
-        <div id="debugLog" style="white-space:pre-wrap;word-wrap:break-word;"></div>
-    </div>
-    <button onclick="toggleDebug()" style="position:fixed;bottom:200px;right:20px;z-index:99998;background:linear-gradient(135deg,#00ff00,#00cc00);color:#000;border:2px solid #00ff00;border-radius:50%;width:56px;height:56px;font-size:24px;cursor:pointer;box-shadow:0 0 30px rgba(0,255,0,0.4);display:flex;align-items:center;justify-content:center;font-weight:bold;">🐛</button>
-
     <!-- Floating Elements -->
     <div class="signature">Winchu · Nexus</div>
     <button class="wp-fab" id="wpFab" onclick="navigate('wallpapers')" style="display:none;" title="Change Wallpaper">🎨</button>
@@ -112,7 +75,7 @@
             <input type="text" id="signupName" placeholder="Full name" autocomplete="name" style="margin-bottom:8px;">
             <input type="text" id="signupUser" placeholder="Username" autocomplete="username" style="margin-bottom:8px;">
             <input type="password" id="signupPass" placeholder="Password (6+ characters)" autocomplete="new-password" style="margin-bottom:16px;">
-            <button class="btn-primary" id="signupBtn" onclick="debugLog('Signup button clicked via onclick'); handleSignup();">Sign Up</button>
+            <button class="btn-primary" id="signupBtn" onclick="handleSignup()">Sign Up</button>
             <div class="auth-toggle" onclick="navigate('login')">Already have an account? Log in</div>
             <div class="auth-toggle" onclick="resetPassword()" style="margin-top:4px;">Forgot password? Reset</div>
             <button class="btn-secondary" onclick="navigate('landing')" style="margin-top:8px;">← Back</button>
@@ -127,7 +90,7 @@
             <h2 style="font-size:20px;font-weight:700;margin-bottom:16px;">🔐 Sign In</h2>
             <input type="text" id="loginUser" placeholder="Username" autocomplete="username" style="margin-bottom:8px;">
             <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password" style="margin-bottom:16px;">
-            <button class="btn-primary" id="loginBtn" onclick="debugLog('Login button clicked via onclick'); handleLogin();">Log In</button>
+            <button class="btn-primary" id="loginBtn" onclick="handleLogin()">Log In</button>
             <div class="auth-toggle" onclick="navigate('signup')">No account? Create one</div>
             <div class="auth-toggle" onclick="resetPassword()" style="margin-top:4px;">Forgot password? Reset</div>
             <button class="btn-secondary" onclick="navigate('landing')" style="margin-top:8px;">← Back</button>
@@ -334,7 +297,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- PAGE: DIARY (Updated with Container) -->
+    <!-- PAGE: DIARY -->
     <!-- ============================================================ -->
     <div class="page" id="page-diary">
         <div class="container" style="padding:10px;height:100%;min-height:600px;">
@@ -360,22 +323,11 @@
     <!-- ============================================================ -->
     <!-- JAVASCRIPT FILES -->
     <!-- ============================================================ -->
-    <!-- 1. Firebase FIRST -->
     <script src="js/firebase.js"></script>
-    
-    <!-- 2. State SECOND -->
     <script src="js/state.js"></script>
-    
-    <!-- 3. Navigation THIRD -->
     <script src="js/navigation.js"></script>
-    
-    <!-- 4. Auth FOURTH -->
     <script src="js/auth.js"></script>
-    
-    <!-- 5. App FIFTH -->
     <script src="js/app.js"></script>
-    
-    <!-- All other scripts -->
     <script src="js/dashboard.js"></script>
     <script src="js/social.js"></script>
     <script src="js/videos.js"></script>
@@ -390,104 +342,15 @@
     <script src="js/ai.js"></script>
 
     <!-- ============================================================ -->
-    <!-- DEBUG SYSTEM -->
+    <!-- DEBUG: Check functions -->
     <!-- ============================================================ -->
     <script>
-    // ============================================================
-    // DEBUG SYSTEM - Complete
-    // ============================================================
-    var debugLogs = [];
-    var debugVisible = false;
-    
-    function toggleDebug() {
-        var panel = document.getElementById('debugPanel');
-        debugVisible = panel.style.display !== 'none';
-        panel.style.display = debugVisible ? 'none' : 'block';
-        if (!debugVisible) {
-            document.getElementById('debugLog').scrollTop = document.getElementById('debugLog').scrollHeight;
-        }
-    }
-    
-    function clearDebug() {
-        debugLogs = [];
-        document.getElementById('debugLog').innerHTML = '';
-        debugLog('🧹 Debug cleared');
-    }
-    
-    function debugLog(message) {
-        var timestamp = new Date().toLocaleTimeString();
-        var logEntry = '[' + timestamp + '] ' + message;
-        debugLogs.push(logEntry);
-        var container = document.getElementById('debugLog');
-        if (container) {
-            container.innerHTML = debugLogs.join('\n');
-            container.scrollTop = container.scrollHeight;
-        }
-        console.log(logEntry);
-    }
-    
-    // Override toast function to show in debug panel
-    if (typeof toast !== 'function') {
-        window.toast = function(message) {
-            debugLog('📢 TOAST: ' + message);
-            alert(message);
-        };
-        debugLog('⚠️ Toast fallback created');
-    } else {
-        var originalToast = window.toast;
-        window.toast = function(message) {
-            debugLog('📢 TOAST: ' + message);
-            originalToast(message);
-        };
-    }
-    
-    // Override console.log to show in debug panel
-    var originalLog = console.log;
-    console.log = function() {
-        var args = Array.from(arguments);
-        var message = args.join(' ');
-        if (message && message.length > 0) {
-            debugLog('📝 ' + message);
-        }
-        originalLog.apply(console, arguments);
-    };
-    
-    var originalError = console.error;
-    console.error = function() {
-        var args = Array.from(arguments);
-        var message = args.join(' ');
-        if (message && message.length > 0) {
-            debugLog('❌ ERROR: ' + message);
-        }
-        originalError.apply(console, arguments);
-    };
-    
-    // Initialize
-    debugLog('🐛 Debug console initialized');
-    debugLog('📌 Checking functions...');
-    debugLog('  - handleSignup: ' + typeof handleSignup);
-    debugLog('  - handleLogin: ' + typeof handleLogin);
-    debugLog('  - firebase: ' + typeof firebase);
-    debugLog('  - S: ' + typeof S);
-    debugLog('  - toast: ' + typeof toast);
-    debugLog('  - navigate: ' + typeof navigate);
-    debugLog('  - document.getElementById("signupBtn"): ' + !!document.getElementById('signupBtn'));
-    debugLog('  - document.getElementById("loginBtn"): ' + !!document.getElementById('loginBtn'));
-    
-    // Expose debug to global
-    window.debugLog = debugLog;
-    window.toggleDebug = toggleDebug;
-    window.clearDebug = clearDebug;
-    
-    // Auto-show debug panel if errors detected
-    if (typeof handleSignup !== 'function' || typeof handleLogin !== 'function') {
-        debugLog('⚠️ Auth functions not found! Showing debug panel.');
-        setTimeout(function() {
-            document.getElementById('debugPanel').style.display = 'block';
-        }, 500);
-    }
-    
-    debugLog('✅ Debug system ready');
+    console.log('🔍 AFTER SCRIPTS LOADED:');
+    console.log('  - handleSignup:', typeof handleSignup);
+    console.log('  - handleLogin:', typeof handleLogin);
+    console.log('  - toast:', typeof toast);
+    console.log('  - navigate:', typeof navigate);
+    console.log('  - firebase:', typeof firebase);
     </script>
 </body>
 </html>
