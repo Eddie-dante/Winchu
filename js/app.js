@@ -1,6 +1,23 @@
-// App Initialization
+// App Initialization - Optimized
 
 console.log('⚡ App Core Loading...');
+
+// ============================================================
+// DEBOUNCE HELPER
+// ============================================================
+function debounce(func, wait) {
+    var timeout;
+    return function executedFunction() {
+        var context = this;
+        var args = arguments;
+        var later = function() {
+            timeout = null;
+            func.apply(context, args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
 
 // ============================================================
 // APP INITIALIZATION
@@ -46,7 +63,7 @@ function initApp() {
                         navigate('select'); 
                     } else { 
                         navigate('social'); 
-                        initAppData(); 
+                        setTimeout(initAppData, 300);
                     }
                     console.log('✅ Winchu ready');
                     return;
@@ -60,12 +77,13 @@ function initApp() {
 }
 
 // ============================================================
-// INIT APP DATA
+// INIT APP DATA - OPTIMIZED
 // ============================================================
 function initAppData() {
     console.log('=== INITIALIZING APP DATA ===');
     
-    firebase.database().ref('posts').orderByChild('time').limitToLast(200).once('value').then(function(snapshot) {
+    // Load posts (limit to 50 for performance)
+    firebase.database().ref('posts').orderByChild('time').limitToLast(50).once('value').then(function(snapshot) {
         var data = snapshot.val(); 
         S.socialPosts = [];
         if (data) { 
@@ -88,7 +106,8 @@ function initAppData() {
         saveState();
     });
     
-    firebase.database().ref('videos').orderByChild('time').limitToLast(100).once('value').then(function(snapshot) {
+    // Load videos (limit to 20)
+    firebase.database().ref('videos').orderByChild('time').limitToLast(20).once('value').then(function(snapshot) {
         var data = snapshot.val(); 
         S.videoData = [];
         if (data) { 
@@ -108,6 +127,7 @@ function initAppData() {
         if (typeof renderVideos === 'function') renderVideos();
     });
     
+    // Load groups
     firebase.database().ref('groups').once('value').then(function(snapshot) {
         var data = snapshot.val(); 
         S.groups = [];
@@ -123,7 +143,8 @@ function initAppData() {
         if (typeof renderChatList === 'function') renderChatList();
     });
     
-    firebase.database().ref('diary/' + S.username).orderByKey().limitToLast(100).once('value').then(function(snapshot) {
+    // Load diary (limit to 20)
+    firebase.database().ref('diary/' + S.username).orderByKey().limitToLast(20).once('value').then(function(snapshot) {
         var data = snapshot.val(); 
         S.diary = [];
         if (data) S.diary = Object.values(data).reverse();
@@ -131,13 +152,15 @@ function initAppData() {
         if (diaryCount) diaryCount.textContent = S.diary.length;
     });
     
-    firebase.database().ref('routines/' + S.username).orderByKey().limitToLast(100).once('value').then(function(snapshot) {
+    // Load routines
+    firebase.database().ref('routines/' + S.username).orderByKey().limitToLast(20).once('value').then(function(snapshot) {
         var data = snapshot.val(); 
         S.routines = [];
         if (data) S.routines = Object.values(data).reverse();
     });
     
-    firebase.database().ref('notifications/' + S.username).orderByChild('time').limitToLast(50).once('value').then(function(snapshot) {
+    // Load notifications (limit to 20)
+    firebase.database().ref('notifications/' + S.username).orderByChild('time').limitToLast(20).once('value').then(function(snapshot) {
         var data = snapshot.val(); 
         S.notifications = [];
         if (data) { 
@@ -182,14 +205,14 @@ function initAppData() {
 }
 
 // ============================================================
-// LISTENER SETUP
+// LISTENER SETUP - OPTIMIZED
 // ============================================================
 function setupPostsListener() {
     if (postsListener) { 
         postsListener.off(); 
         postsListener = null; 
     }
-    postsListener = firebase.database().ref('posts');
+    postsListener = firebase.database().ref('posts').orderByChild('time').limitToLast(50);
     postsListener.on('child_added', function(snapshot) { 
         var post = snapshot.val(); 
         if (!post || !post.author) return; 
@@ -198,7 +221,7 @@ function setupPostsListener() {
         if (!post.comments) post.comments = []; 
         if (!S.socialPosts.find(function(p) { return p.id === post.id; })) { 
             S.socialPosts.unshift(post); 
-            if (S.socialPosts.length > 200) S.socialPosts = S.socialPosts.slice(0, 200); 
+            if (S.socialPosts.length > 100) S.socialPosts.pop(); 
             S.socialPosts.sort(function(a, b) { 
                 return new Date(b.time) - new Date(a.time); 
             }); 
@@ -232,7 +255,7 @@ function setupVideosListener() {
         videosListener.off(); 
         videosListener = null; 
     }
-    videosListener = firebase.database().ref('videos');
+    videosListener = firebase.database().ref('videos').orderByChild('time').limitToLast(20);
     videosListener.on('child_added', function(snapshot) { 
         var video = snapshot.val(); 
         if (!video || !video.author) return; 
@@ -241,7 +264,7 @@ function setupVideosListener() {
         if (!video.comments) video.comments = []; 
         if (!S.videoData.find(function(v) { return v.id === video.id; })) { 
             S.videoData.unshift(video); 
-            if (S.videoData.length > 100) S.videoData = S.videoData.slice(0, 100); 
+            if (S.videoData.length > 50) S.videoData.pop(); 
             if (typeof renderVideos === 'function') renderVideos(); 
         } 
     });
@@ -263,105 +286,26 @@ function setupVideosListener() {
     });
 }
 
-function setupNotifListener() { 
-    if (notifListener) { 
-        notifListener.off(); 
-        notifListener = null; 
-    } 
-    if (!S.username) return; 
-    notifListener = firebase.database().ref('notifications/' + S.username).orderByChild('time').limitToLast(50); 
-    notifListener.on('child_added', function(snapshot) { 
-        var notif = snapshot.val(); 
-        if (!notif) return; 
-        notif.id = snapshot.key; 
-        if (!S.notifications.find(function(n) { return n.id === notif.id; })) { 
-            S.notifications.unshift(notif); 
-            updateNotifBadge(); 
-        } 
-    }); 
-}
+// ============================================================
+// RENDER OPTIMIZATIONS
+// ============================================================
+var renderTimeout = null;
 
-function setupGroupsListener() {
-    firebase.database().ref('groups').on('child_added', function(snapshot) { 
-        var group = snapshot.val(); 
-        group.id = snapshot.key; 
-        if (group.members && group.members.indexOf(S.username) > -1) { 
-            if (!S.groups.find(function(g) { return g.id === group.id; })) { 
-                S.groups.push(group); 
-                if (typeof renderGroups === 'function') renderGroups(); 
-                if (typeof renderChatList === 'function') renderChatList(); 
-            } 
-        } 
-    });
-    firebase.database().ref('groups').on('child_changed', function(snapshot) { 
-        var group = snapshot.val(); 
-        group.id = snapshot.key; 
-        if (group.members && group.members.indexOf(S.username) > -1) { 
-            var idx = S.groups.findIndex(function(g) { return g.id === group.id; }); 
-            if (idx > -1) S.groups[idx] = group; 
-            else S.groups.push(group); 
-        } else { 
-            S.groups = S.groups.filter(function(g) { return g.id !== group.id; }); 
-        } 
-        if (typeof renderGroups === 'function') renderGroups(); 
-        if (typeof renderChatList === 'function') renderChatList(); 
-    });
-    firebase.database().ref('groups').on('child_removed', function(snapshot) { 
-        S.groups = S.groups.filter(function(g) { return g.id !== snapshot.key; }); 
-        if (typeof renderGroups === 'function') renderGroups(); 
-        if (typeof renderChatList === 'function') renderChatList(); 
-    });
-}
-
-function updateNotifBadge() {
-    var unreadCount = (S.notifications || []).filter(function(n) { 
-        return !n.read; 
-    }).length;
-    var badges = ['notifBadge', 'profileNotifBadge'];
-    badges.forEach(function(id) { 
-        var badge = document.getElementById(id); 
-        if (badge) { 
-            badge.textContent = unreadCount > 99 ? '99+' : unreadCount; 
-            badge.style.display = unreadCount > 0 ? 'flex' : 'none'; 
-        } 
-    });
-    document.title = unreadCount > 0 ? '(' + unreadCount + ') Winchu · Nexus' : 'Winchu · Nexus';
-}
-
-function markAllNotifsRead() {
-    if (!S.username) return;
-    var unread = S.notifications.filter(function(n) { return !n.read; });
-    if (unread.length === 0) { 
-        toast('All read'); 
-        return; 
+function scheduleRender(renderFunc) {
+    if (renderTimeout) {
+        clearTimeout(renderTimeout);
     }
-    unread.forEach(function(n) { 
-        n.read = true; 
-        updateData('notifications/' + S.username + '/' + n.id + '/read', true); 
-    });
-    updateNotifBadge(); 
-    if (typeof renderNotifications === 'function') renderNotifications(); 
-    toast('✓ All read');
-}
-
-function addNotification(to, message, type, refId) { 
-    if (!S.username || !to || to === S.username) return; 
-    pushData('notifications/' + to, { 
-        from: S.username, 
-        to: to, 
-        message: message, 
-        type: type || 'general', 
-        refId: refId || '', 
-        time: new Date().toISOString(), 
-        read: false 
-    }); 
+    renderTimeout = setTimeout(function() {
+        renderFunc();
+        renderTimeout = null;
+    }, 100);
 }
 
 // ============================================================
 // DOM READY
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() { 
-    setTimeout(initApp, 500); 
+    setTimeout(initApp, 300); 
 });
 
 document.addEventListener('keydown', function(e) { 
@@ -389,21 +333,14 @@ window.addEventListener('offline', function() {
     toast('⚠️ Offline'); 
 });
 
-if ('serviceWorker' in navigator) { 
-    window.addEventListener('load', function() { 
-        navigator.serviceWorker.register('/service-worker.js').then(function(r) { 
-            console.log('SW registered'); 
-        }).catch(function() {}); 
-    }); 
-}
-
 // ============================================================
-// EXPOSE GLOBALLY
+// EXPOSE
 // ============================================================
 window.initApp = initApp;
 window.initAppData = initAppData;
 window.updateNotifBadge = updateNotifBadge;
 window.markAllNotifsRead = markAllNotifsRead;
 window.addNotification = addNotification;
+window.debounce = debounce;
 
-console.log('⚡ App Core Loaded');
+console.log('⚡ App Core Loaded (Optimized)');
