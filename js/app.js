@@ -24,15 +24,49 @@ function debounce(func, wait) {
 // ============================================================
 function initApp() {
     console.log('=== INITIALIZING APP ===');
+    console.log('S object exists:', typeof S !== 'undefined');
+    
+    if (typeof S === 'undefined') {
+        console.error('❌ S is not defined! Please check state.js');
+        // Try to reload state
+        if (typeof loadState === 'function') {
+            loadState();
+        }
+        if (typeof S === 'undefined') {
+            // Create S if still missing
+            window.S = {
+                username: null,
+                name: '',
+                bio: 'Building my energy. One aura at a time. ⚡',
+                wallpaper: null,
+                selectedAuras: [],
+                avatar: null,
+                friends: [],
+                completedTasks: [],
+                streakData: {},
+                socialPosts: [],
+                diary: [],
+                routines: [],
+                videoData: [],
+                bookmarks: [],
+                notifications: [],
+                groups: []
+            };
+            console.log('⚠️ S was recreated');
+        }
+    }
+    
     var auth = localStorage.getItem('wa');
     if (auth) {
         try {
             var data = JSON.parse(auth);
             if (data.username && (Date.now() - data.timestamp < 7 * 86400000)) {
-                loadState();
-                if (S.username === data.username) {
+                if (typeof loadState === 'function') {
+                    loadState();
+                }
+                if (S && S.username === data.username) {
                     console.log('Restoring session for:', S.username);
-                    setupPresence();
+                    if (typeof setupPresence === 'function') setupPresence();
                     firebase.database().ref('users/' + S.username).once('value').then(function(snapshot) { 
                         if (snapshot.exists()) { 
                             var d = snapshot.val(); 
@@ -43,7 +77,7 @@ function initApp() {
                             S.friends = d.friends || []; 
                             S.bookmarks = d.bookmarks || []; 
                             S.selectedAuras = d.selected_auras || []; 
-                            saveState(); 
+                            if (typeof saveState === 'function') saveState(); 
                         } 
                     });
                     if (S.wallpaper) { 
@@ -59,11 +93,13 @@ function initApp() {
                         setTimeout(initAI, 1500);
                     }
                     
-                    if (S.selectedAuras.length === 0) { 
-                        navigate('select'); 
+                    if (S.selectedAuras && S.selectedAuras.length === 0) { 
+                        if (typeof navigate === 'function') navigate('select'); 
                     } else { 
-                        navigate('social'); 
-                        setTimeout(initAppData, 300);
+                        if (typeof navigate === 'function') {
+                            navigate('social'); 
+                            setTimeout(initAppData, 300);
+                        }
                     }
                     console.log('✅ Winchu ready');
                     return;
@@ -73,7 +109,11 @@ function initApp() {
             console.error('Init error:', e); 
         }
     }
-    navigate('landing');
+    if (typeof navigate === 'function') {
+        navigate('landing');
+    } else {
+        console.error('❌ navigate not available');
+    }
 }
 
 // ============================================================
@@ -103,12 +143,11 @@ function initAppData() {
         if (typeof renderSocial === 'function') renderSocial();
         if (typeof renderProfile === 'function') renderProfile();
         if (typeof renderStories === 'function') renderStories();
-        saveState();
+        if (typeof saveState === 'function') saveState();
     });
     
     // Load videos - FIXED: Call loadVideos directly
     if (typeof loadVideos === 'function') {
-        // Small delay to ensure DOM is ready
         setTimeout(function() {
             loadVideos();
             console.log('🎬 Videos loaded via initAppData');
@@ -184,26 +223,26 @@ function initAppData() {
                 return new Date(b.time) - new Date(a.time); 
             }); 
         }
-        updateNotifBadge();
+        if (typeof updateNotifBadge === 'function') updateNotifBadge();
     });
     
     firebase.database().ref('users/' + S.username + '/bookmarks').once('value').then(function(snapshot) { 
         S.bookmarks = snapshot.val() || []; 
     });
     
-    setupPostsListener();
-    setupVideosListener();
-    setupNotifListener();
-    setupGroupsListener();
+    if (typeof setupPostsListener === 'function') setupPostsListener();
+    if (typeof setupVideosListener === 'function') setupVideosListener();
+    if (typeof setupNotifListener === 'function') setupNotifListener();
+    if (typeof setupGroupsListener === 'function') setupGroupsListener();
     if (typeof initWallpapers === 'function') initWallpapers();
-    setupPresence();
+    if (typeof setupPresence === 'function') setupPresence();
     
     if (typeof initAI === 'function') {
         setTimeout(initAI, 1500);
     }
     
     setInterval(function() { 
-        if (S && S.username) 
+        if (S && S.username && typeof updateData === 'function') 
             updateData('users/' + S.username, { 
                 last_seen: new Date().toISOString(), 
                 online: true 
@@ -211,147 +250,6 @@ function initAppData() {
     }, 60000);
     
     console.log('✅ All app data initialized');
-}
-
-// ============================================================
-// POSTS LISTENER
-// ============================================================
-function setupPostsListener() {
-    if (postsListener) { 
-        postsListener.off(); 
-        postsListener = null; 
-    }
-    postsListener = firebase.database().ref('posts').orderByChild('time').limitToLast(50);
-    postsListener.on('child_added', function(snapshot) { 
-        var post = snapshot.val(); 
-        if (!post || !post.author) return; 
-        post.id = snapshot.key; 
-        if (!post.likes) post.likes = []; 
-        if (!post.comments) post.comments = []; 
-        if (!S.socialPosts.find(function(p) { return p.id === post.id; })) { 
-            S.socialPosts.unshift(post); 
-            if (S.socialPosts.length > 100) S.socialPosts.pop(); 
-            S.socialPosts.sort(function(a, b) { 
-                return new Date(b.time) - new Date(a.time); 
-            }); 
-            if (typeof renderSocial === 'function') renderSocial(); 
-            if (typeof renderProfile === 'function') renderProfile(); 
-            if (typeof renderStories === 'function') renderStories(); 
-            saveState(); 
-        } 
-    });
-    postsListener.on('child_changed', function(snapshot) { 
-        var post = snapshot.val(); 
-        if (!post) return; 
-        post.id = snapshot.key; 
-        var idx = S.socialPosts.findIndex(function(p) { return p.id === post.id; }); 
-        if (idx > -1) { 
-            S.socialPosts[idx] = post; 
-            if (typeof renderSocial === 'function') renderSocial(); 
-        } 
-    });
-    postsListener.on('child_removed', function(snapshot) { 
-        S.socialPosts = S.socialPosts.filter(function(p) { 
-            return p.id !== snapshot.key; 
-        }); 
-        if (typeof renderSocial === 'function') renderSocial(); 
-        if (typeof renderProfile === 'function') renderProfile(); 
-    });
-}
-
-// ============================================================
-// VIDEOS LISTENER - FIXED
-// ============================================================
-function setupVideosListener() {
-    if (videosListener) { 
-        videosListener.off(); 
-        videosListener = null; 
-    }
-    videosListener = firebase.database().ref('videos').orderByChild('time').limitToLast(50);
-    videosListener.on('child_added', function(snapshot) { 
-        var video = snapshot.val(); 
-        if (!video || !video.author) return; 
-        video.id = snapshot.key; 
-        if (!video.likes) video.likes = []; 
-        if (!video.comments) video.comments = []; 
-        if (!S.videoData.find(function(v) { return v.id === video.id; })) { 
-            S.videoData.unshift(video); 
-            if (S.videoData.length > 100) S.videoData.pop(); 
-            if (typeof renderVideos === 'function') renderVideos(); 
-        } 
-    });
-    videosListener.on('child_changed', function(snapshot) { 
-        var video = snapshot.val(); 
-        if (!video) return; 
-        video.id = snapshot.key; 
-        var idx = S.videoData.findIndex(function(v) { return v.id === video.id; }); 
-        if (idx > -1) { 
-            S.videoData[idx] = video; 
-            if (typeof renderVideos === 'function') renderVideos(); 
-        } 
-    });
-    videosListener.on('child_removed', function(snapshot) { 
-        S.videoData = S.videoData.filter(function(v) { 
-            return v.id !== snapshot.key; 
-        }); 
-        if (typeof renderVideos === 'function') renderVideos(); 
-    });
-}
-
-// ============================================================
-// NOTIFICATIONS LISTENER
-// ============================================================
-function setupNotifListener() { 
-    if (notifListener) { 
-        notifListener.off(); 
-        notifListener = null; 
-    } 
-    if (!S.username) return; 
-    notifListener = firebase.database().ref('notifications/' + S.username).orderByChild('time').limitToLast(20); 
-    notifListener.on('child_added', function(snapshot) { 
-        var notif = snapshot.val(); 
-        if (!notif) return; 
-        notif.id = snapshot.key; 
-        if (!S.notifications.find(function(n) { return n.id === notif.id; })) { 
-            S.notifications.unshift(notif); 
-            updateNotifBadge(); 
-        } 
-    }); 
-}
-
-// ============================================================
-// GROUPS LISTENER
-// ============================================================
-function setupGroupsListener() {
-    firebase.database().ref('groups').on('child_added', function(snapshot) { 
-        var group = snapshot.val(); 
-        group.id = snapshot.key; 
-        if (group.members && group.members.indexOf(S.username) > -1) { 
-            if (!S.groups.find(function(g) { return g.id === group.id; })) { 
-                S.groups.push(group); 
-                if (typeof renderGroups === 'function') renderGroups(); 
-                if (typeof renderChatList === 'function') renderChatList(); 
-            } 
-        } 
-    });
-    firebase.database().ref('groups').on('child_changed', function(snapshot) { 
-        var group = snapshot.val(); 
-        group.id = snapshot.key; 
-        if (group.members && group.members.indexOf(S.username) > -1) { 
-            var idx = S.groups.findIndex(function(g) { return g.id === group.id; }); 
-            if (idx > -1) S.groups[idx] = group; 
-            else S.groups.push(group); 
-        } else { 
-            S.groups = S.groups.filter(function(g) { return g.id !== group.id; }); 
-        } 
-        if (typeof renderGroups === 'function') renderGroups(); 
-        if (typeof renderChatList === 'function') renderChatList(); 
-    });
-    firebase.database().ref('groups').on('child_removed', function(snapshot) { 
-        S.groups = S.groups.filter(function(g) { return g.id !== snapshot.key; }); 
-        if (typeof renderGroups === 'function') renderGroups(); 
-        if (typeof renderChatList === 'function') renderChatList(); 
-    });
 }
 
 // ============================================================
@@ -384,7 +282,8 @@ function markAllNotifsRead() {
     }
     unread.forEach(function(n) { 
         n.read = true; 
-        updateData('notifications/' + S.username + '/' + n.id + '/read', true); 
+        if (typeof updateData === 'function') 
+            updateData('notifications/' + S.username + '/' + n.id + '/read', true); 
     });
     updateNotifBadge(); 
     if (typeof renderNotifications === 'function') renderNotifications(); 
@@ -396,30 +295,17 @@ function markAllNotifsRead() {
 // ============================================================
 function addNotification(to, message, type, refId) { 
     if (!S.username || !to || to === S.username) return; 
-    pushData('notifications/' + to, { 
-        from: S.username, 
-        to: to, 
-        message: message, 
-        type: type || 'general', 
-        refId: refId || '', 
-        time: new Date().toISOString(), 
-        read: false 
-    }); 
-}
-
-// ============================================================
-// RENDER OPTIMIZATIONS
-// ============================================================
-var renderTimeout = null;
-
-function scheduleRender(renderFunc) {
-    if (renderTimeout) {
-        clearTimeout(renderTimeout);
+    if (typeof pushData === 'function') {
+        pushData('notifications/' + to, { 
+            from: S.username, 
+            to: to, 
+            message: message, 
+            type: type || 'general', 
+            refId: refId || '', 
+            time: new Date().toISOString(), 
+            read: false 
+        }); 
     }
-    renderTimeout = setTimeout(function() {
-        renderFunc();
-        renderTimeout = null;
-    }, 100);
 }
 
 // ============================================================
@@ -433,26 +319,28 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('keydown', function(e) { 
     if (e.ctrlKey && e.key === 'k') { 
         e.preventDefault(); 
-        navigate('users'); 
+        if (typeof navigate === 'function') navigate('users'); 
     } 
     if (e.key === 'Escape') { 
-        closeDialog(); 
-        closePostDetail(); 
+        if (typeof closeDialog === 'function') closeDialog(); 
+        if (typeof closePostDetail === 'function') closePostDetail(); 
     } 
 });
 
 window.addEventListener('online', function() { 
-    if (S.username) { 
-        setupPresence(); 
-        updateData('users/' + S.username, { online: true }); 
+    if (S && S.username) { 
+        if (typeof setupPresence === 'function') setupPresence(); 
+        if (typeof updateData === 'function') 
+            updateData('users/' + S.username, { online: true }); 
         toast('📶 Online'); 
         console.log('📶 Online'); 
     } 
 });
 
 window.addEventListener('offline', function() { 
-    if (S.username) {
-        updateData('users/' + S.username, { online: false }); 
+    if (S && S.username) {
+        if (typeof updateData === 'function') 
+            updateData('users/' + S.username, { online: false }); 
     }
     toast('⚠️ Offline'); 
     console.log('⚠️ Offline'); 
@@ -472,54 +360,6 @@ if ('serviceWorker' in navigator) {
 }
 
 // ============================================================
-// FORCE SYNC USER DATA
-// ============================================================
-function forceSyncUserData() {
-    if (!S.username) {
-        console.warn('No user logged in to sync');
-        return;
-    }
-    
-    console.log('🔄 Force syncing user data...');
-    
-    firebase.database().ref('users/' + S.username).once('value')
-        .then(function(snapshot) {
-            if (snapshot.exists()) {
-                var data = snapshot.val();
-                S.friends = data.friends || [];
-                S.name = data.name || S.name;
-                S.bio = data.bio || S.bio;
-                S.avatar = data.avatar || S.avatar;
-                S.wallpaper = data.wallpaper || S.wallpaper;
-                S.bookmarks = data.bookmarks || [];
-                S.selectedAuras = data.selected_auras || [];
-                S.completedTasks = data.completedTasks || [];
-                S.streakData = data.streakData || {};
-                saveState();
-                
-                if (typeof renderProfile === 'function') renderProfile();
-                if (typeof renderUsers === 'function') renderUsers();
-                if (typeof renderChatList === 'function') renderChatList();
-                if (typeof renderSocial === 'function') renderSocial();
-                if (typeof renderHome === 'function') renderHome();
-                if (typeof renderNotifications === 'function') renderNotifications();
-                if (typeof renderGroups === 'function') renderGroups();
-                
-                console.log('✅ User data force synced successfully');
-                return true;
-            } else {
-                console.warn('User not found in Firebase');
-                return false;
-            }
-        })
-        .catch(function(error) {
-            console.error('Force sync error:', error);
-            toast('Error syncing data. Please refresh.');
-            return false;
-        });
-}
-
-// ============================================================
 // EXPOSE GLOBALLY
 // ============================================================
 window.initApp = initApp;
@@ -528,8 +368,8 @@ window.updateNotifBadge = updateNotifBadge;
 window.markAllNotifsRead = markAllNotifsRead;
 window.addNotification = addNotification;
 window.debounce = debounce;
-window.forceSyncUserData = forceSyncUserData;
 
 console.log('⚡ App Core Loaded (Optimized)');
+console.log('📌 S object exists:', typeof S !== 'undefined');
 console.log('📌 handleSignup type:', typeof handleSignup);
 console.log('📌 handleLogin type:', typeof handleLogin);
