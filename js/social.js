@@ -1,0 +1,505 @@
+// Social Feed Module - Complete with posts, likes, comments, stories
+
+var postsListener = null;
+var selectedFile = null;
+var selectedFileData = null;
+var processedPostIds = {};
+
+// ============================================================
+// SETUP POSTS LISTENER
+// ============================================================
+function setupPostsListener() {
+    if (postsListener) {
+        postsListener.off();
+        postsListener = null;
+    }
+    S.socialPosts = [];
+    processedPostIds = {};
+    
+    var ref = firebase.database().ref('posts');
+    
+    // Load initial posts
+    ref.orderByChild('time').limitToLast(200).once('value').then(function(snapshot) {
+        var data = snapshot.val();
+        S.socialPosts = [];
+        processedPostIds = {};
+        
+        if (data) {
+            Object.keys(data).forEach(function(key) {
+                var post = data[key];
+                if (post && post.author && !processedPostIds[key]) {
+                    post.id = key;
+                    if (!Array.isArray(post.likes)) post.likes = [];
+                    if (!Array.isArray(post.comments)) post.comments = [];
+                    processedPostIds[key] = true;
+                    S.socialPosts.push(post);
+                }
+            });
+            S.socialPosts.sort(function(a, b) {
+                return new Date(b.time) - new Date(a.time);
+            });
+        }
+        renderSocial();
+        renderProfile();
+        renderStories();
+        saveState();
+    });
+    
+    // Listen for new posts
+    ref.on('child_added', function(snapshot) {
+        var post = snapshot.val();
+        var key = snapshot.key;
+        if (!post || !post.author || processedPostIds[key]) return;
+        post.id = key;
+        if (!Array.isArray(post.likes)) post.likes = [];
+        if (!Array.isArray(post.comments)) post.comments = [];
+        processedPostIds[key] = true;
+        
+        if (!S.socialPosts.find(function(p) { return p.id === key; })) {
+            S.socialPosts.unshift(post);
+            if (S.socialPosts.length > 200) S.socialPosts.pop();
+            S.socialPosts.sort(function(a, b) {
+                return new Date(b.time) - new Date(a.time);
+            });
+            renderSocial();
+            renderProfile();
+            renderStories();
+            saveState();
+        }
+    });
+    
+    // Listen for post changes (likes, comments)
+    ref.on('child_changed', function(snapshot) {
+        var post = snapshot.val();
+        if (!post) return;
+        post.id = snapshot.key;
+        if (!Array.isArray(post.likes)) post.likes = [];
+        if (!Array.isArray(post.comments)) post.comments = [];
+        
+        var idx = S.socialPosts.findIndex(function(p) { return p.id === post.id; });
+        if (idx > -1) {
+            S.socialPosts[idx] = post;
+            renderSocial();
+        }
+    });
+    
+    // Listen for post deletions
+    ref.on('child_removed', function(snapshot) {
+        delete processedPostIds[snapshot.key];
+        S.socialPosts = S.socialPosts.filter(function(p) {
+            return p.id !== snapshot.key;
+        });
+        renderSocial();
+        renderProfile();
+    });
+    
+    console.log('📱 Posts listener active');
+}
+
+// ============================================================
+// RENDER SOCIAL FEED
+// ============================================================
+function renderSocial() {
+    var feed = document.getElementById('socialFeed');
+    if (!feed) return;
+    
+    if (!S.username) {
+        feed.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:30px;">Please log in</p>';
+        return;
+    }
+    
+    var posts = S.socialPosts || [];
+    if (posts.length === 0) {
+        feed.innerHTML = '<div style="text-align:center;padding:50px;">' +
+            '<div style="font-size:48px;">📸</div>' +
+            '<p>No posts yet. Be the first to share!</p>' +
+            '</div>';
+        return;
+    }
+    
+    var html = '';
+    posts.forEach(function(post) {
+        if (!post || !post.author) return;
+        if (!Array.isArray(post.likes)) post.likes = [];
+        if (!Array.isArray(post.comments)) post.comments = [];
+        
+        var liked = post.likes.indexOf(S.username) > -1;
+        var likeCount = post.likes.length;
+        var commentCount = post.comments.length;
+        var timeAgo = timeSince(new Date(post.time));
+        var canDelete = post.author === S.username;
+        
+        // Avatar display
+        var avatarDisplay = post.avatar && (post.avatar.startsWith('data:') || post.avatar.includes('http'))
+            ? '<img src="' + post.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />'
+            : '<div style="width:100%;height:100%;border-radius:50%;background:' + getColor(post.author) + ';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;">' + post.author.charAt(0).toUpperCase() + '</div>';
+        
+        html += '<div class="ig-post" onclick="viewPostDetail(\'' + post.id + '\')">';
+        
+        // Header
+        html += '<div class="ig-post-header">';
+        html += '<div class="profile-bubble" onclick="event.stopPropagation();viewUserProfile(\'' + post.author + '\')">';
+        html += '<div class="pb-avatar">' + avatarDisplay + '</div>';
+        html += '<span class="pb-name">' + escapeHtml(post.author) + '</span>';
+        html += '</div>';
+        html += '<span class="ig-post-time">' + timeAgo + '</span>';
+        if (canDelete) {
+            html += '<button class="btn-sm btn-danger" onclick="event.stopPropagation();deletePost(\'' + post.id + '\')" style="font-size:10px;padding:2px 6px;">🗑️</button>';
+        }
+        html += '</div>';
+        
+        // Image
+        if (post.image) {
+            html += '<img src="' + post.image + '" class="ig-post-image" style="width:100%;max-height:400px;object-fit:cover;" />';
+        }
+        
+        // Text
+        if (post.text) {
+            html += '<div style="padding:8px 12px 4px;"><p style="font-size:13px;">' + escapeHtml(post.text) + '</p></div>';
+        }
+        
+        // Actions
+        html += '<div class="ig-post-actions" onclick="event.stopPropagation();" style="padding:8px 12px;display:flex;align-items:center;gap:14px;">';
+        html += '<button class="ig-post-action' + (liked ? ' liked' : '') + '" onclick="likePost(\'' + post.id + '\')" style="font-size:20px;">' + (liked ? '❤️' : '🤍') + '</button>';
+        html += '<span style="font-size:12px;font-weight:600;color:#94a3b8;" id="likeCount-' + post.id + '">' + likeCount + '</span>';
+        html += '<button class="ig-post-action" onclick="commentOnPost(\'' + post.id + '\')" style="font-size:20px;">💬</button>';
+        html += '<span style="font-size:12px;font-weight:600;color:#94a3b8;">' + commentCount + '</span>';
+        html += '<button class="ig-post-action" onclick="bookmarkItem(\'' + post.id + '\',\'post\')" style="font-size:20px;">🔖</button>';
+        if (post.image) {
+            html += '<button class="ig-post-action" onclick="downloadMedia(\'' + post.image + '\')" style="font-size:20px;">⬇️</button>';
+        }
+        html += '</div>';
+        
+        // Comments preview
+        if (commentCount > 0) {
+            html += '<div style="padding:4px 12px 8px;font-size:12px;color:#64748b;" onclick="event.stopPropagation();viewPostDetail(\'' + post.id + '\')">';
+            html += 'View ' + commentCount + ' comment' + (commentCount > 1 ? 's' : '');
+            html += '</div>';
+        }
+        
+        html += '</div>';
+    });
+    
+    feed.innerHTML = html;
+}
+
+// ============================================================
+// CREATE POST
+// ============================================================
+function createPost() {
+    if (!S.username) {
+        toast('Please log in');
+        return;
+    }
+    
+    var input = document.getElementById('postInput');
+    var text = input ? input.value.trim() : '';
+    
+    if (!text && !selectedFileData) {
+        toast('Write something or attach media');
+        return;
+    }
+    
+    var postData = {
+        author: S.username,
+        avatar: S.avatar || null,
+        text: text || '',
+        image: selectedFileData || null,
+        time: new Date().toISOString(),
+        likes: [],
+        comments: []
+    };
+    
+    var newRef = firebase.database().ref('posts').push();
+    newRef.set(postData).then(function() {
+        if (input) input.value = '';
+        selectedFile = null;
+        selectedFileData = null;
+        
+        var preview = document.getElementById('filePreview');
+        if (preview) {
+            preview.style.display = 'none';
+            preview.innerHTML = '';
+        }
+        
+        var fileInput = document.getElementById('postFile');
+        if (fileInput) fileInput.value = '';
+        
+        renderSocial();
+        renderProfile();
+        renderStories();
+        saveState();
+        toast('📝 Posted!');
+    }).catch(function() {
+        toast('Failed to post');
+    });
+}
+
+// ============================================================
+// LIKE POST - Uses transaction for atomic updates
+// ============================================================
+function likePost(postId) {
+    if (!S.username) {
+        toast('Please log in to like');
+        return;
+    }
+    
+    var postRef = firebase.database().ref('posts/' + postId + '/likes');
+    
+    postRef.transaction(function(currentLikes) {
+        if (currentLikes === null) {
+            currentLikes = [];
+        }
+        if (!Array.isArray(currentLikes)) {
+            currentLikes = [];
+        }
+        
+        var index = currentLikes.indexOf(S.username);
+        
+        if (index !== -1) {
+            currentLikes.splice(index, 1);
+        } else {
+            currentLikes.push(S.username);
+        }
+        
+        return currentLikes;
+        
+    }, function(error, committed, snapshot) {
+        if (error) {
+            console.error('Like transaction error:', error);
+            toast('Error processing like');
+        } else if (committed) {
+            var post = S.socialPosts.find(function(p) { return p.id === postId; });
+            if (post) {
+                var likes = snapshot.val() || [];
+                if (!Array.isArray(likes)) likes = [];
+                post.likes = likes;
+                renderSocial();
+            }
+        }
+    });
+}
+
+// ============================================================
+// COMMENT ON POST - Uses transaction for atomic updates
+// ============================================================
+function commentOnPost(postId) {
+    if (!S.username) {
+        toast('Please log in to comment');
+        return;
+    }
+    
+    showDialog({
+        emoji: '💬',
+        title: 'Add Comment',
+        placeholder: 'Write your comment...',
+        confirmText: 'Post'
+    }).then(function(result) {
+        if (result && result.trim()) {
+            var comment = {
+                username: S.username,
+                text: result.trim(),
+                time: new Date().toISOString()
+            };
+            
+            var commentsRef = firebase.database().ref('posts/' + postId + '/comments');
+            
+            commentsRef.transaction(function(currentComments) {
+                if (currentComments === null) {
+                    currentComments = [];
+                }
+                if (!Array.isArray(currentComments)) {
+                    currentComments = [];
+                }
+                currentComments.push(comment);
+                return currentComments;
+                
+            }, function(error, committed) {
+                if (error) {
+                    console.error('Comment error:', error);
+                    toast('Error posting comment');
+                } else if (committed) {
+                    toast('Comment added! 💬');
+                    
+                    var post = S.socialPosts.find(function(p) { return p.id === postId; });
+                    if (post && post.author !== S.username) {
+                        addNotification(
+                            post.author,
+                            'commented on your post: "' + result.trim().substring(0, 50) + '"',
+                            'comment',
+                            postId
+                        );
+                    }
+                }
+            });
+        }
+    });
+}
+
+// ============================================================
+// DELETE POST
+// ============================================================
+function deletePost(postId) {
+    showDialog({
+        emoji: '🗑️',
+        title: 'Delete Post',
+        subtitle: 'Are you sure?',
+        confirmText: 'Delete',
+        danger: true
+    }).then(function(result) {
+        if (result !== null) {
+            firebase.database().ref('posts/' + postId).remove().then(function() {
+                toast('Post deleted');
+            });
+        }
+    });
+}
+
+// ============================================================
+// HANDLE FILE SELECT FOR POST
+// ============================================================
+function handleFileSelect(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+    
+    var maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+        toast('File too large');
+        event.target.value = '';
+        return;
+    }
+    
+    selectedFile = file;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        selectedFileData = e.target.result;
+        var preview = document.getElementById('filePreview');
+        if (preview) {
+            preview.innerHTML = '<div style="position:relative;display:inline-block;">' +
+                '<img src="' + e.target.result + '" style="max-height:150px;border-radius:8px;max-width:100%;" />' +
+                '<button onclick="clearFileSelection()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;">✕</button>' +
+                '</div>';
+            preview.style.display = 'block';
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+// ============================================================
+// CLEAR FILE SELECTION
+// ============================================================
+function clearFileSelection() {
+    selectedFile = null;
+    selectedFileData = null;
+    var preview = document.getElementById('filePreview');
+    if (preview) {
+        preview.style.display = 'none';
+        preview.innerHTML = '';
+    }
+    var fileInput = document.getElementById('postFile');
+    if (fileInput) fileInput.value = '';
+}
+
+// ============================================================
+// DOWNLOAD MEDIA
+// ============================================================
+function downloadMedia(url) {
+    if (!url) return;
+    if (url.startsWith('data:')) {
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'media.jpg';
+        a.click();
+    }
+}
+
+// ============================================================
+// BOOKMARK ITEM
+// ============================================================
+function bookmarkItem(id, type) {
+    if (!S.username) {
+        toast('Please log in to save items');
+        return;
+    }
+    
+    S.bookmarks = S.bookmarks || [];
+    
+    var idx = S.bookmarks.findIndex(function(b) { return b.id === id; });
+    
+    if (idx > -1) {
+        S.bookmarks.splice(idx, 1);
+        toast('Removed from saved items');
+    } else {
+        S.bookmarks.push({ id: id, type: type, time: new Date().toISOString() });
+        toast('Saved! 🔖');
+    }
+    
+    firebase.database().ref('users/' + S.username + '/bookmarks').set(S.bookmarks);
+    saveState();
+    renderSocial();
+    renderProfile();
+}
+
+// ============================================================
+// RENDER STORIES
+// ============================================================
+function renderStories() {
+    var row = document.getElementById('storyRow');
+    if (!row) return;
+    
+    row.innerHTML = '<div class="ig-story" onclick="addStatus()">' +
+        '<div class="ig-story-avatar">' +
+        '<div class="inner" style="display:flex;align-items:center;justify-content:center;font-size:24px;">📸</div>' +
+        '</div>' +
+        '<span class="ig-story-name">My Status</span>' +
+        '<span style="font-size:8px;color:#6366f1;">+ Add</span>' +
+        '</div>';
+}
+
+// ============================================================
+// ADD STATUS/STORY
+// ============================================================
+function addStatus() {
+    if (!S.username) {
+        toast('Please log in');
+        return;
+    }
+    
+    showDialog({
+        emoji: '📸',
+        title: 'Add Status',
+        placeholder: 'What\'s on your mind?',
+        confirmText: 'Post'
+    }).then(function(text) {
+        if (text !== null && text.trim()) {
+            firebase.database().ref('statuses').push({
+                author: S.username,
+                avatar: S.avatar || null,
+                text: text.trim(),
+                time: new Date().toISOString(),
+                expires: new Date(Date.now() + 86400000).toISOString(),
+                views: []
+            });
+            toast('Status added! 📸');
+            renderStories();
+        }
+    });
+}
+
+// ============================================================
+// EXPOSE GLOBALLY
+// ============================================================
+window.setupPostsListener = setupPostsListener;
+window.renderSocial = renderSocial;
+window.createPost = createPost;
+window.likePost = likePost;
+window.commentOnPost = commentOnPost;
+window.deletePost = deletePost;
+window.handleFileSelect = handleFileSelect;
+window.clearFileSelection = clearFileSelection;
+window.downloadMedia = downloadMedia;
+window.bookmarkItem = bookmarkItem;
+window.renderStories = renderStories;
+window.addStatus = addStatus;
+
+console.log('📱 Social module loaded - complete with posts, likes, comments, stories');
