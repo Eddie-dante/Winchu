@@ -1,75 +1,26 @@
-// ============================================================
-// AUTH MODULE - COMPLETE WITH DEBUG
-// ============================================================
+// Auth Module - Complete
 
-debugLog('🔐 AUTH MODULE LOADING...');
+console.log('🔐 Auth module loading...');
 
 // ============================================================
-// MAKE SURE S OBJECT EXISTS
-// ============================================================
-if (typeof S === 'undefined') {
-    window.S = {
-        username: null,
-        name: '',
-        bio: 'Building my energy. One aura at a time. ⚡',
-        wallpaper: null,
-        selectedAuras: [],
-        avatar: null,
-        friends: [],
-        completedTasks: [],
-        streakData: {},
-        socialPosts: [],
-        diary: [],
-        routines: [],
-        videoData: [],
-        bookmarks: [],
-        notifications: [],
-        groups: []
-    };
-    debugLog('⚠️ S object created by auth.js');
-}
-
-// ============================================================
-// MAKE SURE TOAST EXISTS
-// ============================================================
-if (typeof toast === 'undefined') {
-    window.toast = function(message) {
-        debugLog('📢 TOAST: ' + message);
-        alert(message);
-    };
-    debugLog('⚠️ Toast fallback created');
-}
-
-// ============================================================
-// MAKE SURE NAVIGATE EXISTS
-// ============================================================
-if (typeof navigate === 'undefined') {
-    window.navigate = function(page) {
-        debugLog('🧭 Navigate to: ' + page);
-        var pages = document.querySelectorAll('.page');
-        pages.forEach(function(p) { p.classList.remove('active'); });
-        var target = document.getElementById('page-' + page);
-        if (target) target.classList.add('active');
-    };
-    debugLog('⚠️ Navigate fallback created');
-}
-
-// ============================================================
-// SIGNUP FUNCTION - COMPLETE
+// SIGNUP FUNCTION
 // ============================================================
 function handleSignup() {
-    debugLog('=== SIGNUP BUTTON CLICKED ===');
+    console.log('=== SIGNUP BUTTON CLICKED ===');
     
     try {
         var nameEl = document.getElementById('signupName');
         var usernameEl = document.getElementById('signupUser');
         var passwordEl = document.getElementById('signupPass');
         
-        debugLog('Elements found: name=' + !!nameEl + ', username=' + !!usernameEl + ', password=' + !!passwordEl);
+        console.log('Elements found:', {
+            name: !!nameEl,
+            username: !!usernameEl,
+            password: !!passwordEl
+        });
         
         if (!nameEl || !usernameEl || !passwordEl) {
             toast('Form error. Please refresh the page.');
-            debugLog('❌ Missing form elements');
             return;
         }
         
@@ -77,45 +28,45 @@ function handleSignup() {
         var usernameVal = usernameEl.value.trim();
         var passwordVal = passwordEl.value.trim();
         
-        debugLog('Signup values: name=' + nameVal + ', username=' + usernameVal + ', password=***');
+        console.log('Signup attempt for:', usernameVal);
         
         if (!nameVal || !usernameVal || !passwordVal) {
             toast('Please fill all fields');
-            debugLog('❌ Missing fields: name=' + !!nameVal + ', username=' + !!usernameVal + ', password=' + !!passwordVal);
             return;
         }
         
         if (usernameVal.length < 3) {
             toast('Username must be at least 3 characters');
-            debugLog('❌ Username too short: ' + usernameVal.length);
             return;
         }
         
         if (passwordVal.length < 6) {
             toast('Password must be at least 6 characters');
-            debugLog('❌ Password too short: ' + passwordVal.length);
+            return;
+        }
+        
+        if (!/^[a-zA-Z0-9_]+$/.test(usernameVal)) {
+            toast('Username can only contain letters, numbers, and underscores');
             return;
         }
         
         // Check if Firebase is available
         if (typeof firebase === 'undefined' || !firebase.database) {
             toast('Firebase not loaded. Please check your connection.');
-            debugLog('❌ Firebase not available');
+            console.error('Firebase not available');
             return;
         }
         
-        debugLog('✅ Firebase available, checking username...');
         toast('Checking username...');
         
         firebase.database().ref('users/' + usernameVal).once('value')
             .then(function(snapshot) {
                 if (snapshot.exists()) {
                     toast('Username already taken. Please choose another.');
-                    debugLog('❌ Username taken: ' + usernameVal);
                     return Promise.reject('Username taken');
                 }
                 
-                debugLog('✅ Username available. Creating account...');
+                console.log('Username available. Creating account...');
                 toast('Creating account...');
                 
                 var userData = {
@@ -136,7 +87,7 @@ function handleSignup() {
                 return firebase.database().ref('users/' + usernameVal).set(userData);
             })
             .then(function() {
-                debugLog('✅ Account created successfully for: ' + usernameVal);
+                console.log('Account created successfully for:', usernameVal);
                 
                 S.username = usernameVal;
                 S.name = nameVal;
@@ -165,88 +116,85 @@ function handleSignup() {
                 passwordEl.value = '';
                 
                 toast('Account created successfully! 🎉');
-                debugLog('✅ Account creation complete');
                 
                 setTimeout(function() { 
                     if (typeof navigate === 'function') {
-                        debugLog('🧭 Navigating to select page');
                         navigate('select');
                     } else {
-                        debugLog('⚠️ Navigate not available, using hash');
                         window.location.hash = '#select';
                     }
                 }, 500);
             })
             .catch(function(error) {
                 if (error !== 'Username taken') {
-                    debugLog('❌ Signup error: ' + error.message);
+                    console.error('Signup error:', error);
                     toast('Error creating account. Please try again.');
                 }
             });
             
     } catch (error) {
-        debugLog('❌ Signup function error: ' + error.message);
+        console.error('Signup function error:', error);
         toast('An error occurred. Please try again.');
     }
 }
 
 // ============================================================
-// LOGIN FUNCTION - COMPLETE
+// LOGIN FUNCTION
 // ============================================================
 function handleLogin() {
-    debugLog('=== LOGIN BUTTON CLICKED ===');
+    console.log('=== LOGIN BUTTON CLICKED ===');
     
     try {
         var usernameEl = document.getElementById('loginUser');
         var passwordEl = document.getElementById('loginPass');
         
-        debugLog('Elements found: username=' + !!usernameEl + ', password=' + !!passwordEl);
+        console.log('Elements found:', {
+            username: !!usernameEl,
+            password: !!passwordEl
+        });
         
         if (!usernameEl || !passwordEl) {
             toast('Form error. Please refresh the page.');
-            debugLog('❌ Missing form elements');
             return;
         }
         
         var usernameVal = usernameEl.value.trim();
         var passwordVal = passwordEl.value.trim();
         
-        debugLog('Login attempt for: ' + usernameVal);
+        console.log('Login attempt for:', usernameVal);
         
         if (!usernameVal || !passwordVal) {
             toast('Please fill all fields');
-            debugLog('❌ Missing fields: username=' + !!usernameVal + ', password=' + !!passwordVal);
             return;
         }
         
         // Check if Firebase is available
         if (typeof firebase === 'undefined' || !firebase.database) {
             toast('Firebase not loaded. Please check your connection.');
-            debugLog('❌ Firebase not available');
+            console.error('Firebase not available');
             return;
         }
         
-        debugLog('✅ Firebase available, logging in...');
         toast('Logging in...');
         
         firebase.database().ref('users/' + usernameVal).once('value')
             .then(function(snapshot) {
                 if (!snapshot.exists()) {
-                    debugLog('❌ User not found: ' + usernameVal);
+                    console.log('User not found:', usernameVal);
                     toast('User not found. Please check your username or create an account.');
                     return;
                 }
                 
                 var userData = snapshot.val();
-                debugLog('✅ User found, checking password...');
+                console.log('User found, checking password...');
                 
                 if (userData.password !== passwordVal) {
-                    debugLog('❌ Password incorrect for: ' + usernameVal);
+                    console.log('Password incorrect for:', usernameVal);
                     toast('Incorrect password. Please try again.');
                     return;
                 }
                 
-                debugLog('✅ Login successful for: ' + usernameVal);
+                console.log('Login successful for:', usernameVal);
                 
                 S.username = usernameVal;
                 S.name = userData.name || '';
@@ -287,12 +235,10 @@ function handleLogin() {
                 
                 var displayName = S.name || S.username;
                 toast('Welcome back, ' + displayName + '! ✨');
-                debugLog('✅ Login complete for: ' + displayName);
                 
                 if (S.selectedAuras.length === 0) {
                     setTimeout(function() { 
                         if (typeof navigate === 'function') {
-                            debugLog('🧭 Navigating to select page');
                             navigate('select');
                         } else {
                             window.location.hash = '#select';
@@ -301,7 +247,6 @@ function handleLogin() {
                 } else {
                     setTimeout(function() { 
                         if (typeof navigate === 'function') {
-                            debugLog('🧭 Navigating to social page');
                             navigate('social');
                             if (typeof initAppData === 'function') initAppData();
                         } else {
@@ -311,12 +256,12 @@ function handleLogin() {
                 }
             })
             .catch(function(error) {
-                debugLog('❌ Login error: ' + error.message);
+                console.error('Login error:', error);
                 toast('Connection error. Please check your internet and try again.');
             });
             
     } catch (error) {
-        debugLog('❌ Login function error: ' + error.message);
+        console.error('Login function error:', error);
         toast('An error occurred. Please try again.');
     }
 }
@@ -325,11 +270,11 @@ function handleLogin() {
 // LOGOUT FUNCTION
 // ============================================================
 function logout() {
-    debugLog('=== LOGOUT STARTED ===');
+    console.log('=== LOGOUT STARTED ===');
     
     if (S.username) {
         firebase.database().ref('users/' + S.username).update({ online: false, last_seen: new Date().toISOString() }).catch(function(err) {
-            debugLog('❌ Error updating status: ' + err.message);
+            console.error('Error updating status:', err);
         });
     }
     
@@ -360,26 +305,25 @@ function logout() {
     
     navigate('landing');
     toast('Logged out successfully');
-    debugLog('✅ Logout complete');
+    console.log('✅ Logout complete');
 }
 
 // ============================================================
 // CONFIRM AURA SELECTION
 // ============================================================
 function confirmSelection() {
-    debugLog('=== CONFIRMING AURAS ===');
+    console.log('=== CONFIRMING AURAS ===');
     
     if (S.selectedAuras.length === 0) {
         toast('Please select at least one aura to continue.');
-        debugLog('❌ No auras selected');
         return;
     }
     
     if (S.username) {
         firebase.database().ref('users/' + S.username + '/selected_auras').set(S.selectedAuras).then(function() {
-            debugLog('✅ Auras saved to Firebase');
+            console.log('Auras saved to Firebase');
         }).catch(function(err) {
-            debugLog('❌ Error saving auras: ' + err.message);
+            console.error('Error saving auras:', err);
         });
     }
     
@@ -390,11 +334,14 @@ function confirmSelection() {
     }).join(', ');
     
     toast('Auras activated: ' + auraNames + ' ✨');
-    debugLog('✅ Auras activated: ' + auraNames);
     
     setTimeout(function() { 
-        navigate('social'); 
-        initAppData(); 
+        if (typeof navigate === 'function') {
+            navigate('social'); 
+            if (typeof initAppData === 'function') initAppData();
+        } else {
+            window.location.hash = '#social';
+        }
     }, 500);
 }
 
@@ -402,24 +349,19 @@ function confirmSelection() {
 // RESET PASSWORD
 // ============================================================
 function resetPassword() {
-    debugLog('=== PASSWORD RESET ===');
+    console.log('=== PASSWORD RESET ===');
     
     showDialog({
         emoji: '🔑', title: 'Reset Password', subtitle: 'Enter your username to reset your password',
         placeholder: 'Your username...', confirmText: 'Next →'
     }).then(function(username) {
-        if (!username || !username.trim()) {
-            debugLog('❌ No username entered');
-            return;
-        }
+        if (!username || !username.trim()) return;
         
         var usernameVal = username.trim();
-        debugLog('Resetting password for: ' + usernameVal);
         
         firebase.database().ref('users/' + usernameVal).once('value').then(function(snapshot) {
             if (!snapshot.exists()) { 
                 toast('User not found. Please check your username.'); 
-                debugLog('❌ User not found: ' + usernameVal);
                 return; 
             }
             
@@ -427,28 +369,23 @@ function resetPassword() {
                 emoji: '🔐', title: 'New Password', subtitle: 'Enter your new password (minimum 6 characters)',
                 placeholder: 'New password...', confirmText: 'Save Password'
             }).then(function(newPassword) {
-                if (!newPassword || !newPassword.trim()) {
-                    debugLog('❌ No new password entered');
-                    return;
-                }
+                if (!newPassword || !newPassword.trim()) return;
                 var passwordVal = newPassword.trim();
                 if (passwordVal.length < 6) { 
                     toast('Password must be at least 6 characters'); 
-                    debugLog('❌ Password too short: ' + passwordVal.length);
                     return; 
                 }
                 
                 firebase.database().ref('users/' + usernameVal + '/password').set(passwordVal).then(function() {
                     toast('Password reset successfully! Please log in with your new password.');
-                    debugLog('✅ Password reset for: ' + usernameVal);
                     setTimeout(function() { navigate('login'); }, 1000);
                 }).catch(function(error) { 
-                    debugLog('❌ Reset error: ' + error.message);
+                    console.error('Reset error:', error); 
                     toast('Error resetting password.'); 
                 });
             });
         }).catch(function(error) { 
-            debugLog('❌ Reset error: ' + error.message);
+            console.error('Reset error:', error); 
             toast('Error. Please check your connection.'); 
         });
     });
@@ -463,6 +400,6 @@ window.logout = logout;
 window.confirmSelection = confirmSelection;
 window.resetPassword = resetPassword;
 
-debugLog('✅ Auth module loaded successfully');
-debugLog('📌 handleSignup type: ' + typeof window.handleSignup);
-debugLog('📌 handleLogin type: ' + typeof window.handleLogin);
+console.log('🔐 Auth module loaded successfully');
+console.log('📌 handleSignup type:', typeof window.handleSignup);
+console.log('📌 handleLogin type:', typeof window.handleLogin);

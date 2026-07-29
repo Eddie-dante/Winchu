@@ -1,37 +1,12 @@
-// ============================================================
-// APP INITIALIZATION WITH DEBUG
-// ============================================================
+// App Initialization
 
-debugLog('⚡ APP CORE LOADING...');
-
-// ============================================================
-// CHECK ALL DEPENDENCIES
-// ============================================================
-debugLog('📦 Checking dependencies:');
-debugLog('  - firebase: ' + (typeof firebase !== 'undefined' ? '✅' : '❌'));
-debugLog('  - S: ' + (typeof S !== 'undefined' ? '✅' : '❌'));
-debugLog('  - toast: ' + (typeof toast !== 'undefined' ? '✅' : '❌'));
-debugLog('  - navigate: ' + (typeof navigate !== 'undefined' ? '✅' : '❌'));
-debugLog('  - handleSignup: ' + (typeof handleSignup !== 'undefined' ? '✅' : '❌'));
-debugLog('  - handleLogin: ' + (typeof handleLogin !== 'undefined' ? '✅' : '❌'));
-
-// ============================================================
-// FORCE FUNCTIONS TO BE GLOBAL
-// ============================================================
-if (typeof handleSignup !== 'undefined') {
-    window.handleSignup = handleSignup;
-    debugLog('✅ handleSignup attached to window');
-}
-if (typeof handleLogin !== 'undefined') {
-    window.handleLogin = handleLogin;
-    debugLog('✅ handleLogin attached to window');
-}
+console.log('⚡ App Core Loading...');
 
 // ============================================================
 // APP INITIALIZATION
 // ============================================================
 function initApp() {
-    debugLog('=== INITIALIZING APP ===');
+    console.log('=== INITIALIZING APP ===');
     var auth = localStorage.getItem('wa');
     if (auth) {
         try {
@@ -39,7 +14,7 @@ function initApp() {
             if (data.username && (Date.now() - data.timestamp < 7 * 86400000)) {
                 loadState();
                 if (S.username === data.username) {
-                    debugLog('✅ Restoring session for: ' + S.username);
+                    console.log('Restoring session for:', S.username);
                     setupPresence();
                     firebase.database().ref('users/' + S.username).once('value').then(function(snapshot) { 
                         if (snapshot.exists()) { 
@@ -52,7 +27,6 @@ function initApp() {
                             S.bookmarks = d.bookmarks || []; 
                             S.selectedAuras = d.selected_auras || []; 
                             saveState(); 
-                            debugLog('✅ User data loaded from Firebase');
                         } 
                     });
                     if (S.wallpaper) { 
@@ -69,22 +43,19 @@ function initApp() {
                     }
                     
                     if (S.selectedAuras.length === 0) { 
-                        debugLog('🧭 No auras, navigating to select');
                         navigate('select'); 
                     } else { 
-                        debugLog('🧭 Navigating to social');
                         navigate('social'); 
                         initAppData(); 
                     }
-                    debugLog('✅ Winchu ready');
+                    console.log('✅ Winchu ready');
                     return;
                 }
             }
         } catch(e) { 
-            debugLog('❌ Init error: ' + e.message);
+            console.error('Init error:', e); 
         }
     }
-    debugLog('🧭 No session, navigating to landing');
     navigate('landing');
 }
 
@@ -92,7 +63,7 @@ function initApp() {
 // INIT APP DATA
 // ============================================================
 function initAppData() {
-    debugLog('=== INITIALIZING APP DATA ===');
+    console.log('=== INITIALIZING APP DATA ===');
     
     firebase.database().ref('posts').orderByChild('time').limitToLast(200).once('value').then(function(snapshot) {
         var data = snapshot.val(); 
@@ -115,7 +86,6 @@ function initAppData() {
         if (typeof renderProfile === 'function') renderProfile();
         if (typeof renderStories === 'function') renderStories();
         saveState();
-        debugLog('✅ Posts loaded: ' + S.socialPosts.length);
     });
     
     firebase.database().ref('videos').orderByChild('time').limitToLast(100).once('value').then(function(snapshot) {
@@ -136,7 +106,6 @@ function initAppData() {
             }); 
         }
         if (typeof renderVideos === 'function') renderVideos();
-        debugLog('✅ Videos loaded: ' + S.videoData.length);
     });
     
     firebase.database().ref('groups').once('value').then(function(snapshot) {
@@ -152,7 +121,6 @@ function initAppData() {
         }
         if (typeof renderGroups === 'function') renderGroups();
         if (typeof renderChatList === 'function') renderChatList();
-        debugLog('✅ Groups loaded: ' + S.groups.length);
     });
     
     firebase.database().ref('diary/' + S.username).orderByKey().limitToLast(100).once('value').then(function(snapshot) {
@@ -161,14 +129,12 @@ function initAppData() {
         if (data) S.diary = Object.values(data).reverse();
         var diaryCount = document.getElementById('diaryCount');
         if (diaryCount) diaryCount.textContent = S.diary.length;
-        debugLog('✅ Diary entries: ' + S.diary.length);
     });
     
     firebase.database().ref('routines/' + S.username).orderByKey().limitToLast(100).once('value').then(function(snapshot) {
         var data = snapshot.val(); 
         S.routines = [];
         if (data) S.routines = Object.values(data).reverse();
-        debugLog('✅ Routines loaded: ' + S.routines.length);
     });
     
     firebase.database().ref('notifications/' + S.username).orderByChild('time').limitToLast(50).once('value').then(function(snapshot) {
@@ -187,12 +153,10 @@ function initAppData() {
             }); 
         }
         updateNotifBadge();
-        debugLog('✅ Notifications loaded: ' + S.notifications.length);
     });
     
     firebase.database().ref('users/' + S.username + '/bookmarks').once('value').then(function(snapshot) { 
         S.bookmarks = snapshot.val() || []; 
-        debugLog('✅ Bookmarks loaded: ' + S.bookmarks.length);
     });
     
     setupPostsListener();
@@ -214,7 +178,7 @@ function initAppData() {
             }); 
     }, 60000);
     
-    debugLog('✅ All app data initialized');
+    console.log('✅ All app data initialized');
 }
 
 // ============================================================
@@ -394,58 +358,9 @@ function addNotification(to, message, type, refId) {
 }
 
 // ============================================================
-// FORCE SYNC USER DATA
-// ============================================================
-function forceSyncUserData() {
-    if (!S.username) {
-        debugLog('⚠️ No user logged in to sync');
-        return;
-    }
-    
-    debugLog('🔄 Force syncing user data...');
-    
-    firebase.database().ref('users/' + S.username).once('value')
-        .then(function(snapshot) {
-            if (snapshot.exists()) {
-                var data = snapshot.val();
-                S.friends = data.friends || [];
-                S.name = data.name || S.name;
-                S.bio = data.bio || S.bio;
-                S.avatar = data.avatar || S.avatar;
-                S.wallpaper = data.wallpaper || S.wallpaper;
-                S.bookmarks = data.bookmarks || [];
-                S.selectedAuras = data.selected_auras || [];
-                S.completedTasks = data.completedTasks || [];
-                S.streakData = data.streakData || {};
-                saveState();
-                
-                if (typeof renderProfile === 'function') renderProfile();
-                if (typeof renderUsers === 'function') renderUsers();
-                if (typeof renderChatList === 'function') renderChatList();
-                if (typeof renderSocial === 'function') renderSocial();
-                if (typeof renderHome === 'function') renderHome();
-                if (typeof renderNotifications === 'function') renderNotifications();
-                if (typeof renderGroups === 'function') renderGroups();
-                
-                debugLog('✅ User data force synced successfully');
-                return true;
-            } else {
-                debugLog('⚠️ User not found in Firebase');
-                return false;
-            }
-        })
-        .catch(function(error) {
-            debugLog('❌ Force sync error: ' + error.message);
-            toast('Error syncing data. Please refresh.');
-            return false;
-        });
-}
-
-// ============================================================
 // DOM READY
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() { 
-    debugLog('📄 DOM Ready, initializing app...');
     setTimeout(initApp, 500); 
 });
 
@@ -465,7 +380,6 @@ window.addEventListener('online', function() {
         setupPresence(); 
         updateData('users/' + S.username, { online: true }); 
         toast('📶 Online'); 
-        debugLog('📶 Online'); 
     } 
 });
 
@@ -473,16 +387,13 @@ window.addEventListener('offline', function() {
     if (S.username) 
         updateData('users/' + S.username, { online: false }); 
     toast('⚠️ Offline'); 
-    debugLog('⚠️ Offline'); 
 });
 
 if ('serviceWorker' in navigator) { 
     window.addEventListener('load', function() { 
         navigator.serviceWorker.register('/service-worker.js').then(function(r) { 
-            debugLog('✅ SW registered'); 
-        }).catch(function() { 
-            debugLog('⚠️ SW registration failed'); 
-        }); 
+            console.log('SW registered'); 
+        }).catch(function() {}); 
     }); 
 }
 
@@ -494,8 +405,5 @@ window.initAppData = initAppData;
 window.updateNotifBadge = updateNotifBadge;
 window.markAllNotifsRead = markAllNotifsRead;
 window.addNotification = addNotification;
-window.forceSyncUserData = forceSyncUserData;
 
-debugLog('⚡ App Core Loaded');
-debugLog('📌 handleSignup type: ' + typeof window.handleSignup);
-debugLog('📌 handleLogin type: ' + typeof window.handleLogin);
+console.log('⚡ App Core Loaded');
