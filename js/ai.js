@@ -1,9 +1,12 @@
-// AI Chat Module – Frontend
+// AI Chat Module – Complete with OpenRouter
 
 var aiChatMessages = [];
 var isAIOpen = false;
 var aiInitialized = false;
 
+// ============================================================
+// TOGGLE AI CHAT
+// ============================================================
 function toggleAIChat() {
     if (isAIOpen) {
         closeAIChat();
@@ -12,6 +15,9 @@ function toggleAIChat() {
     }
 }
 
+// ============================================================
+// OPEN AI CHAT
+// ============================================================
 function openAIChat() {
     if (isAIOpen) return;
     
@@ -171,6 +177,9 @@ function sendAIMessage() {
         });
 }
 
+// ============================================================
+// CALL AI API - Using Vercel proxy
+// ============================================================
 function callAIApi(userMessage) {
     return new Promise(function(resolve, reject) {
         var messages = [

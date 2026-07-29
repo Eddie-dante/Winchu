@@ -178,33 +178,25 @@ function loadState() {
 }
 
 // ============================================================
-// TOAST NOTIFICATION - Uses app dialog
+// TOAST NOTIFICATION
 // ============================================================
 function toast(message, duration) {
     console.log('📢 TOAST:', message);
     
-    // Use the app's dialog system if available
-    if (typeof showDialog === 'function') {
-        // Use the app's dialog
-        var container = document.getElementById('toastContainer');
-        if (container) {
-            var toastElement = document.createElement('div');
-            toastElement.className = 'toast';
-            toastElement.textContent = message;
-            container.appendChild(toastElement);
-            
-            var timeout = duration || 2500;
-            setTimeout(function() {
-                if (toastElement.parentNode) {
-                    toastElement.remove();
-                }
-            }, timeout);
-        } else {
-            // Fallback to alert
-            alert(message);
-        }
+    var container = document.getElementById('toastContainer');
+    if (container) {
+        var toastElement = document.createElement('div');
+        toastElement.className = 'toast';
+        toastElement.textContent = message;
+        container.appendChild(toastElement);
+        
+        var timeout = duration || 2500;
+        setTimeout(function() {
+            if (toastElement.parentNode) {
+                toastElement.remove();
+            }
+        }, timeout);
     } else {
-        // Fallback to alert
         alert(message);
     }
 }

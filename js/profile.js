@@ -1,49 +1,67 @@
-// Profile Module - Complete with fixed friend registration
+// Profile Module - Complete
 
 function renderProfile() {
-    if (!S.username) return;
-    
-    var profileName = document.getElementById('profileName');
-    if (profileName) profileName.textContent = S.name || S.username;
-    
-    var profileUsername = document.getElementById('profileUsername');
-    if (profileUsername) profileUsername.textContent = '@' + S.username;
-    
-    var profileBio = document.getElementById('profileBio');
-    if (profileBio) profileBio.textContent = S.bio || 'Building my energy. One aura at a time. ⚡';
-    
-    updateProfileAvatar();
-    updatePostAvatarInComposer();
-    
-    var userPosts = (S.socialPosts || []).filter(function(p) { return p.author === S.username; });
-    
-    var profilePosts = document.getElementById('profilePosts');
-    if (profilePosts) profilePosts.textContent = userPosts.length;
-    
-    var profileFriends = document.getElementById('profileFriends');
-    if (profileFriends) profileFriends.textContent = (S.friends || []).length;
-    
-    var profileBookmarks = document.getElementById('profileBookmarks');
-    if (profileBookmarks) profileBookmarks.textContent = (S.bookmarks || []).length;
-    
-    renderProfileRequests();
-    
-    if (typeof updateNotifBadge === 'function') updateNotifBadge();
-    
-    var postsGrid = document.getElementById('profilePostsGrid');
-    if (postsGrid) {
-        if (userPosts.length === 0) {
-            postsGrid.innerHTML = '<p style="color:#94a3b8;text-align:center;grid-column:1/-1;padding:20px;">No posts yet. Share your first post! 📸</p>';
-        } else {
-            var sortedPosts = userPosts.slice().sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
-            var gridHTML = '';
-            sortedPosts.forEach(function(post) {
-                var img = post.image || 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=400&q=80';
-                gridHTML += '<div style="aspect-ratio:1;background-image:url(' + img + ');background-size:cover;background-position:center;border-radius:6px;cursor:pointer;" onclick="viewPostDetail(\'' + post.id + '\')"></div>';
-            });
-            postsGrid.innerHTML = gridHTML;
-        }
+    if (!S.username) {
+        console.warn('No user logged in');
+        return;
     }
+    
+    console.log('👤 Rendering profile for:', S.username);
+    
+    // Force reload user data
+    firebase.database().ref('users/' + S.username).once('value').then(function(snapshot) {
+        if (snapshot.exists()) {
+            var data = snapshot.val();
+            S.name = data.name || S.name;
+            S.bio = data.bio || S.bio;
+            S.avatar = data.avatar || S.avatar;
+            S.friends = data.friends || [];
+            S.bookmarks = data.bookmarks || [];
+            saveState();
+        }
+        
+        var profileName = document.getElementById('profileName');
+        if (profileName) profileName.textContent = S.name || S.username;
+        
+        var profileUsername = document.getElementById('profileUsername');
+        if (profileUsername) profileUsername.textContent = '@' + S.username;
+        
+        var profileBio = document.getElementById('profileBio');
+        if (profileBio) profileBio.textContent = S.bio || 'Building my energy. One aura at a time. ⚡';
+        
+        updateProfileAvatar();
+        updatePostAvatarInComposer();
+        
+        var userPosts = (S.socialPosts || []).filter(function(p) { return p.author === S.username; });
+        
+        var profilePosts = document.getElementById('profilePosts');
+        if (profilePosts) profilePosts.textContent = userPosts.length;
+        
+        var profileFriends = document.getElementById('profileFriends');
+        if (profileFriends) profileFriends.textContent = (S.friends || []).length;
+        
+        var profileBookmarks = document.getElementById('profileBookmarks');
+        if (profileBookmarks) profileBookmarks.textContent = (S.bookmarks || []).length;
+        
+        renderProfileRequests();
+        
+        if (typeof updateNotifBadge === 'function') updateNotifBadge();
+        
+        var postsGrid = document.getElementById('profilePostsGrid');
+        if (postsGrid) {
+            if (userPosts.length === 0) {
+                postsGrid.innerHTML = '<p style="color:#94a3b8;text-align:center;grid-column:1/-1;padding:20px;">No posts yet. Share your first post! 📸</p>';
+            } else {
+                var sortedPosts = userPosts.slice().sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
+                var gridHTML = '';
+                sortedPosts.forEach(function(post) {
+                    var img = post.image || 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=400&q=80';
+                    gridHTML += '<div style="aspect-ratio:1;background-image:url(' + img + ');background-size:cover;background-position:center;border-radius:6px;cursor:pointer;" onclick="viewPostDetail(\'' + post.id + '\')"></div>';
+                });
+                postsGrid.innerHTML = gridHTML;
+            }
+        }
+    });
 }
 
 function updateProfileAvatar() {
@@ -94,7 +112,6 @@ function editName() {
             S.name = result.trim(); 
             if (S.username) { 
                 firebase.database().ref('users/' + S.username + '/name').set(S.name); 
-                updateAllPostsAuthorName(S.name); 
             } 
             saveState(); 
             renderProfile(); 
@@ -135,43 +152,12 @@ function handleAvatarSelect(event) {
     reader.onload = function(e) { 
         S.avatar = e.target.result; 
         if (S.username) firebase.database().ref('users/' + S.username + '/avatar').set(S.avatar); 
-        updateAllPostsAvatar(S.avatar); 
         updateProfileAvatar(); 
         updatePostAvatarInComposer(); 
         saveState(); 
         toast('✅ Avatar updated!'); 
     };
     reader.readAsDataURL(file);
-}
-
-function updateAllPostsAvatar(avatarUrl) {
-    (S.socialPosts || []).forEach(function(post) { 
-        if (post.author === S.username) post.avatar = avatarUrl; 
-    });
-    firebase.database().ref('posts').once('value').then(function(snapshot) { 
-        var data = snapshot.val(); 
-        if (data) { 
-            Object.keys(data).forEach(function(key) { 
-                if (data[key].author === S.username) 
-                    firebase.database().ref('posts/' + key + '/avatar').set(avatarUrl); 
-            }); 
-        } 
-    });
-}
-
-function updateAllPostsAuthorName(newName) {
-    (S.socialPosts || []).forEach(function(post) { 
-        if (post.author === S.username) post.author = newName; 
-    });
-    firebase.database().ref('posts').once('value').then(function(snapshot) { 
-        var data = snapshot.val(); 
-        if (data) { 
-            Object.keys(data).forEach(function(key) { 
-                if (data[key].author === S.username) 
-                    firebase.database().ref('posts/' + key + '/author').set(newName); 
-            }); 
-        } 
-    });
 }
 
 function renderUsers() {
@@ -181,10 +167,13 @@ function renderUsers() {
         container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">Please log in</p>'; 
         return; 
     }
+    
+    toast('Loading users...');
+    
     firebase.database().ref('friendRequests/' + S.username).once('value').then(function(reqSnapshot) {
         var pendingRequests = reqSnapshot.val() || [];
         if (!Array.isArray(pendingRequests)) pendingRequests = [];
-        firebase.database().ref('users').once('value').then(function(snapshot) {
+        firebase.database().ref('users').limitToLast(50).once('value').then(function(snapshot) {
             var users = snapshot.val() || {}; 
             var usernames = Object.keys(users);
             if (usernames.length === 0) { 
@@ -328,8 +317,6 @@ function acceptFriendRequest(username) {
             if (typeof renderSocial === 'function') renderSocial();
             
             toast('✅ You and @' + username + ' are now friends! 🎉');
-            
-            forceSyncUserData();
         })
         .catch(function(error) {
             console.error('Error accepting friend request:', error);
@@ -356,35 +343,6 @@ function declineFriendRequest(username) {
         })
         .catch(function(error) {
             console.error('Error declining request:', error);
-        });
-}
-
-function forceSyncUserData() {
-    if (!S.username) return;
-    
-    firebase.database().ref('users/' + S.username).once('value')
-        .then(function(snapshot) {
-            if (snapshot.exists()) {
-                var data = snapshot.val();
-                S.friends = data.friends || [];
-                S.name = data.name || S.name;
-                S.bio = data.bio || S.bio;
-                S.avatar = data.avatar || S.avatar;
-                S.wallpaper = data.wallpaper || S.wallpaper;
-                S.bookmarks = data.bookmarks || [];
-                S.selectedAuras = data.selected_auras || [];
-                saveState();
-                
-                if (typeof renderProfile === 'function') renderProfile();
-                if (typeof renderUsers === 'function') renderUsers();
-                if (typeof renderChatList === 'function') renderChatList();
-                if (typeof renderSocial === 'function') renderSocial();
-                
-                console.log('🔄 User data force synced');
-            }
-        })
-        .catch(function(error) {
-            console.error('Sync error:', error);
         });
 }
 
@@ -461,6 +419,5 @@ window.acceptFriendRequest = acceptFriendRequest;
 window.declineFriendRequest = declineFriendRequest;
 window.viewUserProfile = viewUserProfile;
 window.renderUserProfile = renderUserProfile;
-window.forceSyncUserData = forceSyncUserData;
 
-console.log('👤 Profile loaded - fixed friend registration');
+console.log('👤 Profile module loaded');
