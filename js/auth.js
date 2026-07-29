@@ -1,9 +1,34 @@
-// Auth Module - Complete
+// ============================================================
+// AUTH MODULE - COMPLETE FIX
+// ============================================================
 
 console.log('🔐 Auth module loading...');
 
 // ============================================================
-// SIGNUP FUNCTION
+// SIMPLE TOAST FALLBACK
+// ============================================================
+if (typeof toast === 'undefined') {
+    window.toast = function(message) {
+        console.log('📢 TOAST:', message);
+        alert(message);
+    };
+}
+
+// ============================================================
+// SIMPLE NAVIGATE FALLBACK
+// ============================================================
+if (typeof navigate === 'undefined') {
+    window.navigate = function(page) {
+        console.log('🧭 Navigate to:', page);
+        var pages = document.querySelectorAll('.page');
+        pages.forEach(function(p) { p.classList.remove('active'); });
+        var target = document.getElementById('page-' + page);
+        if (target) target.classList.add('active');
+    };
+}
+
+// ============================================================
+// SIGNUP FUNCTION - DIRECT FIREBASE
 // ============================================================
 function handleSignup() {
     console.log('=== SIGNUP BUTTON CLICKED ===');
@@ -13,22 +38,14 @@ function handleSignup() {
         var usernameEl = document.getElementById('signupUser');
         var passwordEl = document.getElementById('signupPass');
         
-        console.log('Elements found:', {
-            name: !!nameEl,
-            username: !!usernameEl,
-            password: !!passwordEl
-        });
-        
         if (!nameEl || !usernameEl || !passwordEl) {
-            toast('Form error. Please refresh the page.');
+            toast('Form error. Please refresh.');
             return;
         }
         
         var nameVal = nameEl.value.trim();
         var usernameVal = usernameEl.value.trim();
         var passwordVal = passwordEl.value.trim();
-        
-        console.log('Signup attempt for:', usernameVal);
         
         if (!nameVal || !usernameVal || !passwordVal) {
             toast('Please fill all fields');
@@ -45,28 +62,19 @@ function handleSignup() {
             return;
         }
         
-        if (!/^[a-zA-Z0-9_]+$/.test(usernameVal)) {
-            toast('Username can only contain letters, numbers, and underscores');
-            return;
-        }
-        
-        // Check if Firebase is available
-        if (typeof firebase === 'undefined' || !firebase.database) {
-            toast('Firebase not loaded. Please check your connection.');
-            console.error('Firebase not available');
-            return;
-        }
+        // Direct Firebase access
+        var db = firebase.database();
         
         toast('Checking username...');
         
-        firebase.database().ref('users/' + usernameVal).once('value')
+        db.ref('users/' + usernameVal).once('value')
             .then(function(snapshot) {
                 if (snapshot.exists()) {
-                    toast('Username already taken. Please choose another.');
+                    toast('Username already taken');
                     return Promise.reject('Username taken');
                 }
                 
-                console.log('Username available. Creating account...');
+                console.log('✅ Creating account for:', usernameVal);
                 toast('Creating account...');
                 
                 var userData = {
@@ -84,11 +92,12 @@ function handleSignup() {
                     online: true
                 };
                 
-                return firebase.database().ref('users/' + usernameVal).set(userData);
+                return db.ref('users/' + usernameVal).set(userData);
             })
             .then(function() {
-                console.log('Account created successfully for:', usernameVal);
+                console.log('✅ Account created for:', usernameVal);
                 
+                // Save session
                 S.username = usernameVal;
                 S.name = nameVal;
                 S.bio = 'Building my energy. One aura at a time. ⚡';
@@ -115,31 +124,25 @@ function handleSignup() {
                 usernameEl.value = '';
                 passwordEl.value = '';
                 
-                toast('Account created successfully! 🎉');
+                toast('Account created! 🎉');
                 
-                setTimeout(function() { 
-                    if (typeof navigate === 'function') {
-                        navigate('select');
-                    } else {
-                        window.location.hash = '#select';
-                    }
-                }, 500);
+                setTimeout(function() { navigate('select'); }, 500);
             })
             .catch(function(error) {
                 if (error !== 'Username taken') {
-                    console.error('Signup error:', error);
-                    toast('Error creating account. Please try again.');
+                    console.error('❌ Signup error:', error);
+                    toast('Error: ' + error.message);
                 }
             });
             
     } catch (error) {
-        console.error('Signup function error:', error);
+        console.error('❌ Signup error:', error);
         toast('An error occurred. Please try again.');
     }
 }
 
 // ============================================================
-// LOGIN FUNCTION
+// LOGIN FUNCTION - DIRECT FIREBASE
 // ============================================================
 function handleLogin() {
     console.log('=== LOGIN BUTTON CLICKED ===');
@@ -148,53 +151,44 @@ function handleLogin() {
         var usernameEl = document.getElementById('loginUser');
         var passwordEl = document.getElementById('loginPass');
         
-        console.log('Elements found:', {
-            username: !!usernameEl,
-            password: !!passwordEl
-        });
-        
         if (!usernameEl || !passwordEl) {
-            toast('Form error. Please refresh the page.');
+            toast('Form error. Please refresh.');
             return;
         }
         
         var usernameVal = usernameEl.value.trim();
         var passwordVal = passwordEl.value.trim();
         
-        console.log('Login attempt for:', usernameVal);
-        
         if (!usernameVal || !passwordVal) {
             toast('Please fill all fields');
             return;
         }
         
-        // Check if Firebase is available
-        if (typeof firebase === 'undefined' || !firebase.database) {
-            toast('Firebase not loaded. Please check your connection.');
-            console.error('Firebase not available');
-            return;
-        }
+        var db = firebase.database();
         
         toast('Logging in...');
         
-        firebase.database().ref('users/' + usernameVal).once('value')
+        db.ref('users/' + usernameVal).once('value')
             .then(function(snapshot) {
                 if (!snapshot.exists()) {
-                    console.log('User not found:', usernameVal);
-                    toast('User not found. Please check your username or create an account.');
+                    toast('User not found');
                     return;
                 }
                 
                 var userData = snapshot.val();
-                console.log('User found, checking password...');
+                console.log('✅ User found');
                 
-                if (userData.password !== passwordVal) {
-                    console.log('Password incorrect for:', usernameVal);
-                    toast('Incorrect password. Please try again.');
+                if (!userData.password) {
+                    toast('Account data corrupted. Please create a new account.');
                     return;
                 }
                 
-                console.log('Login successful for:', usernameVal);
+                if (userData.password !== passwordVal) {
+                    toast('Incorrect password');
+                    return;
+                }
+                
+                console.log('✅ Login successful:', usernameVal);
                 
                 S.username = usernameVal;
                 S.name = userData.name || '';
@@ -204,14 +198,8 @@ function handleLogin() {
                 S.wallpaper = userData.wallpaper || null;
                 S.friends = userData.friends || [];
                 S.bookmarks = userData.bookmarks || [];
-                S.completedTasks = [];
-                S.streakData = {};
-                S.diary = [];
-                S.routines = [];
-                S.notifications = [];
-                S.groups = [];
-                S.videoData = [];
-                S.socialPosts = [];
+                S.completedTasks = userData.completedTasks || [];
+                S.streakData = userData.streakData || {};
                 
                 if (typeof saveState === 'function') saveState();
                 localStorage.setItem('wa', JSON.stringify({ username: usernameVal, timestamp: Date.now() }));
@@ -223,59 +211,40 @@ function handleLogin() {
                 
                 if (S.wallpaper) {
                     document.body.style.backgroundImage = 'url(' + S.wallpaper + ')';
-                    document.body.style.backgroundSize = 'cover';
-                    document.body.style.backgroundPosition = 'center';
-                    document.body.style.backgroundAttachment = 'fixed';
                 }
                 
-                firebase.database().ref('users/' + usernameVal).update({ 
-                    online: true, 
-                    last_seen: new Date().toISOString() 
-                });
+                db.ref('users/' + usernameVal).update({ online: true, last_seen: new Date().toISOString() });
                 
-                var displayName = S.name || S.username;
-                toast('Welcome back, ' + displayName + '! ✨');
+                toast('Welcome back, ' + (S.name || S.username) + '! ✨');
                 
                 if (S.selectedAuras.length === 0) {
-                    setTimeout(function() { 
-                        if (typeof navigate === 'function') {
-                            navigate('select');
-                        } else {
-                            window.location.hash = '#select';
-                        }
-                    }, 500);
+                    setTimeout(function() { navigate('select'); }, 500);
                 } else {
                     setTimeout(function() { 
-                        if (typeof navigate === 'function') {
-                            navigate('social');
-                            if (typeof initAppData === 'function') initAppData();
-                        } else {
-                            window.location.hash = '#social';
-                        }
+                        navigate('social');
+                        if (typeof initAppData === 'function') initAppData();
                     }, 500);
                 }
             })
             .catch(function(error) {
-                console.error('Login error:', error);
-                toast('Connection error. Please check your internet and try again.');
+                console.error('❌ Login error:', error);
+                toast('Error: ' + error.message);
             });
             
     } catch (error) {
-        console.error('Login function error:', error);
+        console.error('❌ Login error:', error);
         toast('An error occurred. Please try again.');
     }
 }
 
 // ============================================================
-// LOGOUT FUNCTION
+// LOGOUT
 // ============================================================
 function logout() {
-    console.log('=== LOGOUT STARTED ===');
+    console.log('=== LOGOUT ===');
     
     if (S.username) {
-        firebase.database().ref('users/' + S.username).update({ online: false, last_seen: new Date().toISOString() }).catch(function(err) {
-            console.error('Error updating status:', err);
-        });
+        firebase.database().ref('users/' + S.username).update({ online: false });
     }
     
     S = {
@@ -288,15 +257,7 @@ function logout() {
     localStorage.removeItem('ws');
     localStorage.removeItem('wa');
     
-    if (chatListener) { chatListener.off(); chatListener = null; }
-    if (postsListener) { postsListener.off(); postsListener = null; }
-    if (videosListener) { videosListener.off(); videosListener = null; }
-    if (notifListener) { notifListener.off(); notifListener = null; }
-    
     document.body.style.backgroundImage = "url('https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1920&q=80')";
-    document.body.style.backgroundSize = 'cover';
-    document.body.style.backgroundPosition = 'center';
-    document.body.style.backgroundAttachment = 'fixed';
     
     var wpFab = document.getElementById('wpFab');
     var bottomNav = document.getElementById('bottomNav');
@@ -304,95 +265,62 @@ function logout() {
     if (bottomNav) bottomNav.style.display = 'none';
     
     navigate('landing');
-    toast('Logged out successfully');
-    console.log('✅ Logout complete');
+    toast('Logged out');
 }
 
 // ============================================================
-// CONFIRM AURA SELECTION
+// CONFIRM AURAS
 // ============================================================
 function confirmSelection() {
     console.log('=== CONFIRMING AURAS ===');
     
     if (S.selectedAuras.length === 0) {
-        toast('Please select at least one aura to continue.');
+        toast('Select at least one aura');
         return;
     }
     
     if (S.username) {
-        firebase.database().ref('users/' + S.username + '/selected_auras').set(S.selectedAuras).then(function() {
-            console.log('Auras saved to Firebase');
-        }).catch(function(err) {
-            console.error('Error saving auras:', err);
-        });
+        firebase.database().ref('users/' + S.username + '/selected_auras').set(S.selectedAuras);
     }
     
-    saveState();
+    if (typeof saveState === 'function') saveState();
     
-    var auraNames = S.selectedAuras.map(function(k) {
-        return AURAS[k] ? AURAS[k].emoji + ' ' + AURAS[k].name : k;
-    }).join(', ');
-    
-    toast('Auras activated: ' + auraNames + ' ✨');
-    
-    setTimeout(function() { 
-        if (typeof navigate === 'function') {
-            navigate('social'); 
-            if (typeof initAppData === 'function') initAppData();
-        } else {
-            window.location.hash = '#social';
-        }
-    }, 500);
+    toast('Auras activated! ✨');
+    setTimeout(function() { navigate('social'); }, 500);
 }
 
 // ============================================================
 // RESET PASSWORD
 // ============================================================
 function resetPassword() {
-    console.log('=== PASSWORD RESET ===');
+    // Simple implementation
+    var username = prompt('Enter your username to reset password:');
+    if (!username) return;
     
-    showDialog({
-        emoji: '🔑', title: 'Reset Password', subtitle: 'Enter your username to reset your password',
-        placeholder: 'Your username...', confirmText: 'Next →'
-    }).then(function(username) {
-        if (!username || !username.trim()) return;
-        
-        var usernameVal = username.trim();
-        
-        firebase.database().ref('users/' + usernameVal).once('value').then(function(snapshot) {
-            if (!snapshot.exists()) { 
-                toast('User not found. Please check your username.'); 
-                return; 
+    var newPassword = prompt('Enter new password (min 6 characters):');
+    if (!newPassword || newPassword.length < 6) {
+        toast('Password must be at least 6 characters');
+        return;
+    }
+    
+    firebase.database().ref('users/' + username).once('value')
+        .then(function(snapshot) {
+            if (!snapshot.exists()) {
+                toast('User not found');
+                return;
             }
-            
-            showDialog({
-                emoji: '🔐', title: 'New Password', subtitle: 'Enter your new password (minimum 6 characters)',
-                placeholder: 'New password...', confirmText: 'Save Password'
-            }).then(function(newPassword) {
-                if (!newPassword || !newPassword.trim()) return;
-                var passwordVal = newPassword.trim();
-                if (passwordVal.length < 6) { 
-                    toast('Password must be at least 6 characters'); 
-                    return; 
-                }
-                
-                firebase.database().ref('users/' + usernameVal + '/password').set(passwordVal).then(function() {
-                    toast('Password reset successfully! Please log in with your new password.');
-                    setTimeout(function() { navigate('login'); }, 1000);
-                }).catch(function(error) { 
-                    console.error('Reset error:', error); 
-                    toast('Error resetting password.'); 
-                });
-            });
-        }).catch(function(error) { 
-            console.error('Reset error:', error); 
-            toast('Error. Please check your connection.'); 
+            return firebase.database().ref('users/' + username + '/password').set(newPassword);
+        })
+        .then(function() {
+            toast('Password reset! Please login.');
+        })
+        .catch(function(error) {
+            toast('Error: ' + error.message);
         });
-    });
 }
 
 // ============================================================
-// EXPOSE FUNCTIONS GLOBALLY
+// EXPOSE
 // ============================================================
 window.handleSignup = handleSignup;
 window.handleLogin = handleLogin;
@@ -400,6 +328,4 @@ window.logout = logout;
 window.confirmSelection = confirmSelection;
 window.resetPassword = resetPassword;
 
-console.log('🔐 Auth module loaded successfully');
-console.log('📌 handleSignup type:', typeof window.handleSignup);
-console.log('📌 handleLogin type:', typeof window.handleLogin);
+console.log('🔐 Auth module loaded');
