@@ -7,8 +7,76 @@
     <meta name="description" content="Winchu · Nexus - Shape your presence. Manifest your energy." />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="/manifest.json" />
     <title>Winchu · Nexus</title>
+
+    <!-- ============================================================ -->
+    <!-- SOURCE CODE PROTECTION - RE-ENABLED -->
+    <!-- ============================================================ -->
+    <script>
+        // Disable right-click
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // Disable keyboard shortcuts for developer tools
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if (e.ctrlKey && e.keyCode === 85) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+S
+            if (e.ctrlKey && e.keyCode === 83) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+P
+            if (e.ctrlKey && e.keyCode === 80) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // Detect developer tools
+        (function() {
+            var threshold = 160;
+            setInterval(function() {
+                if (window.outerWidth - window.innerWidth > threshold ||
+                    window.outerHeight - window.innerHeight > threshold) {
+                    document.body.innerHTML = `
+                        <div style="text-align:center;padding:50px;font-family:sans-serif;background:#0f172a;color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+                            <h1 style="font-size:2rem;margin-bottom:20px;">⚠️ Developer Tools Detected</h1>
+                            <p style="color:#94a3b8;">Please close developer tools to continue.</p>
+                            <button onclick="location.reload()" style="margin-top:20px;padding:12px 30px;background:#6366f1;color:#fff;border:none;border-radius:12px;font-size:16px;cursor:pointer;">🔄 Reload Page</button>
+                        </div>
+                    `;
+                }
+            }, 1000);
+        })();
+    </script>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
