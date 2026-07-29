@@ -1,9 +1,8 @@
-// Videos Module - Complete with fixed video playback
+// Videos Module - Optimized for PC and Mobile
 
 var videosListener = null;
 var processedVideoIds = {};
 var currentVideoCommentId = null;
-var videoLoadAttempts = 0;
 
 // ============================================================
 // LOAD VIDEOS
@@ -41,8 +40,6 @@ function loadVideos() {
                     return new Date(b.time) - new Date(a.time); 
                 });
                 console.log('✅ Videos loaded:', S.videoData.length);
-            } else {
-                console.log('📹 No videos found');
             }
             
             renderVideos();
@@ -54,7 +51,6 @@ function loadVideos() {
                 container.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#fff;text-align:center;flex-direction:column;padding:20px;">' +
                     '<i class="fas fa-exclamation-triangle" style="font-size:3rem;opacity:0.6;margin-bottom:20px;"></i>' +
                     '<p style="font-size:1.2rem;opacity:0.8;">Error loading videos</p>' +
-                    '<p style="font-size:0.9rem;opacity:0.5;margin-top:10px;">' + error.message + '</p>' +
                     '<button onclick="loadVideos()" style="margin-top:20px;padding:10px 30px;background:#6366f1;color:#fff;border:none;border-radius:10px;cursor:pointer;">🔄 Retry</button>' +
                     '</div>';
             }
@@ -103,7 +99,7 @@ function loadVideos() {
 }
 
 // ============================================================
-// RENDER VIDEOS - FIXED PLAYBACK
+// RENDER VIDEOS - PC OPTIMIZED
 // ============================================================
 function renderVideos() {
     var container = document.getElementById('videoFeed');
@@ -123,7 +119,6 @@ function renderVideos() {
         container.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#fff;text-align:center;flex-direction:column;padding:20px;">' +
             '<i class="fas fa-play-circle" style="font-size:4rem;opacity:0.4;"></i>' +
             '<p style="font-size:1.2rem;opacity:0.6;margin-top:15px;">No videos yet</p>' +
-            '<p style="font-size:0.9rem;opacity:0.4;margin-top:5px;">Upload your first video!</p>' +
             '</div>';
         return;
     }
@@ -143,18 +138,22 @@ function renderVideos() {
         
         var videoSrc = video.url || '';
         
-        html += '<div class="video-slide" style="background:#000;" data-video-id="' + video.id + '" data-index="' + index + '">';
+        html += '<div class="video-slide" style="background:#000;height:100vh;width:100%;position:relative;overflow:hidden;" data-video-id="' + video.id + '">';
         
         if (videoSrc) {
-            html += '<video ' +
-                'src="' + videoSrc + '" ' +
-                'loop playsinline preload="metadata" ' +
-                'style="width:100%;height:100%;object-fit:contain;position:absolute;inset:0;" ' +
-                'onclick="toggleVideoPlay(this)" ' +
-                'playsinline ' +
-                'webkit-playsinline ' +
-                'x5-playsinline ' +
-                '></video>';
+            // PC Optimized: preload="auto" and proper attributes
+            html += '<video ';
+            html += 'id="video-' + video.id + '" ';
+            html += 'src="' + videoSrc + '" ';
+            html += 'loop ';
+            html += 'playsinline ';
+            html += 'webkit-playsinline ';
+            html += 'x5-playsinline ';
+            html += 'preload="auto" ';
+            html += 'muted ';
+            html += 'style="width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;background:#000;" ';
+            html += 'onclick="toggleVideoPlay(this)" ';
+            html += '></video>';
         } else {
             html += '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.5rem;background:#1a1a1a;flex-direction:column;">' +
                 '<i class="fas fa-video" style="font-size:4rem;opacity:0.3;margin-bottom:15px;"></i>' +
@@ -211,11 +210,11 @@ function renderVideos() {
     
     setTimeout(function() {
         setupVideoAutoplay(container);
-    }, 500);
+    }, 1000);
 }
 
 // ============================================================
-// VIDEO AUTOPLAY - FIXED
+// VIDEO AUTOPLAY - PC OPTIMIZED
 // ============================================================
 function setupVideoAutoplay(container) {
     if (!container) {
@@ -226,21 +225,42 @@ function setupVideoAutoplay(container) {
     var videos = container.querySelectorAll('video');
     if (videos.length === 0) return;
     
-    if (videos.length > 0) {
-        var firstVideo = videos[0];
-        firstVideo.muted = true;
-        firstVideo.play().catch(function() {});
-    }
+    // Check if PC or Mobile
+    var isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
+    videos.forEach(function(video, index) {
+        // For PC: Load video data but don't autoplay with sound
+        // For Mobile: Autoplay muted
+        if (isMobile) {
+            video.muted = true;
+            video.play().catch(function() {});
+        } else {
+            // PC: Just load the video, user will click to play
+            video.load();
+            // Add click handler to play with sound on PC
+            video.addEventListener('click', function() {
+                if (this.paused) {
+                    this.muted = false;
+                    this.play().catch(function() {});
+                } else {
+                    this.pause();
+                }
+            });
+        }
+    });
+    
+    // Intersection Observer for both PC and Mobile
     var observer = new IntersectionObserver(function(entries) {
         entries.forEach(function(entry) {
             var video = entry.target;
             if (entry.isIntersecting) {
-                video.muted = false;
-                video.play().catch(function() {
+                // Video is visible
+                if (isMobile) {
+                    // Mobile: Play muted
                     video.muted = true;
                     video.play().catch(function() {});
-                });
+                }
+                // PC: Only play if user has interacted
             } else {
                 video.pause();
             }
@@ -253,18 +273,25 @@ function setupVideoAutoplay(container) {
 }
 
 // ============================================================
-// TOGGLE VIDEO PLAY
+// TOGGLE VIDEO PLAY - PC OPTIMIZED
 // ============================================================
 function toggleVideoPlay(el) {
     if (!el) return;
     if (el.paused) {
+        // Unmute and play
         el.muted = false;
-        el.play().catch(function() {
+        el.play().then(function() {
+            console.log('▶️ Video playing with sound');
+        }).catch(function(error) {
+            console.log('⚠️ Autoplay prevented:', error.message);
+            // If autoplay is blocked, show a play button overlay
             el.muted = true;
             el.play().catch(function() {});
+            toast('🔊 Tap again for sound');
         });
     } else {
         el.pause();
+        console.log('⏸️ Video paused');
     }
 }
 
@@ -287,7 +314,7 @@ function handleVideoUpload(event) {
         return;
     }
     
-    toast('Uploading video...');
+    toast('Uploading video... (may take a moment)');
     
     var reader = new FileReader();
     reader.onload = function(e) {
@@ -361,6 +388,183 @@ function likeVideo(videoId) {
 }
 
 // ============================================================
+// SHOW VIDEO COMMENTS
+// ============================================================
+function showVideoComments(videoId) {
+    if (!S.username) {
+        toast('Please log in');
+        return;
+    }
+    
+    var video = S.videoData.find(function(v) { return v.id === videoId; });
+    if (!video) {
+        toast('Video not found');
+        return;
+    }
+    
+    if (!Array.isArray(video.comments)) {
+        video.comments = [];
+    }
+    
+    currentVideoCommentId = videoId;
+    
+    var commentsHTML = '<div style="max-height:300px;overflow-y:auto;margin-bottom:10px;">';
+    
+    if (video.comments.length === 0) {
+        commentsHTML += '<p style="color:#94a3b8;text-align:center;padding:20px;">No comments yet. Be the first! 💬</p>';
+    } else {
+        var sortedComments = video.comments.slice().sort(function(a, b) {
+            return new Date(b.time) - new Date(a.time);
+        });
+        
+        sortedComments.forEach(function(comment) {
+            var timeAgo = timeSince(new Date(comment.time));
+            var color = getColor(comment.username);
+            
+            commentsHTML += '<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.05);">';
+            commentsHTML += '<div style="width:32px;height:32px;border-radius:50%;background:' + color + ';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0;cursor:pointer;" onclick="viewUserProfile(\'' + comment.username + '\')">' + comment.username.charAt(0).toUpperCase() + '</div>';
+            commentsHTML += '<div style="flex:1;min-width:0;">';
+            commentsHTML += '<div style="font-weight:600;font-size:12px;cursor:pointer;" onclick="viewUserProfile(\'' + comment.username + '\')">@' + escapeHtml(comment.username) + '</div>';
+            commentsHTML += '<div style="font-size:12px;word-wrap:break-word;">' + escapeHtml(comment.text) + '</div>';
+            commentsHTML += '<div style="font-size:9px;color:#94a3b8;margin-top:2px;">' + timeAgo + '</div>';
+            commentsHTML += '</div>';
+            
+            if (comment.username === S.username) {
+                commentsHTML += '<button class="btn-sm btn-danger" onclick="deleteVideoComment(\'' + videoId + '\', \'' + comment.time + '\')" style="font-size:8px;padding:2px 6px;">✕</button>';
+            }
+            
+            commentsHTML += '</div>';
+        });
+    }
+    
+    commentsHTML += '</div>';
+    
+    commentsHTML += '<div style="display:flex;gap:6px;align-items:center;">';
+    commentsHTML += '<input type="text" id="videoCommentInput" placeholder="Write a comment..." style="flex:1;padding:8px 12px;border:1px solid rgba(0,0,0,0.1);border-radius:20px;font-size:13px;outline:none;" onkeypress="if(event.key===\'Enter\')postVideoComment()" />';
+    commentsHTML += '<button class="btn-sm btn-primary" onclick="postVideoComment()" style="padding:8px 16px;">Post</button>';
+    commentsHTML += '</div>';
+    
+    showDialog({
+        emoji: '💬',
+        title: 'Comments on Video',
+        htmlSubtitle: commentsHTML,
+        showBack: true,
+        noCancel: true,
+        confirmText: 'Close'
+    });
+}
+
+// ============================================================
+// POST VIDEO COMMENT
+// ============================================================
+function postVideoComment() {
+    if (!S.username) {
+        toast('Please log in to comment');
+        return;
+    }
+    
+    var input = document.getElementById('videoCommentInput');
+    if (!input) {
+        input = document.querySelector('#videoCommentInput');
+    }
+    
+    if (!input) {
+        toast('Comment input not found');
+        return;
+    }
+    
+    var text = input.value.trim();
+    if (!text) {
+        toast('Please write a comment');
+        return;
+    }
+    
+    if (!currentVideoCommentId) {
+        toast('No video selected');
+        return;
+    }
+    
+    var comment = {
+        username: S.username,
+        text: text,
+        time: new Date().toISOString()
+    };
+    
+    var commentsRef = firebase.database().ref('videos/' + currentVideoCommentId + '/comments');
+    
+    commentsRef.transaction(function(currentComments) {
+        if (currentComments === null) {
+            currentComments = [];
+        }
+        if (!Array.isArray(currentComments)) {
+            currentComments = [];
+        }
+        currentComments.push(comment);
+        return currentComments;
+        
+    }, function(error, committed) {
+        if (error) {
+            console.error('Comment error:', error);
+            toast('Error posting comment');
+        } else if (committed) {
+            input.value = '';
+            toast('Comment added! 💬');
+            
+            var video = S.videoData.find(function(v) { return v.id === currentVideoCommentId; });
+            if (video) {
+                if (!Array.isArray(video.comments)) {
+                    video.comments = [];
+                }
+                video.comments.push(comment);
+                renderVideos();
+                showVideoComments(currentVideoCommentId);
+            }
+        }
+    });
+}
+
+// ============================================================
+// DELETE VIDEO COMMENT
+// ============================================================
+function deleteVideoComment(videoId, commentTime) {
+    if (!S.username) return;
+    
+    showDialog({
+        emoji: '🗑️',
+        title: 'Delete Comment',
+        subtitle: 'Remove this comment?',
+        confirmText: 'Delete',
+        danger: true
+    }).then(function(result) {
+        if (result !== null) {
+            var video = S.videoData.find(function(v) { return v.id === videoId; });
+            if (!video) return;
+            
+            if (!Array.isArray(video.comments)) {
+                video.comments = [];
+            }
+            
+            video.comments = video.comments.filter(function(c) {
+                return c.time !== commentTime;
+            });
+            
+            firebase.database().ref('videos/' + videoId + '/comments').set(video.comments)
+                .then(function() {
+                    toast('Comment deleted');
+                    renderVideos();
+                    if (currentVideoCommentId === videoId) {
+                        showVideoComments(videoId);
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Error deleting comment:', error);
+                    toast('Error deleting comment');
+                });
+        }
+    });
+}
+
+// ============================================================
 // DELETE VIDEO
 // ============================================================
 function deleteVideo(videoId) {
@@ -389,13 +593,35 @@ function deleteVideo(videoId) {
 }
 
 // ============================================================
+// DOWNLOAD VIDEO
+// ============================================================
+function downloadVideo(videoId) {
+    var v = S.videoData.find(function(x) { return x.id === videoId; });
+    if (v && v.url && v.url.startsWith('data:')) {
+        var a = document.createElement('a');
+        a.href = v.url;
+        a.download = 'winchu-video-' + Date.now() + '.mp4';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        toast('⬇️ Downloading...');
+    } else {
+        toast('Video not available for download');
+    }
+}
+
+// ============================================================
 // EXPOSE
 // ============================================================
 window.loadVideos = loadVideos;
 window.renderVideos = renderVideos;
 window.handleVideoUpload = handleVideoUpload;
 window.likeVideo = likeVideo;
+window.showVideoComments = showVideoComments;
+window.postVideoComment = postVideoComment;
+window.deleteVideoComment = deleteVideoComment;
 window.deleteVideo = deleteVideo;
+window.downloadVideo = downloadVideo;
 window.toggleVideoPlay = toggleVideoPlay;
 
-console.log('🎬 Videos module loaded (fixed)');
+console.log('🎬 Videos module loaded (PC & Mobile optimized)');
