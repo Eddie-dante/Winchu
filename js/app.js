@@ -1,9 +1,90 @@
-// App Core Module
+// ============================================================
+// APP INITIALIZATION WITH DEBUGGING
+// ============================================================
 
-var postsListener = null;
-var videosListener = null;
-var notifListener = null;
+console.log('⚡ APP CORE LOADING...');
 
+// ============================================================
+// CHECK ALL DEPENDENCIES
+// ============================================================
+console.log('📦 Checking dependencies:');
+console.log('  - firebase:', typeof firebase !== 'undefined' ? '✅' : '❌');
+console.log('  - S:', typeof S !== 'undefined' ? '✅' : '❌');
+console.log('  - toast:', typeof toast !== 'undefined' ? '✅' : '❌');
+console.log('  - navigate:', typeof navigate !== 'undefined' ? '✅' : '❌');
+console.log('  - handleSignup:', typeof handleSignup !== 'undefined' ? '✅' : '❌');
+console.log('  - handleLogin:', typeof handleLogin !== 'undefined' ? '✅' : '❌');
+
+// ============================================================
+// FORCE FUNCTIONS TO BE GLOBAL
+// ============================================================
+if (typeof handleSignup !== 'undefined') {
+    window.handleSignup = handleSignup;
+}
+if (typeof handleLogin !== 'undefined') {
+    window.handleLogin = handleLogin;
+}
+
+// ============================================================
+// APP INITIALIZATION
+// ============================================================
+function initApp() {
+    console.log('=== INITIALIZING APP ===');
+    var auth = localStorage.getItem('wa');
+    if (auth) {
+        try {
+            var data = JSON.parse(auth);
+            if (data.username && (Date.now() - data.timestamp < 7 * 86400000)) {
+                loadState();
+                if (S.username === data.username) {
+                    console.log('Restoring session for:', S.username);
+                    setupPresence();
+                    firebase.database().ref('users/' + S.username).once('value').then(function(snapshot) { 
+                        if (snapshot.exists()) { 
+                            var d = snapshot.val(); 
+                            S.name = d.name || ''; 
+                            S.bio = d.bio || 'Building my energy. ⚡'; 
+                            S.avatar = d.avatar; 
+                            S.wallpaper = d.wallpaper; 
+                            S.friends = d.friends || []; 
+                            S.bookmarks = d.bookmarks || []; 
+                            S.selectedAuras = d.selected_auras || []; 
+                            saveState(); 
+                        } 
+                    });
+                    if (S.wallpaper) { 
+                        document.body.style.backgroundImage = 'url(' + S.wallpaper + ')'; 
+                        document.body.style.backgroundSize = 'cover'; 
+                        document.body.style.backgroundPosition = 'center'; 
+                        document.body.style.backgroundAttachment = 'fixed'; 
+                    }
+                    document.getElementById('wpFab').style.display = 'flex';
+                    document.getElementById('bottomNav').style.display = 'flex';
+                    
+                    if (typeof initAI === 'function') {
+                        setTimeout(initAI, 1500);
+                    }
+                    
+                    if (S.selectedAuras.length === 0) { 
+                        navigate('select'); 
+                    } else { 
+                        navigate('social'); 
+                        initAppData(); 
+                    }
+                    console.log('✅ Winchu ready');
+                    return;
+                }
+            }
+        } catch(e) { 
+            console.error('Init error:', e); 
+        }
+    }
+    navigate('landing');
+}
+
+// ============================================================
+// INIT APP DATA
+// ============================================================
 function initAppData() {
     console.log('=== INITIALIZING APP DATA ===');
     
@@ -123,6 +204,9 @@ function initAppData() {
     console.log('✅ All app data initialized');
 }
 
+// ============================================================
+// LISTENER SETUP
+// ============================================================
 function setupPostsListener() {
     if (postsListener) { 
         postsListener.off(); 
@@ -296,6 +380,9 @@ function addNotification(to, message, type, refId) {
     }); 
 }
 
+// ============================================================
+// FORCE SYNC USER DATA
+// ============================================================
 function forceSyncUserData() {
     if (!S.username) {
         console.warn('No user logged in to sync');
@@ -341,60 +428,9 @@ function forceSyncUserData() {
         });
 }
 
-function initApp() {
-    console.log('=== INITIALIZING APP ===');
-    var auth = localStorage.getItem('wa');
-    if (auth) {
-        try {
-            var data = JSON.parse(auth);
-            if (data.username && (Date.now() - data.timestamp < 7 * 86400000)) {
-                loadState();
-                if (S.username === data.username) {
-                    console.log('Restoring session for:', S.username);
-                    setupPresence();
-                    firebase.database().ref('users/' + S.username).once('value').then(function(snapshot) { 
-                        if (snapshot.exists()) { 
-                            var d = snapshot.val(); 
-                            S.name = d.name || ''; 
-                            S.bio = d.bio || 'Building my energy. ⚡'; 
-                            S.avatar = d.avatar; 
-                            S.wallpaper = d.wallpaper; 
-                            S.friends = d.friends || []; 
-                            S.bookmarks = d.bookmarks || []; 
-                            S.selectedAuras = d.selected_auras || []; 
-                            saveState(); 
-                        } 
-                    });
-                    if (S.wallpaper) { 
-                        document.body.style.backgroundImage = 'url(' + S.wallpaper + ')'; 
-                        document.body.style.backgroundSize = 'cover'; 
-                        document.body.style.backgroundPosition = 'center'; 
-                        document.body.style.backgroundAttachment = 'fixed'; 
-                    }
-                    document.getElementById('wpFab').style.display = 'flex';
-                    document.getElementById('bottomNav').style.display = 'flex';
-                    
-                    if (typeof initAI === 'function') {
-                        setTimeout(initAI, 1500);
-                    }
-                    
-                    if (S.selectedAuras.length === 0) { 
-                        navigate('select'); 
-                    } else { 
-                        navigate('social'); 
-                        initAppData(); 
-                    }
-                    console.log('✅ Winchu ready');
-                    return;
-                }
-            }
-        } catch(e) { 
-            console.error('Init error:', e); 
-        }
-    }
-    navigate('landing');
-}
-
+// ============================================================
+// DOM READY
+// ============================================================
 document.addEventListener('DOMContentLoaded', function() { 
     setTimeout(initApp, 500); 
 });
@@ -432,6 +468,9 @@ if ('serviceWorker' in navigator) {
     }); 
 }
 
+// ============================================================
+// EXPOSE GLOBALLY
+// ============================================================
 window.initApp = initApp;
 window.initAppData = initAppData;
 window.updateNotifBadge = updateNotifBadge;
@@ -439,4 +478,6 @@ window.markAllNotifsRead = markAllNotifsRead;
 window.addNotification = addNotification;
 window.forceSyncUserData = forceSyncUserData;
 
-console.log('⚡ App Core Loaded - Goes to SOCIAL');
+console.log('⚡ App Core Loaded');
+console.log('📌 handleSignup type:', typeof window.handleSignup);
+console.log('📌 handleLogin type:', typeof window.handleLogin);
