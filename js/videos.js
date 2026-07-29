@@ -1,4 +1,4 @@
-// Videos Module - Optimized for PC and Mobile
+// Videos Module - Complete Working (PC & Mobile)
 
 var videosListener = null;
 var processedVideoIds = {};
@@ -99,7 +99,7 @@ function loadVideos() {
 }
 
 // ============================================================
-// RENDER VIDEOS - PC OPTIMIZED
+// RENDER VIDEOS - COMPLETE REWRITE
 // ============================================================
 function renderVideos() {
     var container = document.getElementById('videoFeed');
@@ -140,8 +140,12 @@ function renderVideos() {
         
         html += '<div class="video-slide" style="background:#000;height:100vh;width:100%;position:relative;overflow:hidden;" data-video-id="' + video.id + '">';
         
+        // Create video element with clear play button overlay for PC
+        html += '<div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;z-index:2;pointer-events:none;" id="playOverlay-' + video.id + '">';
+        html += '<div style="background:rgba(0,0,0,0.5);border-radius:50%;width:80px;height:80px;display:flex;align-items:center;justify-content:center;font-size:40px;color:#fff;border:2px solid rgba(255,255,255,0.3);pointer-events:none;" class="play-icon">▶</div>';
+        html += '</div>';
+        
         if (videoSrc) {
-            // PC Optimized: preload="auto" and proper attributes
             html += '<video ';
             html += 'id="video-' + video.id + '" ';
             html += 'src="' + videoSrc + '" ';
@@ -150,18 +154,17 @@ function renderVideos() {
             html += 'webkit-playsinline ';
             html += 'x5-playsinline ';
             html += 'preload="auto" ';
-            html += 'muted ';
-            html += 'style="width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;background:#000;" ';
-            html += 'onclick="toggleVideoPlay(this)" ';
+            html += 'style="width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;background:#000;cursor:pointer;z-index:1;" ';
+            html += 'onclick="playVideo(this, \'' + video.id + '\')" ';
             html += '></video>';
         } else {
-            html += '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.5rem;background:#1a1a1a;flex-direction:column;">' +
+            html += '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.5rem;background:#1a1a1a;flex-direction:column;z-index:1;position:relative;">' +
                 '<i class="fas fa-video" style="font-size:4rem;opacity:0.3;margin-bottom:15px;"></i>' +
                 '<span style="opacity:0.5;">Video unavailable</span>' +
                 '</div>';
         }
         
-        html += '<div class="video-overlay">';
+        html += '<div class="video-overlay" style="z-index:3;">';
         html += '<div class="video-info">';
         html += '<div class="username" style="cursor:pointer;" onclick="event.stopPropagation();viewUserProfile(\'' + video.author + '\')">';
         html += '@' + escapeHtml(video.author) + ' <i class="fas fa-check-circle" style="color:#ffd700;font-size:0.7rem;"></i>';
@@ -208,13 +211,56 @@ function renderVideos() {
     
     container.innerHTML = html;
     
+    // Auto-play videos in view
     setTimeout(function() {
         setupVideoAutoplay(container);
-    }, 1000);
+    }, 500);
 }
 
 // ============================================================
-// VIDEO AUTOPLAY - PC OPTIMIZED
+// PLAY VIDEO - NEW FUNCTION
+// ============================================================
+function playVideo(videoElement, videoId) {
+    console.log('🎬 playVideo called for:', videoId);
+    
+    if (!videoElement) return;
+    
+    // Hide play overlay
+    var overlay = document.getElementById('playOverlay-' + videoId);
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
+    
+    if (videoElement.paused) {
+        // Try to play with sound
+        videoElement.muted = false;
+        videoElement.play().then(function() {
+            console.log('▶️ Video playing with sound');
+        }).catch(function(error) {
+            console.log('⚠️ Autoplay blocked:', error.message);
+            // If autoplay blocked, play muted
+            videoElement.muted = true;
+            videoElement.play().catch(function() {});
+            toast('🔊 Tap again for sound');
+            // Show overlay again if muted
+            setTimeout(function() {
+                if (overlay) {
+                    overlay.style.display = 'flex';
+                }
+            }, 500);
+        });
+    } else {
+        videoElement.pause();
+        console.log('⏸️ Video paused');
+        // Show overlay when paused
+        if (overlay) {
+            overlay.style.display = 'flex';
+        }
+    }
+}
+
+// ============================================================
+// VIDEO AUTOPLAY
 // ============================================================
 function setupVideoAutoplay(container) {
     if (!container) {
@@ -225,42 +271,19 @@ function setupVideoAutoplay(container) {
     var videos = container.querySelectorAll('video');
     if (videos.length === 0) return;
     
-    // Check if PC or Mobile
-    var isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    videos.forEach(function(video, index) {
-        // For PC: Load video data but don't autoplay with sound
-        // For Mobile: Autoplay muted
-        if (isMobile) {
-            video.muted = true;
-            video.play().catch(function() {});
-        } else {
-            // PC: Just load the video, user will click to play
-            video.load();
-            // Add click handler to play with sound on PC
-            video.addEventListener('click', function() {
-                if (this.paused) {
-                    this.muted = false;
-                    this.play().catch(function() {});
-                } else {
-                    this.pause();
-                }
-            });
-        }
-    });
-    
-    // Intersection Observer for both PC and Mobile
     var observer = new IntersectionObserver(function(entries) {
         entries.forEach(function(entry) {
             var video = entry.target;
             if (entry.isIntersecting) {
-                // Video is visible
-                if (isMobile) {
-                    // Mobile: Play muted
-                    video.muted = true;
-                    video.play().catch(function() {});
+                // Video is visible - play muted
+                video.muted = true;
+                video.play().catch(function() {});
+                // Hide play overlay when autoplaying
+                var videoId = video.id.replace('video-', '');
+                var overlay = document.getElementById('playOverlay-' + videoId);
+                if (overlay) {
+                    overlay.style.display = 'none';
                 }
-                // PC: Only play if user has interacted
             } else {
                 video.pause();
             }
@@ -273,26 +296,12 @@ function setupVideoAutoplay(container) {
 }
 
 // ============================================================
-// TOGGLE VIDEO PLAY - PC OPTIMIZED
+// TOGGLE VIDEO PLAY - LEGACY FUNCTION
 // ============================================================
 function toggleVideoPlay(el) {
     if (!el) return;
-    if (el.paused) {
-        // Unmute and play
-        el.muted = false;
-        el.play().then(function() {
-            console.log('▶️ Video playing with sound');
-        }).catch(function(error) {
-            console.log('⚠️ Autoplay prevented:', error.message);
-            // If autoplay is blocked, show a play button overlay
-            el.muted = true;
-            el.play().catch(function() {});
-            toast('🔊 Tap again for sound');
-        });
-    } else {
-        el.pause();
-        console.log('⏸️ Video paused');
-    }
+    var videoId = el.id.replace('video-', '');
+    playVideo(el, videoId);
 }
 
 // ============================================================
@@ -314,7 +323,7 @@ function handleVideoUpload(event) {
         return;
     }
     
-    toast('Uploading video... (may take a moment)');
+    toast('Uploading video...');
     
     var reader = new FileReader();
     reader.onload = function(e) {
@@ -623,5 +632,6 @@ window.deleteVideoComment = deleteVideoComment;
 window.deleteVideo = deleteVideo;
 window.downloadVideo = downloadVideo;
 window.toggleVideoPlay = toggleVideoPlay;
+window.playVideo = playVideo;
 
 console.log('🎬 Videos module loaded (PC & Mobile optimized)');
