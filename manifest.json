@@ -2,7 +2,7 @@
   "name": "Winchu · Nexus",
   "short_name": "Nexus",
   "description": "Shape your presence. Manifest your energy.",
-  "start_url": "/",
+  "start_url": "/winchu-alpha.vercel.app",
   "display": "standalone",
   "background_color": "#f1f5f9",
   "theme_color": "#0f172a",
